@@ -1,0 +1,41 @@
+spec:
+  goTemplate: true
+  generators:
+    - git:
+        repoURL: https://github.com/pikaro/k8s.git
+        revision: main
+        files:
+          - path: argocd/catalog/platform/*.yaml
+
+  template:
+    metadata:
+      name: "{{ .name }}"
+    spec:
+      project: default
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{ .namespace }}"
+
+  templatePatch: |
+    spec:
+      sources:
+        {{- if .requirements }}
+        - repoURL: https://github.com/pikaro/k8s.git
+          targetRevision: main
+          path: {{ .path }}/requirements
+        {{- end }}
+        - repoURL: {{ .chartRepo }}
+          chart: {{ .chart }}
+          targetRevision: {{ .chartVersion }}
+          helm:
+            releaseName: {{ .name }}
+            valueFiles:
+              - $values/{{ .path }}/values.yml
+        - repoURL: https://github.com/pikaro/k8s.git
+          targetRevision: main
+          ref: values
+        {{- if .resources }}
+        - repoURL: https://github.com/pikaro/k8s.git
+          targetRevision: main
+          path: {{ .path }}/resources
+        {{- end }}

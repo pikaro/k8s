@@ -1,0 +1,19 @@
+spec:
+  sources:
+    - repoURL: https://openebs.github.io/openebs
+      chart: openebs
+      targetRevision: <live-chart-version>
+      helm:
+        releaseName: openebs
+        valueFiles:
+          - $repo/services/platform/openebs/values.yml
+    - repoURL: https://github.com/pikaro/k8s.git
+      targetRevision: main
+      ref: repo
+      path: services/platform/openebs/resources
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: openebs
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

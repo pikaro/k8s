@@ -194,7 +194,25 @@ Best guide but very outdated:
 - Update `argocd/applications/coredns.yaml` to use the same version.
 - Ensure repo is committed and pushed.
 - `kubectl apply -f root.yaml` to create the root application
-- In the web interface, observe the root application.
+
+### Adopting CoreDNS
+
+- In the web interface, observe the root application. All child applications
+    should be healthy and OutOfSync.
+- Find the CoreDNS child application and click "Sync" to bring it up to date.
+- In the main ArgoCD application list, you should now have a new CoreDNS
+    application that is healthy and OutOfSync.
+- Validate the diff. You should only see ArgoCD annotations being added.
+- Sync the CoreDNS application to bring it up to date. It should now be healthy
+    and InSync.
+
+## Deploying additional services
+
+### Preparation
+
+- In `argocd/catalog`, check the versions for the individual charts. Update any
+    versions that are out of date and modify the corresponding `values.yml`
+    files as needed.
 
 ### OpenEBS
 
