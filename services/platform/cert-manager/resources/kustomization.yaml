@@ -3,4 +3,4 @@ kind: Kustomization
 commonAnnotations:
   argocd.argoproj.io/sync-wave: "10"
 resources:
-  - issuers.yml
+  - issuers.yaml
