@@ -237,6 +237,16 @@ Best guide but very outdated:
 - Refresh the public JWKS document:
     `kubectl get --raw /openid/v1/jwks > services/platform/oidc/jwks.json`
 
+#### Vaultwarden
+
+- `kubectl create namespace vaultwarden`
+- `openssl rand -base64 32 | tee /dev/stderr | tr -d '\n' | argon2 $(openssl rand -base64 32)`
+    (first line is the password)
+- `kubectl create secret generic -n vaultwarden vaultwarden-smtp --from-literal username='vaultwarden@d-reis.com' --from-literal token='<token>'`
+- Go to bitwarden.com/host, request an installation ID and key (no account
+    required)
+- `kubectl create secret generic -n vaultwarden vaultwarden-installation --from-literal installation_id="<uuid>" --from-literal installation_key="<key>"`
+
 ### Initial deployment
 
 Snyc the Applications in the `platform` ApplicationSet one by one, in the
@@ -249,6 +259,17 @@ following order:
 - OIDC issuer
 - CNPG Operator
 - external-secrets
+
+Sync the Applications in the `base-app` ApplicationSet one by one, in the
+following order:
+
+- CNPG database cluster
+
+Sync the Applications in the `app` ApplicationSet one by one, in the following
+order:
+
+- Vaultwarden
+- Vikunja
 
 ## Testing
 
@@ -275,55 +296,14 @@ following order:
 
 ### external-secrets
 
-- `cd bootstrap/helm/external-secrets`
-- `helm repo add external-secrets https://charts.external-secrets.io`
-- `helm repo update`
-- `./install.sh`
-
-For GitOps, manage these as separate units:
-
-- Helm chart: `bootstrap/helm/external-secrets/values.yml`
-- Post-CRD resources: `bootstrap/helm/external-secrets/resources/`
-
-Smoke test manifests are kept in this directory as one-off checks:
-
-- `test.yml` reads `/external-secrets/smoke`
+- `test.yaml` reads `/external-secrets/smoke`
 - `test-securestring.yml` reads `/external-secrets/smoke-secure`
-
-### CloudNativePG
-
-- `cd bootstrap/helm/cpng`
-- `helm repo add cnpg `
-- `helm repo update`
-- `./install.sh`
 
 ### PostgreSQL cluster
 
-- `cd bootstrap/helm/postgres`
-- `./install.sh`
-- `kubectl apply -f test.yaml` to run `psql ping`
-- `kubectl -n cnpg-database get pods` / `logs` to verify the test succeeded
+- `test.yaml` executes a ping to the database cluster.
 
-### Vikunja
-
-- `cd bootstrap/helm/vikunja`
-- `./install.sh`
-- `kubectl exec -n vikunja vikunja-<id> -- /app/vikunja/vikunja index`
-- Import data
-
-### Vaultwarden
-
-- `cd bootstrap/helm/vaultwarden`
-- `helm repo add vaultwarden https://guerzon.github.io/vaultwarden`
-- `helm repo update`
-- `kubectl create namespace vaultwarden`
-- `openssl rand -base64 32 | tee /dev/stderr | tr -d '\n' | argon2 $(openssl rand -base64 32)`
-    (first line is the password)
-- `kubectl create secret generic -n vaultwarden vaultwarden-smtp --from-literal username='vaultwarden@d-reis.com' --from-literal token='<token>'`
-- Go to bitwarden.com/host, request an installation ID and key (no account
-    required)
-- `kubectl create secret generic -n vaultwarden vaultwarden-installation --from-literal installation_id="<uuid>" --from-literal installation_key="<key>"`
-- `helm -n vaultwarden upgrade --install vaultwarden vaultwarden/vaultwarden -f values.yml`
+<!---
 
 ### Odoo
 
@@ -343,3 +323,5 @@ Smoke test manifests are kept in this directory as one-off checks:
 - `kubectl -n odoo rollout restart deployment odoo`
 - `<odoo>/web/database/manager`, do NOT delete existing DB!
 - Restore, "database was moved"
+
+-->
