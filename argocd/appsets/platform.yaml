@@ -32,7 +32,13 @@ spec:
     {{- $valuesFile := dig "valuesFile" (printf "services/platform/%s/values.yaml" $name) . }}
     {{- $requirementsPath := dig "requirementsPath" "" . }}
     {{- $resourcesPath := dig "resourcesPath" "" . }}
+    {{- $serverSideApply := eq (dig "serverSideApply" "false" .) "true" }}
     spec:
+      {{- if $serverSideApply }}
+      syncPolicy:
+        syncOptions:
+          - ServerSideApply=true
+      {{- end }}
       sources:
         {{- if eq $sourceType "kustomize" }}
         - repoURL: https://github.com/pikaro/k8s.git
