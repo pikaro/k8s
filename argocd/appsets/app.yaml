@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: "platform"
+  name: "app"
   namespace: argocd
 spec:
   goTemplate: true
@@ -12,7 +12,7 @@ spec:
         repoURL: https://github.com/pikaro/k8s.git
         revision: main
         files:
-          - path: "argocd/catalog/platform/*.yaml"
+          - path: "argocd/catalog/app/*.yaml"
 
   template:
     metadata:
@@ -26,10 +26,10 @@ spec:
   templatePatch: |
     {{- $name := .name }}
     {{- $sourceType := dig "sourceType" "helm" . }}
-    {{- $basePath := dig "basePath" (printf "services/platform/%s" $name) . }}
+    {{- $basePath := dig "basePath" (printf "services/app/%s" $name) . }}
     {{- $chart := dig "chart" $name . }}
     {{- $releaseName := dig "releaseName" $name . }}
-    {{- $valuesFile := dig "valuesFile" (printf "services/platform/%s/values.yaml" $name) . }}
+    {{- $valuesFile := dig "valuesFile" (printf "services/app/%s/values.yaml" $name) . }}
     {{- $requirementsPath := dig "requirementsPath" "" . }}
     {{- $resourcesPath := dig "resourcesPath" "" . }}
     {{- $serverSideApply := eq (dig "serverSideApply" "false" .) "true" }}

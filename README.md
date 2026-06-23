@@ -215,7 +215,8 @@ Best guide but very outdated:
 - In `argocd/catalog`, check the versions for the individual charts. Update any
     versions that are out of date and modify the corresponding `values.yml`
     files as needed.
-- Sync the `{platform}` ApplicationSet.
+- Deploy the `aws` Terraform repository.
+- Sync the `platform` ApplicationSet.
 
 #### cert-manager
 
@@ -229,14 +230,25 @@ Best guide but very outdated:
 - `kubectl create namespace cert-manager`
 - `kubectl create secret generic -n cert-manager cert-manager --from-file credentials`
 
+#### OIDC issuer
+
+- In `bootstrap/talos`, run `./patch.sh oidc` to generate the OIDC issuer config
+    patch.
+- Refresh the public JWKS document:
+    `kubectl get --raw /openid/v1/jwks > services/platform/oidc/jwks.json`
+
 ### Initial deployment
 
-Snyc the Applications in the `{platform}` ApplicationSet one by one, in the
+Snyc the Applications in the `platform` ApplicationSet one by one, in the
 following order:
 
 - OpenEBS
+- external-dns
 - cert-manager
 - Traefik
+- OIDC issuer
+- CNPG Operator
+- external-secrets
 
 ## Testing
 
@@ -256,13 +268,6 @@ following order:
 
 ### Kubernetes OIDC issuer
 
-AWS IAM, KMS and SSM permissions for this integration are managed in the
-`aws-main` repository.
-
-- From the repository root: `./patch.sh oidc`
-- Refresh the public JWKS document:
-    `kubectl get --raw /openid/v1/jwks > bootstrap/oidc/jwks.json`
-- Publish the issuer discovery endpoints: `kubectl apply -k bootstrap/oidc`
 - Verify the published endpoints:
     `curl -fsS https://oidc.k8s.d-reis.com/.well-known/openid-configuration`
 - Verify the published JWKS:
@@ -288,7 +293,7 @@ Smoke test manifests are kept in this directory as one-off checks:
 ### CloudNativePG
 
 - `cd bootstrap/helm/cpng`
-- `helm repo add cnpg https://cloudnative-pg.github.io/charts`
+- `helm repo add cnpg `
 - `helm repo update`
 - `./install.sh`
 

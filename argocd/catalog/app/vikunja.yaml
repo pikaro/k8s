@@ -1,0 +1,3 @@
+name: vikunja
+chartRepo: oci://ghcr.io/go-vikunja/helm-chart/vikunja
+chartVersion: 2.0.0
