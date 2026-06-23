@@ -55,7 +55,7 @@ Best guide but very outdated:
 
 - `cd bootstrap/talos`
 
-- Edit `image.yml` to add extensions if needed
+- Edit `image.yaml` to add extensions if needed
 
 - `./image.sh` and note the generated ID
 
@@ -141,7 +141,8 @@ Best guide but very outdated:
 
 ## Storage
 
-- `./shell.sh` opens an admin shell with privileges
+- From the repository root, `tools/shell.sh` opens an admin shell with
+  privileges
 - `apt update && apt install gdisk`
 - Use `bf01` partition type for ZFS partitions
 - `gdisk /dev/nvme0n1`
@@ -161,17 +162,17 @@ Best guide but very outdated:
         EXACTLY the same on both disks.
     - `w` to write changes
 - Exit shell and `talosctl reboot`
-- `./shell.sh`, and use `gdisk` again to verify everything worked
-- `./shell.sh start`
-- You can use `./shell.sh run bash` to run commands in the shell
-- `./shell.sh run zfs zpool create -m legacy tank_single nvme1n1p1`. This is the
+- `tools/shell.sh`, and use `gdisk` again to verify everything worked
+- `tools/shell.sh start`
+- You can use `tools/shell.sh run bash` to run commands in the shell
+- `tools/shell.sh run zfs zpool create -m legacy tank_single nvme1n1p1`. This is the
     *leading* partition on the *secondary* disk. If will serve as an unmirrored
     pool for non-critical data.
 - Note the device of the last partition on the system disk. Ex. `nvme0n1p6`.
-- `./shell.sh run zfs zpool create -m legacy -f tank_mirror mirror nvme0n1p6 nvme1n1p2`.
+- `tools/shell.sh run zfs zpool create -m legacy -f tank_mirror mirror nvme0n1p6 nvme1n1p2`.
     This is the *trailing* partition on *both* disks. It will serve as a
     mirrored pool for critical data.
-- `./shell.sh run zfs zpool status` to verify both pools are healthy.
+- `tools/shell.sh run zfs zpool status` to verify both pools are healthy.
 
 ## Initial services
 
@@ -180,7 +181,7 @@ Best guide but very outdated:
 - `cd bootstrap/coredns`
 - `helm repo add coredns https://coredns.github.io/helm`
 - `helm repo update`
-- `helm upgrade --install coredns --namespace kube-system coredns/coredns --values values.yml`
+- `helm upgrade --install coredns --namespace kube-system coredns/coredns --values values.yaml`
 - `kubectl run -it --rm --restart=Never --image=infoblox/dnstools:latest dnstools`
     and use `dig` to verify DNS resolution works and uses the configured DNS IP
 
@@ -213,7 +214,7 @@ Best guide but very outdated:
 ### Prerequisites
 
 - In `argocd/catalog`, check the versions for the individual charts. Update any
-    versions that are out of date and modify the corresponding `values.yml`
+    versions that are out of date and modify the corresponding `values.yaml`
     files as needed.
 - Deploy the `aws` Terraform repository.
 - Sync the `platform` ApplicationSet.
@@ -249,7 +250,7 @@ Best guide but very outdated:
 
 ### Initial deployment
 
-Snyc the Applications in the `platform` ApplicationSet one by one, in the
+Sync the Applications in the `platform` ApplicationSet one by one, in the
 following order:
 
 - OpenEBS
@@ -275,17 +276,19 @@ order:
 
 ### OpenEBS
 
-- `kubectl apply -f test.yml` to create test pods
+- `kubectl apply -f services/platform/openebs/test/test.yaml` to create test
+    pods
     - `cat /mnt/std/testfile.txt` should show only `openebs-test-pod-1`
     - `cat /mnt/bulk/testfile.txt` should show both pods
     - Same for `spof` and `spof-bulk`
-    - `./shell.sh run zfs list` to see the created datasets
-- `kubectl delete -f test.yml` to clean up test pods
+    - `tools/shell.sh run zfs list` to see the created datasets
+- `kubectl delete -f services/platform/openebs/test/test.yaml` to clean up test
+    pods
 - `kubectl -A get pv` to see created persistent volumes
 - `kubectl delete <pv-name>` to delete persistent volume
-- `./shell.sh run zfs list` to see datasets removed except for the persistent
+- `tools/shell.sh run zfs list` to see datasets removed except for the persistent
     volume
-- `./shell.sh run zfs destroy <dataset>` to remove dataset manually
+- `tools/shell.sh run zfs destroy <dataset>` to remove dataset manually
 
 ### Kubernetes OIDC issuer
 
@@ -296,12 +299,15 @@ order:
 
 ### external-secrets
 
-- `test.yaml` reads `/external-secrets/smoke`
-- `test-securestring.yml` reads `/external-secrets/smoke-secure`
+- `services/platform/external-secrets/test/test.yaml` reads
+    `/external-secrets/smoke`
+- `services/platform/external-secrets/test/test-securestring.yaml` reads
+    `/external-secrets/smoke-secure`
 
 ### PostgreSQL cluster
 
-- `test.yaml` executes a ping to the database cluster.
+- `services/base-app/cnpg-cluster/test.yaml` executes a ping to the database
+    cluster.
 
 <!---
 

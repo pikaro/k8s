@@ -1,4 +1,5 @@
 #!/bin/bash
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 if [ "$#" -gt 0 ]; then
     ACTION="$1"
@@ -13,7 +14,7 @@ if [ "${ACTION}" = "run" ] && [ "${1:-}" = "zfs" ]; then
 fi
 
 start() {
-    kubectl -n kube-system apply -f shell.yaml
+    kubectl -n kube-system apply -f "${SCRIPT_DIR}/shell.yaml"
 }
 
 run() {
@@ -22,7 +23,7 @@ run() {
 }
 
 stop() {
-    kubectl -n kube-system delete -f shell.yaml
+    kubectl -n kube-system delete -f "${SCRIPT_DIR}/shell.yaml"
 }
 
 if [ "${ACTION}" = "cycle" ]; then
