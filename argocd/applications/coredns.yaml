@@ -15,7 +15,7 @@ spec:
       helm:
         releaseName: coredns
         valueFiles:
-          - $values/bootstrap/coredns/values.yml
+          - $values/bootstrap/coredns/values.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system

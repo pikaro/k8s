@@ -236,6 +236,7 @@ following order:
 
 - OpenEBS
 - cert-manager
+- Traefik
 
 ## Testing
 
@@ -252,16 +253,6 @@ following order:
 - `./shell.sh run zfs list` to see datasets removed except for the persistent
     volume
 - `./shell.sh run zfs destroy <dataset>` to remove dataset manually
-
-Validation is only possible after all components are done.
-
-### Traefik
-
-- `cd bootstrap/helm/traefik`
-- `helm repo add traefik https://traefik.github.io/charts`
-- `helm repo update`
-- `helm -n traefik upgrade --install --create-namespace traefik traefik/traefik -f values.yml`
-- `kubectl -n traefik apply -f classes.yml`
 
 ### Kubernetes OIDC issuer
 
