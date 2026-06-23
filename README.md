@@ -188,12 +188,13 @@ Best guide but very outdated:
 - `helm repo add argo https://argoproj.github.io/argo-helm`
 - `helm repo update`
 - `./install.sh`
-- Commit and push GitOps manifests before applying Applications that reference
-  this repository. ArgoCD reads from the remote Git branch, not the local
-  checkout.
-- Apply the CoreDNS adoption Application after the commit is visible on the
-  remote branch:
-    `kubectl apply -f gitops/argocd/applications/coredns.yaml`
+- Open the web interface and log in per instructions output from the install
+    process.
+- `helm list -n kube-system` and find the `coredns` chart version.
+- Update `argocd/applications/coredns.yaml` to use the same version.
+- Ensure repo is committed and pushed.
+- `kubectl apply -f root.yaml` to create the root application
+- In the web interface, observe the root application.
 
 ### OpenEBS
 

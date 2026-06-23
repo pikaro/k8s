@@ -11,10 +11,11 @@ spec:
       ref: values
     - repoURL: https://coredns.github.io/helm
       chart: coredns
+      targetRevision: 1.45.0
       helm:
         releaseName: coredns
         valueFiles:
-          - $values/services/platform/coredns/values.yml
+          - $values/bootstrap/coredns/values.yml
   destination:
     server: https://kubernetes.default.svc
     namespace: kube-system
