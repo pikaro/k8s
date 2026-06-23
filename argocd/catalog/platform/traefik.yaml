@@ -1,0 +1,8 @@
+name: traefik
+namespace: traefik
+chartRepo: https://traefik.github.io/charts
+chart: traefik
+chartVersion: 37.4.0
+valuesFile: services/platform/traefik/values.yml
+requirementsPath: ""
+resourcesPath: ""
