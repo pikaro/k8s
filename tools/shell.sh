@@ -13,7 +13,7 @@ if [ "${ACTION}" = "run" ] && [ "${1:-}" = "zfs" ]; then
 fi
 
 start() {
-    kubectl -n kube-system apply -f shell.yml
+    kubectl -n kube-system apply -f shell.yaml
 }
 
 run() {
@@ -22,7 +22,7 @@ run() {
 }
 
 stop() {
-    kubectl -n kube-system delete -f shell.yml
+    kubectl -n kube-system delete -f shell.yaml
 }
 
 if [ "${ACTION}" = "cycle" ]; then

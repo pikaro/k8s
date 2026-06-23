@@ -53,6 +53,8 @@ Best guide but very outdated:
 - Look up latest Talos version
     [here](https://github.com/siderolabs/talos/releases) (may be out of order)
 
+- `cd bootstrap/talos`
+
 - Edit `image.yml` to add extensions if needed
 
 - `./image.sh` and note the generated ID
@@ -208,20 +210,37 @@ Best guide but very outdated:
 
 ## Deploying additional services
 
-### Preparation
+### Prerequisites
 
 - In `argocd/catalog`, check the versions for the individual charts. Update any
     versions that are out of date and modify the corresponding `values.yml`
     files as needed.
+- Sync the `{platform}` ApplicationSet.
+
+#### cert-manager
+
+- Create `credentials` file using a temporary IAM key that has permissions to
+    manage the hosted zone `k8s.d-reis.com` in Route53:
+    ```
+    [default]
+    aws_access_key_id = <access-key-id>
+    aws_secret_access_key = <secret-access-key>
+    ```
+- `kubectl create namespace cert-manager`
+- `kubectl create secret generic -n cert-manager cert-manager --from-file credentials`
+
+### Initial deployment
+
+Snyc the Applications in the `{platform}` ApplicationSet one by one, in the
+following order:
+
+- OpenEBS
+- cert-manager
+
+## Testing
 
 ### OpenEBS
 
-- `cd bootstrap/helm/openebs`
-- `helm repo add openebs https://openebs.github.io/openebs`
-- `helm repo update`
-- `helm upgrade --install openebs --namespace openebs openebs/openebs --create-namespace --values values.yml`
-- `kubectl -n openebs get pods` to verify everything is running
-- `kubectl apply -f classes.yml` to create storage classes
 - `kubectl apply -f test.yml` to create test pods
     - `cat /mnt/std/testfile.txt` should show only `openebs-test-pod-1`
     - `cat /mnt/bulk/testfile.txt` should show both pods
@@ -233,36 +252,6 @@ Best guide but very outdated:
 - `./shell.sh run zfs list` to see datasets removed except for the persistent
     volume
 - `./shell.sh run zfs destroy <dataset>` to remove dataset manually
-
-### cert-manager
-
-- `aws route53 create-hosted-zone --name 'k8s.example.com' --caller-reference "externaldns-$(date +%s)"`
-    to create a hosted zone
-- Create `credentials` file using a temporary IAM key that has permissions to
-    manage the hosted zone:
-    ```
-    [default]
-    aws_access_key_id = <access-key-id>
-    aws_secret_access_key = <secret-access-key>
-    ```
-- `cd bootstrap/helm/cert-manager`
-- `helm repo add cert-manager https://charts.jetstack.io`
-- `helm repo update`
-- `kubectl create namespace cert-manager`
-- `kubectl create secret generic -n cert-manager cert-manager --from-file credentials`
-- `helm upgrade --install -n cert-manager cert-manager cert-manager/cert-manager --values values.yml`
-- `kubectl apply -f resources.yml`
-
-Validation is only possible after all components are done.
-
-### external-dns
-
-- `kubectl create namespace external-dns`
-- `kubectl create secret generic -n external-dns external-dns --from-file credentials`
-- `cd bootstrap/helm/externaldns`
-- `helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/`
-- `helm repo update`
-- `helm upgrade --install external-dns --namespace external-dns external-dns/external-dns --values values.yml`
 
 Validation is only possible after all components are done.
 
