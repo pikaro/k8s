@@ -1,0 +1,9 @@
+sourceType: helm
+name: postgres
+namespace: cnpg-database
+chartRepo: https://cloudnative-pg.github.io/charts
+chart: cluster
+chartVersion: 0.7.0
+valuesFile: services/base-app/postgres/values.yaml
+requirementsPath: ""
+resourcesPath: ""

@@ -1,9 +1,4 @@
-sourceType: helm
 name: cert-manager
-namespace: cert-manager
 chartRepo: https://charts.jetstack.io
-chart: cert-manager
 chartVersion: v1.19.1
-valuesFile: services/platform/cert-manager/values.yaml
-requirementsPath: ""
 resourcesPath: services/platform/cert-manager/resources

@@ -1,4 +1,2 @@
-name: oidc
-namespace: oidc
 sourceType: kustomize
-basePath: services/platform/oidc
+name: oidc

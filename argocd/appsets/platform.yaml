@@ -5,6 +5,8 @@ metadata:
   namespace: argocd
 spec:
   goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+
   generators:
     - git:
         repoURL: https://github.com/pikaro/k8s.git
@@ -19,34 +21,42 @@ spec:
       project: default
       destination:
         server: https://kubernetes.default.svc
-        namespace: "{{ .namespace }}"
+        namespace: '{{ dig "namespace" .name . }}'
 
   templatePatch: |
+    {{- $name := .name }}
+    {{- $sourceType := dig "sourceType" "helm" . }}
+    {{- $basePath := dig "basePath" (printf "services/platform/%s" $name) . }}
+    {{- $chart := dig "chart" $name . }}
+    {{- $releaseName := dig "releaseName" $name . }}
+    {{- $valuesFile := dig "valuesFile" (printf "services/platform/%s/values.yaml" $name) . }}
+    {{- $requirementsPath := dig "requirementsPath" "" . }}
+    {{- $resourcesPath := dig "resourcesPath" "" . }}
     spec:
       sources:
-        {{- if eq .sourceType "kustomize" }}
+        {{- if eq $sourceType "kustomize" }}
         - repoURL: https://github.com/pikaro/k8s.git
           targetRevision: main
-          path: {{ .basePath }}
-        {{- else if eq .sourceType "helm" }}
-        {{- if .requirementsPath }}
+          path: {{ $basePath }}
+        {{- else if eq $sourceType "helm" }}
+        {{- if $requirementsPath }}
         - repoURL: https://github.com/pikaro/k8s.git
           targetRevision: main
-          path: {{ .requirementsPath }}
+          path: {{ $requirementsPath }}
         {{- end }}
         - repoURL: {{ .chartRepo }}
-          chart: {{ .chart }}
+          chart: {{ $chart }}
           targetRevision: {{ .chartVersion }}
           helm:
-            releaseName: {{ .name }}
+            releaseName: {{ $releaseName }}
             valueFiles:
-              - $values/{{ .valuesFile }}
+              - $values/{{ $valuesFile }}
         - repoURL: https://github.com/pikaro/k8s.git
           targetRevision: main
           ref: values
-        {{- if .resourcesPath }}
+        {{- if $resourcesPath }}
         - repoURL: https://github.com/pikaro/k8s.git
           targetRevision: main
-          path: {{ .resourcesPath }}
+          path: {{ $resourcesPath }}
         {{- end }}
         {{- end }}
