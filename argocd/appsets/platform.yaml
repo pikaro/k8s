@@ -27,7 +27,7 @@ spec:
         {{- if eq .sourceType "kustomize" }}
         - repoURL: https://github.com/pikaro/k8s.git
           targetRevision: main
-          path: {{ .path }}
+          path: {{ .basePath }}
         {{- else if eq .sourceType "helm" }}
         {{- if .requirementsPath }}
         - repoURL: https://github.com/pikaro/k8s.git
