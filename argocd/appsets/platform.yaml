@@ -24,6 +24,11 @@ spec:
   templatePatch: |
     spec:
       sources:
+        {{- if eq .sourceType "kustomize" }}
+        - repoURL: https://github.com/pikaro/k8s.git
+          targetRevision: main
+          path: {{ .path }}
+        {{- else if eq .sourceType "helm" }}
         {{- if .requirementsPath }}
         - repoURL: https://github.com/pikaro/k8s.git
           targetRevision: main
@@ -43,4 +48,5 @@ spec:
         - repoURL: https://github.com/pikaro/k8s.git
           targetRevision: main
           path: {{ .resourcesPath }}
+        {{- end }}
         {{- end }}

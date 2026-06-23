@@ -1,3 +1,4 @@
+sourceType: helm
 name: traefik
 namespace: traefik
 chartRepo: https://traefik.github.io/charts

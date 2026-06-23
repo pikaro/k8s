@@ -1,3 +1,4 @@
+sourceType: helm
 name: openebs
 namespace: openebs
 chartRepo: https://openebs.github.io/openebs
