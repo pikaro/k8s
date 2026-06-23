@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: coredns
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://github.com/pikaro/k8s.git
+      targetRevision: main
+      ref: values
+    - repoURL: https://coredns.github.io/helm
+      chart: coredns
+      helm:
+        releaseName: coredns
+        valueFiles:
+          - $values/services/platform/coredns/values.yml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=false

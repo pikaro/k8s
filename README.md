@@ -173,6 +173,28 @@ Best guide but very outdated:
 
 ## Initial services
 
+### CoreDNS
+
+- `cd bootstrap/coredns`
+- `helm repo add coredns https://coredns.github.io/helm`
+- `helm repo update`
+- `helm upgrade --install coredns --namespace kube-system coredns/coredns --values values.yml`
+- `kubectl run -it --rm --restart=Never --image=infoblox/dnstools:latest dnstools`
+    and use `dig` to verify DNS resolution works and uses the configured DNS IP
+
+### ArgoCD
+
+- `cd bootstrap/argocd`
+- `helm repo add argo https://argoproj.github.io/argo-helm`
+- `helm repo update`
+- `./install.sh`
+- Commit and push GitOps manifests before applying Applications that reference
+  this repository. ArgoCD reads from the remote Git branch, not the local
+  checkout.
+- Apply the CoreDNS adoption Application after the commit is visible on the
+  remote branch:
+    `kubectl apply -f gitops/argocd/applications/coredns.yaml`
+
 ### OpenEBS
 
 - `cd bootstrap/helm/openebs`
@@ -192,15 +214,6 @@ Best guide but very outdated:
 - `./shell.sh run zfs list` to see datasets removed except for the persistent
     volume
 - `./shell.sh run zfs destroy <dataset>` to remove dataset manually
-
-### CoreDNS
-
-- `cd bootstrap/helm/coredns`
-- `helm repo add coredns https://coredns.github.io/helm`
-- `helm repo update`
-- `helm upgrade --install coredns --namespace kube-system coredns/coredns --values values.yml`
-- `kubectl run -it --rm --restart=Never --image=infoblox/dnstools:latest dnstools`
-    and use `dig` to verify DNS resolution works and uses the configured DNS IP
 
 ### cert-manager
 
