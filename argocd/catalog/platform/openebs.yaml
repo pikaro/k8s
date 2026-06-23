@@ -3,6 +3,6 @@ namespace: openebs
 chartRepo: https://openebs.github.io/openebs
 chart: openebs
 chartVersion: 4.4.0
-path: services/platform/openebs
-requirements: false
-resources: true
+valuesFile: services/platform/openebs/values.yml
+requirementsPath: ""
+resourcesPath: services/platform/openebs/resources
