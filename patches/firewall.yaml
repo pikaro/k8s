@@ -1,0 +1,83 @@
+apiVersion: v1alpha1
+kind: NetworkDefaultActionConfig
+ingress: block
+---
+# apiVersion: v1alpha1
+# kind: NetworkRuleConfig
+# name: kubelet-ingress
+# portSelector:
+#   ports:
+#     - 10250
+#   protocol: tcp
+# ingress:
+#   - subnet: $CLUSTER_SUBNET
+# ---
+# apiVersion: v1alpha1
+# kind: NetworkRuleConfig
+# name: trustd-ingress
+# portSelector:
+#   ports:
+#     - 50001
+#   protocol: tcp
+# ingress:
+#   - subnet: $CLUSTER_SUBNET
+# ---
+# apiVersion: v1alpha1
+# kind: NetworkRuleConfig
+# name: cni-vxlan
+# portSelector:
+#   ports:
+#     - $VXLAN_PORT
+#   protocol: udp
+# ingress:
+#   - subnet: $CLUSTER_SUBNET
+# ---
+# apiVersion: v1alpha1
+# kind: NetworkRuleConfig
+# name: etcd-ingress
+# portSelector:
+#   ports:
+#     - 2379-2380
+#   protocol: tcp
+# ingress:
+#   - subnet: $CP1/32
+#   - subnet: $CP2/32
+#   - subnet: $CP3/32
+# ---
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: apid-ingress
+portSelector:
+  ports:
+    - 50000
+  protocol: tcp
+ingress:
+  - subnet: 0.0.0.0/0
+  - subnet: ::/0
+---
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: kubernetes-api-ingress
+portSelector:
+  ports:
+    - 6443
+  protocol: tcp
+ingress:
+  - subnet: 0.0.0.0/0
+  - subnet: ::/0
+---
+apiVersion: v1alpha1
+kind: NetworkRuleConfig
+name: services
+portSelector:
+  ports:
+    - 25
+    - 80
+    - 443
+    - 465
+    - 587
+    - 993
+  protocol: tcp
+ingress:
+  - subnet: 0.0.0.0/0
+  - subnet: ::/0

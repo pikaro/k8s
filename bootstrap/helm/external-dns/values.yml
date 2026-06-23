@@ -1,0 +1,30 @@
+extraVolumes:
+  - name: aws-credentials
+    secret:
+      secretName: external-dns
+
+extraVolumeMounts:
+  - name: aws-credentials
+    mountPath: /.aws
+    readOnly: true
+
+provider:
+  name: aws
+
+namespaced: false
+
+policy: sync
+
+sources:
+  - service
+  - ingress
+
+domainFilters:
+  - k8s.d-reis.com
+  - .k8s.d-reis.com
+
+env:
+  - name: AWS_DEFAULT_REGION
+    value: eu-central-1
+  - name: AWS_SHARED_CREDENTIALS_FILE
+    value: /.aws/credentials

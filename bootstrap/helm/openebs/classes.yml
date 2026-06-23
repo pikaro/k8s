@@ -1,0 +1,136 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: zfs-spof
+provisioner: zfs.csi.openebs.io
+allowVolumeExpansion: true
+parameters:
+  recordsize: "128k"
+  compression: "lz4"
+  dedup: "off"
+  fstype: "zfs"
+  poolname: "tank_single"
+reclaimPolicy: Retain
+
+---
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: zfs-spof-bulk
+provisioner: zfs.csi.openebs.io
+allowVolumeExpansion: true
+parameters:
+  recordsize: "1M"
+  compression: "lz4"
+  dedup: "off"
+  fstype: "zfs"
+  shared: "yes"
+  poolname: "tank_single"
+reclaimPolicy: Retain
+
+---
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: zfs
+provisioner: zfs.csi.openebs.io
+allowVolumeExpansion: true
+parameters:
+  recordsize: "128k"
+  compression: "lz4"
+  dedup: "off"
+  fstype: "zfs"
+  poolname: "tank_mirror"
+reclaimPolicy: Retain
+
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: zfs-bulk
+provisioner: zfs.csi.openebs.io
+allowVolumeExpansion: true
+parameters:
+  recordsize: "1M"
+  compression: "lz4"
+  dedup: "off"
+  fstype: "zfs"
+  shared: "yes"
+  poolname: "tank_mirror"
+reclaimPolicy: Retain
+
+---
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: zfs-temp-spof
+provisioner: zfs.csi.openebs.io
+allowVolumeExpansion: true
+parameters:
+  recordsize: "128k"
+  compression: "lz4"
+  dedup: "off"
+  fstype: "zfs"
+  poolname: "tank_single"
+reclaimPolicy: Delete
+
+---
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: zfs-temp-spof-bulk
+provisioner: zfs.csi.openebs.io
+allowVolumeExpansion: true
+parameters:
+  recordsize: "1M"
+  compression: "lz4"
+  dedup: "off"
+  fstype: "zfs"
+  shared: "yes"
+  poolname: "tank_single"
+reclaimPolicy: Delete
+
+---
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: zfs-temp
+provisioner: zfs.csi.openebs.io
+allowVolumeExpansion: true
+parameters:
+  recordsize: "128k"
+  compression: "lz4"
+  dedup: "off"
+  fstype: "zfs"
+  poolname: "tank_mirror"
+reclaimPolicy: Delete
+
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: zfs-temp-bulk
+provisioner: zfs.csi.openebs.io
+allowVolumeExpansion: true
+parameters:
+  recordsize: "1M"
+  compression: "lz4"
+  dedup: "off"
+  fstype: "zfs"
+  shared: "yes"
+  poolname: "tank_mirror"
+reclaimPolicy: Delete
+
+---
+
+kind: VolumeSnapshotClass
+apiVersion: snapshot.storage.k8s.io/v1
+metadata:
+  name: zfs-snapshot
+driver: zfs.csi.openebs.io
+deletionPolicy: Delete

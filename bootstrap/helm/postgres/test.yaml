@@ -1,0 +1,42 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cnpg-cluster-restricted-ping-test
+  namespace: cnpg-database
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 26
+        runAsGroup: 26
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: psql
+          image: ghcr.io/cloudnative-pg/postgresql:16
+          command: ["/bin/sh", "-ec"]
+          args:
+            - psql -h cnpg-cluster-rw.cnpg-database.svc.cluster.local -p 5432 -d "${PGDBNAME:-$PGUSER}" -c 'SELECT 1'
+          env:
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: cnpg-cluster-app
+                  key: username
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: cnpg-cluster-app
+                  key: password
+            - name: PGDBNAME
+              valueFrom:
+                secretKeyRef:
+                  name: cnpg-cluster-app
+                  key: dbname
+                  optional: true
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]

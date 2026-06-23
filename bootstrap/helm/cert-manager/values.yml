@@ -1,0 +1,37 @@
+crds:
+  enabled: true
+  keep: true
+
+serviceAccount:
+  create: true
+  automountServiceAccountToken: true
+
+enableCertificateOwnerRef: false
+securityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+
+enabled: true
+
+ingressShim:
+  defaultIssuerName: letsencrypt
+  defaultIssuerKind: ClusterIssuer
+  defaultIssuerGroup: cert-manager.io
+
+volumes:
+  - name: aws-credentials
+    secret:
+      secretName: cert-manager
+
+volumeMounts:
+  - name: aws-credentials
+    mountPath: /.aws
+    readOnly: true

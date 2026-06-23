@@ -1,0 +1,89 @@
+replicaCount: 1
+
+image:
+  tag: "15.0"
+
+postgresql:
+  enabled: true
+  # FIXME: REMOVE BITNAMI
+  global:
+    storageClass: zfs
+    security:
+      allowInsecureImages: true
+
+  image:
+    repository: bitnamilegacy/postgresql
+
+  auth:
+    database: odoo
+    username: odoo
+    # FIXME: Use external secrets
+    # password: mySecuredPassword
+    # admin_password: mySecuredPassword
+    # existingSecret: odoo-postgresql-secret
+    # secretKeys:
+    #   adminPasswordKey: postgresql-admin-password
+    #   userPasswordKey: postgresql-password
+
+  primary:
+    persistence:
+      # WARNING: false by default
+      enabled: true
+      size: 1Gi
+
+odoo:
+  list_db: True
+
+# FIXME: ENABLE
+# externalsecrets:
+#   enabled: false
+#   secretStoreRef:
+#     name: vault-backend
+#   postgresqlKey:
+#   odooKey:
+
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  storageClass: "zfs"
+  size: 5Gi
+
+# FIXME: Broken in chart -> needs to partially go unter template.spec.containers[].securityContext
+# securityContext:
+#   fsGroup: 101
+#   capabilities:
+#     drop:
+#     - ALL
+#   readOnlyRootFilesystem: true
+#   runAsNonRoot: true
+#   runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: traefik
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: odoo.k8s.d-reis.com
+    cert-manager.io/cluster-issuer: letsencrypt
+
+  hosts:
+    - host: odoo.k8s.d-reis.com
+      paths:
+        - path: /
+          pathType: Prefix
+    - host: odoo.d-reis.com
+      paths:
+        - path: /
+          pathType: Prefix
+
+  tls:
+  - secretName: tls-odoo
+    hosts:
+      - odoo.k8s.d-reis.com
+      - odoo.d-reis.com
+
+maintenance:
+  enabled: false

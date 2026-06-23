@@ -1,0 +1,50 @@
+vikunja:
+  image:
+    repository: vikunja/vikunja
+    tag: "2.3.0"
+
+  ingress:
+    main:
+      enabled: true
+      tls:
+        - hosts:
+            - vikunja.k8s.d-reis.com
+            - todo.d-reis.com
+          secretName: tls-vikunja
+      hosts:
+        - host: vikunja.k8s.d-reis.com
+          paths:
+            - path: /
+        - host: todo.d-reis.com
+          paths:
+            - path: /
+
+      annotations:
+        external-dns.alpha.kubernetes.io/hostname: vikunja.k8s.d-reis.com
+        cert-manager.io/cluster-issuer: letsencrypt
+
+  persistence:
+    data:
+      enabled: true
+      accessMode: ReadWriteOnce
+      size: 5Gi
+      mountPath: /app/vikunja/files
+      storageClass: zfs
+    database:
+      enabled: true
+      accessMode: ReadWriteOnce
+      size: 2Gi
+      mountPath: /db
+      storageClass: zfs
+
+  env:
+    VIKUNJA_SERVICE_PUBLICURL: "https://todo.d-reis.com"
+    VIKUNJA_SERVICE_ENABLEREGISTRATION: "false"
+
+  configMaps:
+    config:
+      enabled: true
+      data:
+        config.yml: |
+          service:
+            enableregistration: false

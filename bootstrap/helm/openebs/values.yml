@@ -1,0 +1,41 @@
+engines:
+  replicated:
+    mayastor:
+      enabled: false
+  local:
+    lvm:
+      enabled: false
+    zfs:
+      enabled: true
+
+mayastor:
+  csi:
+    node:
+      initContainers:
+        enabled: false
+  localpv-provisioner:
+    enabled: false
+  crds:
+    enabled: false
+  loki:
+    enabled: false
+  alloy:
+    enabled: false
+
+loki:
+  enabled: false
+
+minio:
+  enabled: false
+
+zfs-localpv:
+  crds:
+    zfsLocalPv:
+      enabled: true
+    csi:
+      volumeSnapshots:
+        enabled: false
+
+  zfsNode:
+    # WARNING: This will DESTROY all data if EPHEMERAL is wiped!
+    encrKeysDir: /var/openebs/keys

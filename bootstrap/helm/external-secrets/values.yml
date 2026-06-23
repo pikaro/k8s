@@ -1,0 +1,58 @@
+installCRDs: true
+
+replicaCount: 1
+leaderElect: false
+
+crds:
+  createClusterExternalSecret: false
+  createClusterSecretStore: true
+  createSecretStore: true
+  createClusterGenerator: false
+  createClusterPushSecret: false
+  createPushSecret: false
+
+processClusterExternalSecret: false
+processClusterStore: true
+processSecretStore: true
+processClusterGenerator: false
+processClusterPushSecret: false
+processPushSecret: false
+
+serviceAccount:
+  create: true
+  automount: true
+  name: external-secrets
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::891152304175:role/external-secrets"
+    eks.amazonaws.com/audience: "sts.amazonaws.com"
+
+rbac:
+  create: true
+  serviceAccountTokenCreate: true
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 64Mi
+  limits:
+    memory: 256Mi
+
+webhook:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+certController:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      memory: 256Mi
+
+extraObjects: []

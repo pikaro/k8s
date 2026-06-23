@@ -1,0 +1,17 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: aws-ssm-securestring-smoke
+  namespace: external-secrets
+spec:
+  refreshInterval: 1m
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: aws-ssm
+  target:
+    name: aws-ssm-securestring-smoke
+    creationPolicy: Owner
+  data:
+    - secretKey: value
+      remoteRef:
+        key: /external-secrets/smoke-secure

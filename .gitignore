@@ -1,0 +1,6 @@
+secrets.yml
+talosconfig
+controlplane.yaml
+worker.yaml
+build/*
+credentials

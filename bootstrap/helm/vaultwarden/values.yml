@@ -1,0 +1,130 @@
+image:
+  tag: "1.36.0-alpine"
+
+replicas: 1
+
+podSecurityContext:
+  fsGroup: 1001
+  supplementalGroups:
+    - 1001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  privileged: false
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsGroup: 1001
+  runAsUser: 1001
+  seccompProfile:
+    type: RuntimeDefault
+  capabilities:
+    drop:
+      - ALL
+
+storage:
+  data:
+    name: "vaultwarden-data"
+    size: "2Gi"
+    class: "zfs"
+    accessMode: "ReadWriteOnce"
+
+  attachments:
+    name: "vaultwarden-files"
+    size: "5Gi"
+    class: "zfs"
+    accessMode: "ReadWriteOnce"
+
+webVaultEnabled: "true"
+
+database:
+  # FIXME: this is sqlite - use Postgres
+  type: "default"
+
+pushNotifications:
+  enabled: true
+  existingSecret: "vaultwarden-installation"
+  installationId:
+    existingSecretKey: "installation_id"
+  installationKey:
+    existingSecretKey: "installation_key"
+  relayUri: "https://push.bitwarden.com"
+  identityUri: "https://identity.bitwarden.com"
+
+domain: "https://pwd.d-reis.com"
+
+adminToken:
+  value: "$argon2i$v=19$m=4096,t=3,p=1$V0hvZ215V1BXTmJJQ2RXaXpoMTJPRk5CR2gvY204R2NhTVoraTYzMEU1ST0$TRn8fML2IxsNtxNFIbTYugqDfBgHbMi2O1AmbQWBAzc"
+
+sendsAllowed: "true"
+
+signupsAllowed: true
+signupsVerify: "true"
+signupDomains: "d-reis.com"
+orgCreationUsers: ""
+invitationsAllowed: true
+invitationOrgName: "Vaultwarden"
+invitationExpirationHours: "120"
+emergencyAccessAllowed: "true"
+emailChangeAllowed: "true"
+showPassHint: "false"
+timeZone: "Europe/Berlin"
+
+smtp:
+  existingSecret: "vaultwarden-smtp"
+  host: "smtp.protonmail.ch"
+  security: "starttls"
+  port: 587
+  from: "vaultwarden@d-reis.com"
+  fromName: "Vaultwarden"
+  username:
+    existingSecretKey: "username"
+  password:
+    existingSecretKey: "token"
+  authMechanism: "Plain"
+  acceptInvalidHostnames: "false"
+  acceptInvalidCerts: "false"
+  debug: false
+
+rocket:
+  address: "0.0.0.0"
+  port: "8080"
+  workers: "10"
+
+ingress:
+  enabled: true
+  class: "traefik"
+  additionalAnnotations:
+    external-dns.alpha.kubernetes.io/hostname: pwd.k8s.d-reis.com
+    cert-manager.io/cluster-issuer: letsencrypt
+  tls: true
+  hostname: "pwd.k8s.d-reis.com"
+  additionalHostnames:
+    - "pwd.d-reis.com"
+  path: "/"
+  pathType: "Prefix"
+  tlsSecret: "vaultwarden-tls"
+
+# FIXME: Yubikey
+## Yubico (Yubikey) settings
+## Reference: https://github.com/dani-garcia/vaultwarden/wiki/Enabling-Yubikey-OTP-authentication
+yubico:
+  ## @param yubico.clientId Yubico client ID
+  ##
+  clientId: ""
+  ## @param yubico.existingSecret Name of an existing secret containing the Yubico secret key. Also set yubico.secretKey.existingSecretKey.
+  ##
+  existingSecret: ""
+  ## Yubico secret key
+  ##
+  secretKey:
+    ## @param yubico.secretKey.value secretKey plain text
+    ## Example: ABCDEABCDEABCDEABCDE=
+    ##
+    value: ""
+    ## @param yubico.secretKey.existingSecretKey When using an existing secret, specify the key which contains the secretKey.
+    ## Example: YUBICO_SECRET_KEY
+    ##
+    existingSecretKey: ""
+  ## @param yubico.server Specify a Yubico server, otherwise the default servers will be used
+  ##
+  server: ""

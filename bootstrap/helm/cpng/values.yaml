@@ -1,0 +1,123 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/cloudnative-pg/cloudnative-pg
+  pullPolicy: IfNotPresent
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+namespaceOverride: ""
+
+hostNetwork: false
+dnsPolicy: ""
+
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 25%
+    maxUnavailable: 25%
+
+crds:
+  create: true
+
+webhook:
+  port: 9443
+  mutating:
+    create: true
+    failurePolicy: Fail
+  validating:
+    create: true
+    failurePolicy: Fail
+  livenessProbe:
+    initialDelaySeconds: 3
+  readinessProbe:
+    initialDelaySeconds: 3
+  startupProbe:
+    failureThreshold: 6
+    periodSeconds: 5
+
+config:
+  create: true
+  name: cnpg-controller-manager-config
+  secret: false
+  clusterWide: true
+  maxConcurrentReconciles: 10
+  # TODO: Configure this
+  # -- The content of the configmap/secret, see
+  # https://cloudnative-pg.io/documentation/current/operator_conf/#available-options
+  # for all the available options.
+  data: {}
+  # INHERITED_ANNOTATIONS: categories
+  # INHERITED_LABELS: environment, workload, app
+  # WATCH_NAMESPACE: namespace-a,namespace-b
+
+additionalArgs: []
+additionalEnv: []
+#  - name: MY_VAR
+#    value: "mySpecialKey"
+
+serviceAccount:
+  create: true
+  name: ""
+
+rbac:
+  create: true
+  aggregateClusterRoles: false
+
+commonAnnotations: {}
+podAnnotations: {}
+podLabels: {}
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+  capabilities:
+    drop:
+      - "ALL"
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+service:
+  type: ClusterIP
+  name: cnpg-webhook-service
+  port: 443
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 200Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 100Mi
+
+nodeSelector: {}
+topologySpreadConstraints: []
+tolerations: []
+affinity: {}
+monitoring:
+  # TODO: Enable
+  podMonitorEnabled: false
+  podMonitorMetricRelabelings: []
+  podMonitorRelabelings: []
+  podMonitorAdditionalLabels: {}
+  grafanaDashboard:
+    create: false
+    namespace: ""
+    configMapName: "cnpg-grafana-dashboard"
+    sidecarLabel: "grafana_dashboard"
+    sidecarLabelValue: "1"
+    labels: {}
+    annotations: {}
+
+monitoringQueriesConfigMap:
+  name: cnpg-default-monitoring
+  # queries: default, see values.yaml

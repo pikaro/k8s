@@ -1,0 +1,156 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: openebs-test-persist
+spec:
+  storageClassName: zfs
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1G
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: openebs-test-standard
+spec:
+  storageClassName: zfs-temp
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1G
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: openebs-test-bulk
+spec:
+  storageClassName: zfs-temp-bulk
+  accessModes:
+    - ReadWriteOnce
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1G
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: openebs-test-spof
+spec:
+  storageClassName: zfs-temp-spof
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1G
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: openebs-test-spof-bulk
+spec:
+  storageClassName: zfs-temp-spof-bulk
+  accessModes:
+    - ReadWriteOnce
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1G
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: openebs-test-pod1
+spec:
+  volumes:
+  - name: local-storage-std-persist
+    persistentVolumeClaim:
+      claimName: openebs-test-persist
+  - name: local-storage-std
+    persistentVolumeClaim:
+      claimName: openebs-test-standard
+  - name: local-storage-bulk
+    persistentVolumeClaim:
+      claimName: openebs-test-bulk
+  - name: local-storage-spof
+    persistentVolumeClaim:
+      claimName: openebs-test-spof
+  - name: local-storage-spof-bulk
+    persistentVolumeClaim:
+      claimName: openebs-test-spof-bulk
+  containers:
+    - name: openebs-test-container
+      image: busybox
+      command: ["/bin/sh"]
+      args: ["-c", "while true; do for d in std-persist std bulk spof spof-bulk; do hostname >> /mnt/$d/testfile.txt; done; sleep 5; done"]
+      volumeMounts:
+        - mountPath: /mnt/std-persist
+          name: local-storage-std-persist
+        - mountPath: /mnt/std
+          name: local-storage-std
+        - mountPath: /mnt/bulk
+          name: local-storage-bulk
+        - mountPath: /mnt/spof
+          name: local-storage-spof
+        - mountPath: /mnt/spof-bulk
+          name: local-storage-spof-bulk
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        capabilities:
+          drop:
+            - ALL
+  restartPolicy: OnFailure
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+    seccompProfile:
+      type: RuntimeDefault
+
+---
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: openebs-test-pod2
+spec:
+  volumes:
+    - name: local-storage-bulk
+      persistentVolumeClaim:
+        claimName: openebs-test-bulk
+    - name: local-storage-spof-bulk
+      persistentVolumeClaim:
+        claimName: openebs-test-spof-bulk
+  containers:
+    - name: openebs-test-container
+      image: busybox
+      command: ["/bin/sh"]
+      args: ["-c", "while true; do for d in std bulk spof spof-bulk; do hostname >> /mnt/$d/testfile.txt; done; sleep 5; done"]
+      volumeMounts:
+        - mountPath: /mnt/bulk
+          name: local-storage-bulk
+        - mountPath: /mnt/spof-bulk
+          name: local-storage-spof-bulk
+      securityContext:
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        capabilities:
+          drop:
+            - ALL
+  restartPolicy: OnFailure
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+    seccompProfile:
+      type: RuntimeDefault

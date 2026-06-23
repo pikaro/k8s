@@ -1,0 +1,9 @@
+namespace: oidc
+resources:
+  - deployment.yaml
+configMapGenerator:
+  - name: oidc-issuer-docs
+    files:
+      - oidc.json
+      - jwks.json
+      - default.conf

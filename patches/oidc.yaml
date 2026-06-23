@@ -1,0 +1,5 @@
+cluster:
+  apiServer:
+    extraArgs:
+      service-account-issuer: https://oidc.k8s.d-reis.com
+      service-account-jwks-uri: https://oidc.k8s.d-reis.com/openid/v1/jwks

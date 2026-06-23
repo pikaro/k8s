@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: admin-shell
+spec:
+  hostIPC: true
+  hostNetwork: true
+  hostPID: true
+  containers:
+    - command: ["sleep", "infinity"]
+      image: debian
+      name: admin-shell
+      securityContext:
+        privileged: true
