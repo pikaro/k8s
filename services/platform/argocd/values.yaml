@@ -12,6 +12,8 @@ server:
     enabled: true
     minReplicas: 1
 
+  insecure: true
+
   ingress:
     enabled: true
     ingressClassName: "traefik"
