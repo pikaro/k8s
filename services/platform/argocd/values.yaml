@@ -1,6 +1,10 @@
 global:
   domain: argo.d-reis.com
 
+configs:
+  params:
+    server.insecure: true
+
 redis-ha:
   enabled: false
 
@@ -19,9 +23,19 @@ server:
     annotations:
       external-dns.alpha.kubernetes.io/hostname: argo.d-reis.com,argo.k8s.d-reis.com
       external-dns.alpha.kubernetes.io/target: thule.d-reis.com
-      cert-manager.io/cluster-issuer: letsencrypt
 
-    tls: false
+    tls: true
+    extraHosts:
+      - name: argo.k8s.d-reis.com
+        path: /
+
+  certificate:
+    enabled: true
+    additionalHosts:
+      - argo.k8s.d-reis.com
+    issuer:
+      kind: ClusterIssuer
+      name: letsencrypt
 
 repoServer:
   autoscaling:
