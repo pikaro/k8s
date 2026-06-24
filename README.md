@@ -216,13 +216,37 @@ Best guide but very outdated:
 - In `argocd/catalog`, check the versions for the individual charts. Update any
     versions that are out of date and modify the corresponding `values.yaml`
     files as needed.
-- Deploy the `aws` Terraform repository.
+- Deploy the base `aws` Terraform repository, then deploy this repository's
+    Terraform with OIDC roles disabled:
+    `tofu -chdir=terraform apply -var enable_oidc_roles=false`
+- Terraform creates scoped Route53 credentials for the DNS controllers.
+    Published DNS names are controlled by the Kubernetes manifests.
+- external-dns uses a DynamoDB registry managed by Terraform, not Route53 TXT
+    ownership records.
 - Sync the `platform` ApplicationSet.
+
+#### external-dns
+
+- Checked-in values use the `external_dns_role_arn` role. Before OIDC is live,
+    temporarily use the commented bootstrapping credentials in
+    `services/platform/external-dns/values.yaml`.
+- Use the `external_dns_access_key` Terraform output for the bootstrap
+    `credentials` file:
+    ```
+    [default]
+    aws_access_key_id = <access-key-id>
+    aws_secret_access_key = <secret-access-key>
+    ```
+- `kubectl create namespace external-dns`
+- `kubectl create secret generic -n external-dns external-dns --from-file credentials`
 
 #### cert-manager
 
-- Create `credentials` file using a temporary IAM key that has permissions to
-    manage the hosted zone `k8s.d-reis.com` in Route53:
+- Checked-in values use the `cert_manager_role_arn` role. Before OIDC is live,
+    temporarily use the commented bootstrapping credentials in
+    `services/platform/cert-manager/values.yaml`.
+- Use the `cert_manager_access_key` Terraform output for the bootstrap
+    `credentials` file:
     ```
     [default]
     aws_access_key_id = <access-key-id>
@@ -237,6 +261,12 @@ Best guide but very outdated:
     patch.
 - Refresh the public JWKS document:
     `kubectl get --raw /openid/v1/jwks > services/platform/oidc/jwks.json`
+- Verify the issuer endpoints under `https://oidc.k8s.d-reis.com`, then run
+    `tofu -chdir=terraform apply`.
+- Revert the temporary bootstrapping credential values and sync external-dns and
+    cert-manager. After they work with roles, set `enable_iam_users = false`,
+    run `tofu -chdir=terraform apply`, and delete the `external-dns` and
+    `cert-manager` AWS credential Secrets.
 
 #### Vaultwarden
 
