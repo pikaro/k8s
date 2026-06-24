@@ -1,0 +1,31 @@
+global:
+  domain: argocd.d-reis.com
+
+redis-ha:
+  enabled: false
+
+controller:
+  replicas: 1
+
+server:
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+
+  ingress:
+    enabled: true
+    class: "traefik"
+
+    additionalAnnotations:
+      external-dns.alpha.kubernetes.io/hostname: argocd.k8s.d-reis.com
+      cert-manager.io/cluster-issuer: letsencrypt
+    tls: true
+
+repoServer:
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+
+applicationSet:
+  replicas: 1
+

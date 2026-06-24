@@ -1,0 +1,3 @@
+name: argocd
+chartRepo: https://argoproj.github.io/argo-helm
+chartVersion: 9.7.0
