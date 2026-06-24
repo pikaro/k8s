@@ -20,7 +20,7 @@ vikunja:
             - path: /
 
       annotations:
-        external-dns.alpha.kubernetes.io/hostname: vikunja.k8s.d-reis.com
+        external-dns.alpha.kubernetes.io/hostname: todo.d-reis.com,vikunja.k8s.d-reis.com
         cert-manager.io/cluster-issuer: letsencrypt
 
   persistence:

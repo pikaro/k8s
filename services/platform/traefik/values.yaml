@@ -32,7 +32,7 @@ updateStrategy:
   type: Recreate
 
 additionalArguments:
-  - "--providers.kubernetesingress.ingressendpoint.ip=95.217.36.114"
+  - "--providers.kubernetesingress.ingressendpoint.hostname=thule.d-reis.com"
 
 securityContext:
   capabilities:

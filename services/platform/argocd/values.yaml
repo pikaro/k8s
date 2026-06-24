@@ -17,12 +17,8 @@ server:
     ingressClassName: "traefik"
 
     annotations:
-      external-dns.alpha.kubernetes.io/hostname: argo.k8s.d-reis.com
+      external-dns.alpha.kubernetes.io/hostname: argo.d-reis.com,argo.k8s.d-reis.com
       cert-manager.io/cluster-issuer: letsencrypt
-
-    extraTls:
-      - hosts:
-        - argo.d-reis.com
 
     tls: true
 
@@ -33,4 +29,3 @@ repoServer:
 
 applicationSet:
   replicas: 1
-

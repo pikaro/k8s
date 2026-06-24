@@ -1,13 +1,3 @@
-extraVolumes:
-  - name: aws-credentials
-    secret:
-      secretName: external-dns
-
-extraVolumeMounts:
-  - name: aws-credentials
-    mountPath: /.aws
-    readOnly: true
-
 provider:
   name: aws
 
@@ -15,16 +5,61 @@ namespaced: false
 
 policy: sync
 
+registry: dynamodb
+txtOwnerId: thule
+
+extraArgs:
+  dynamodb-region: eu-central-1
+  dynamodb-table: external-dns
+
 sources:
   - service
   - ingress
 
 domainFilters:
+  - d-reis.com
+  - .d-reis.com
   - k8s.d-reis.com
   - .k8s.d-reis.com
 
 env:
   - name: AWS_DEFAULT_REGION
     value: eu-central-1
-  - name: AWS_SHARED_CREDENTIALS_FILE
-    value: /.aws/credentials
+
+# NOTE: Prod values using IRSA
+
+  - name: AWS_REGION
+    value: eu-central-1
+  - name: AWS_ROLE_ARN
+    value: arn:aws:iam::891152304175:role/external-dns
+  - name: AWS_WEB_IDENTITY_TOKEN_FILE
+    value: /var/run/secrets/aws/token
+
+extraVolumes:
+  - name: aws-web-identity-token
+    projected:
+      sources:
+        - serviceAccountToken:
+            audience: sts.amazonaws.com
+            expirationSeconds: 3600
+            path: token
+
+extraVolumeMounts:
+  - name: aws-web-identity-token
+    mountPath: /var/run/secrets/aws
+    readOnly: true
+
+# WARNING: Bootstrapping only
+
+  # - name: AWS_SHARED_CREDENTIALS_FILE
+  #   value: /.aws/credentials
+
+# extraVolumes:
+#   - name: aws-credentials
+#     secret:
+#       secretName: external-dns
+
+# extraVolumeMounts:
+#   - name: aws-credentials
+#     mountPath: /.aws
+#     readOnly: true

@@ -13,7 +13,6 @@ spec:
           cnameStrategy: Follow
           route53:
             region: eu-central-1
-            hostedZoneID: Z05053771JYDPS919R87I
 
 ---
 
@@ -32,4 +31,3 @@ spec:
           cnameStrategy: Follow
           route53:
             region: eu-central-1
-            hostedZoneID: Z05053771JYDPS919R87I

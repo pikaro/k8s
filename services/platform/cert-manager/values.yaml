@@ -26,12 +26,40 @@ ingressShim:
   defaultIssuerKind: ClusterIssuer
   defaultIssuerGroup: cert-manager.io
 
+# NOTE: Prod values using IRSA
+
+extraEnv:
+  - name: AWS_DEFAULT_REGION
+    value: eu-central-1
+  - name: AWS_REGION
+    value: eu-central-1
+  - name: AWS_ROLE_ARN
+    value: arn:aws:iam::891152304175:role/cert-manager
+  - name: AWS_WEB_IDENTITY_TOKEN_FILE
+    value: /var/run/secrets/aws/token
+
 volumes:
-  - name: aws-credentials
-    secret:
-      secretName: cert-manager
+  - name: aws-web-identity-token
+    projected:
+      sources:
+        - serviceAccountToken:
+            audience: sts.amazonaws.com
+            expirationSeconds: 3600
+            path: token
 
 volumeMounts:
-  - name: aws-credentials
-    mountPath: /.aws
+  - name: aws-web-identity-token
+    mountPath: /var/run/secrets/aws
     readOnly: true
+
+# WARNING: Bootstrapping only
+
+# volumes:
+#   - name: aws-credentials
+#     secret:
+#       secretName: cert-manager
+
+# volumeMounts:
+#   - name: aws-credentials
+#     mountPath: /.aws
+#     readOnly: true
