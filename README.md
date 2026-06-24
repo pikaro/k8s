@@ -142,7 +142,7 @@ Best guide but very outdated:
 ## Storage
 
 - From the repository root, `tools/shell.sh` opens an admin shell with
-  privileges
+    privileges
 - `apt update && apt install gdisk`
 - Use `bf01` partition type for ZFS partitions
 - `gdisk /dev/nvme0n1`
@@ -165,9 +165,9 @@ Best guide but very outdated:
 - `tools/shell.sh`, and use `gdisk` again to verify everything worked
 - `tools/shell.sh start`
 - You can use `tools/shell.sh run bash` to run commands in the shell
-- `tools/shell.sh run zfs zpool create -m legacy tank_single nvme1n1p1`. This is the
-    *leading* partition on the *secondary* disk. If will serve as an unmirrored
-    pool for non-critical data.
+- `tools/shell.sh run zfs zpool create -m legacy tank_single nvme1n1p1`. This is
+    the *leading* partition on the *secondary* disk. If will serve as an
+    unmirrored pool for non-critical data.
 - Note the device of the last partition on the system disk. Ex. `nvme0n1p6`.
 - `tools/shell.sh run zfs zpool create -m legacy -f tank_mirror mirror nvme0n1p6 nvme1n1p2`.
     This is the *trailing* partition on *both* disks. It will serve as a
@@ -266,11 +266,13 @@ following order:
 
 - CNPG database cluster
 
-Sync the Applications in the `app` ApplicationSet one by one, in the following
-order:
+Go back to the `platform` ApplicationSet and sync the `argocd` Application.
 
-- Vaultwarden
-- Vikunja
+This will bring up ArgoCD with its ingress, so you can terminate your local
+port-forward and use the web interface.
+
+It will auto enable auto-syncing and self-healing, so you can just let it run
+while it brings up the rest of the applications.
 
 ## Testing
 
@@ -286,8 +288,8 @@ order:
     pods
 - `kubectl -A get pv` to see created persistent volumes
 - `kubectl delete <pv-name>` to delete persistent volume
-- `tools/shell.sh run zfs list` to see datasets removed except for the persistent
-    volume
+- `tools/shell.sh run zfs list` to see datasets removed except for the
+    persistent volume
 - `tools/shell.sh run zfs destroy <dataset>` to remove dataset manually
 
 ### Kubernetes OIDC issuer
