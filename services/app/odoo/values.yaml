@@ -67,6 +67,7 @@ ingress:
   className: traefik
   annotations:
     external-dns.alpha.kubernetes.io/hostname: odoo.d-reis.com,odoo.k8s.d-reis.com
+    external-dns.alpha.kubernetes.io/target: thule.d-reis.com
     cert-manager.io/cluster-issuer: letsencrypt
 
   hosts:

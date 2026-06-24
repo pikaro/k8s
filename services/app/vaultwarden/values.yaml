@@ -95,6 +95,7 @@ ingress:
   class: "traefik"
   additionalAnnotations:
     external-dns.alpha.kubernetes.io/hostname: pwd.d-reis.com,pwd.k8s.d-reis.com
+    external-dns.alpha.kubernetes.io/target: thule.d-reis.com
     cert-manager.io/cluster-issuer: letsencrypt
   tls: true
   hostname: "pwd.k8s.d-reis.com"

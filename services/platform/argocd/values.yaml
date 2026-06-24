@@ -18,6 +18,7 @@ server:
 
     annotations:
       external-dns.alpha.kubernetes.io/hostname: argo.d-reis.com,argo.k8s.d-reis.com
+      external-dns.alpha.kubernetes.io/target: thule.d-reis.com
       cert-manager.io/cluster-issuer: letsencrypt
 
     tls: true
