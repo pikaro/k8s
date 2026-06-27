@@ -206,7 +206,9 @@ added.
 1. Add `kube-prometheus-stack` as `monitoring` in `observability`.
 2. Install CRDs through the chart. The generated Application uses
    `SkipDryRunOnMissingResource=true` because the chart renders Prometheus
-   Operator CRDs and custom resources in the same sync.
+   Operator CRDs and custom resources in the same sync. It also uses
+   `ServerSideApply=true` because several Prometheus Operator CRDs are too large
+   for client-side apply's `last-applied-configuration` annotation.
 3. Enable Grafana with:
    - ingress through Traefik;
    - cert-manager certificate;
