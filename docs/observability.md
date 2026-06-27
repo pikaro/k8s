@@ -182,7 +182,9 @@ added.
 ## Monitoring App Plan
 
 1. Add `kube-prometheus-stack` as `monitoring` in `observability`.
-2. Install CRDs through the chart.
+2. Install CRDs through the chart. The generated Application uses
+   `SkipDryRunOnMissingResource=true` because the chart renders Prometheus
+   Operator CRDs and custom resources in the same sync.
 3. Enable Grafana with:
    - ingress through Traefik;
    - cert-manager certificate;

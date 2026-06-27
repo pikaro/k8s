@@ -40,12 +40,16 @@ spec:
     {{- $requirementsPath := dig "requirementsPath" "" . }}
     {{- $resourcesPath := dig "resourcesPath" "" . }}
     {{- $serverSideApply := eq (dig "serverSideApply" "false" .) "true" }}
+    {{- $skipDryRunOnMissingResource := eq (dig "skipDryRunOnMissingResource" "false" .) "true" }}
     spec:
       syncPolicy:
         syncOptions:
           - CreateNamespace=true
       {{- if $serverSideApply }}
           - ServerSideApply=true
+      {{- end }}
+      {{- if $skipDryRunOnMissingResource }}
+          - SkipDryRunOnMissingResource=true
       {{- end }}
       sources:
         {{- if eq $sourceType "kustomize" }}
