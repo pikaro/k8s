@@ -3,16 +3,16 @@ chartRepo: https://argoproj.github.io/argo-helm
 chart: argo-cd
 chartVersion: 9.7.0
 authentik:
-  kind: native
   name: ArgoCD
   group: Management
   url: https://argo.d-reis.com
-  secret_labels:
-    app.kubernetes.io/part-of: argocd
-    app.kubernetes.io/name: argocd-sso
-  redirect_uris:
-    - https://argo.d-reis.com/auth/callback
-    - https://localhost:8085/auth/callback
   directory_groups:
     - argocd-users
     - argocd-admins
+  oidc:
+    redirect_uris:
+      - https://argo.d-reis.com/auth/callback
+      - https://localhost:8085/auth/callback
+    secret_labels:
+      app.kubernetes.io/part-of: argocd
+      app.kubernetes.io/name: argocd-sso

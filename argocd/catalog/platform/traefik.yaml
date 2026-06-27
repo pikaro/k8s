@@ -1,3 +1,4 @@
 name: traefik
 chartRepo: https://traefik.github.io/charts
 chartVersion: 37.4.0
+resourcesPath: services/platform/traefik/resources

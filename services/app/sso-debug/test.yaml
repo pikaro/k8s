@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sso-debug
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whoami
+  labels:
+    app.kubernetes.io/name: sso-debug
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: sso-debug
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: sso-debug
+    spec:
+      containers:
+        - name: whoami
+          image: traefik/whoami:v1.11.0
+          args:
+            - --port=8080
+          ports:
+            - containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 65532
+            runAsGroup: 65532
+            capabilities:
+              drop:
+                - ALL
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: whoami
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: sso-debug
+  ports:
+    - port: 80
+      targetPort: 8080
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: whoami
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: sso-debug.k8s.d-reis.com
+    external-dns.alpha.kubernetes.io/target: thule.d-reis.com
+    cert-manager.io/cluster-issuer: letsencrypt
+    traefik.ingress.kubernetes.io/router.middlewares: traefik-forward-auth@kubernetescrd
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - sso-debug.k8s.d-reis.com
+      secretName: sso-debug-tls
+  rules:
+    - host: sso-debug.k8s.d-reis.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: whoami
+                port:
+                  number: 80

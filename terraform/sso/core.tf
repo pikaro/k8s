@@ -85,3 +85,7 @@ data "authentik_group" "admins" {
 data "authentik_group" "readonly" {
   name = "authentik Read-only"
 }
+
+data "authentik_outpost" "embedded" {
+  name = "authentik Embedded Outpost"
+}

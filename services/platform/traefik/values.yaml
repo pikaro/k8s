@@ -24,6 +24,11 @@ hostNetwork: true
 service:
   enabled: false
 
+providers:
+  kubernetesCRD:
+    enabled: true
+    allowCrossNamespace: true
+
 logs:
   general:
     level: INFO
