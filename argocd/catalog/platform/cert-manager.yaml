@@ -2,3 +2,5 @@ name: cert-manager
 chartRepo: https://charts.jetstack.io
 chartVersion: v1.19.1
 resourcesPath: services/platform/cert-manager/resources
+# WARNING: Creates kube-system resources
+project: default

@@ -28,8 +28,8 @@ secrets/backups, without remembered imperative app setup.
 | Vaultwarden | Managed by `argocd/catalog/app/vaultwarden.yaml`. Uses ZFS PVCs, TLS/DNS annotations, SMTP Secret, Bitwarden installation Secret, and currently `database.type: default` with a FIXME to move off SQLite. | App modernization remains open, but Vaultwarden is not a current readiness blocker. |
 | Vikunja | Managed by `argocd/catalog/app/vikunja.yaml`. Uses ZFS PVCs and TLS/DNS annotations. Current values define file and database PVCs, so it is still effectively local-state backed. | App modernization remains open, but Vikunja is not a current readiness blocker. |
 | Odoo | `services/app/odoo/values.yaml` exists, but there is no `argocd/catalog/app/odoo.yaml`. | Intentionally parked until the chart/database/security issues are handled. Do not treat this as a readiness blocker for the current app set. |
-| Observability | No Prometheus, Grafana, Loki, Alloy/Promtail, ServiceMonitor, PodMonitor, or alerting config is present. | Needs a platform observability stack and per-service metrics toggles. |
-| Backups | No backup controller is present. CNPG backups are disabled. Volume backups are absent. | Needs off-cluster backup target, CNPG object-store backups, and PVC backup coverage for non-database state. |
+| Observability | No Prometheus, Grafana, Loki, Alloy, ServiceMonitor, PodMonitor, or alerting config is present. The readiness stack is selected: Prometheus, Grafana, Loki, Alloy, Alertmanager, Apprise API, and ntfy. Observability PVCs are disposable readiness state, not backup targets. | Implement the selected stack as platform observability, then route ArgoCD notifications through the same Apprise/ntfy path. |
+| Backups | No backup controller is present. CNPG backups are disabled. Volume backups are absent. | Needs off-cluster backup target, CNPG object-store backups, and PVC backup coverage for workload state. Observability history/cache is intentionally excluded unless that policy changes later. |
 
 ## Prioritized Readiness Work
 
@@ -43,7 +43,7 @@ repeatable convergence, day-to-day iteration, or debugging.
 | 2 | Done | Define restore inputs and secret ownership | High | Low | Turns the current implicit restore knowledge into a repeatable checklist without changing live workloads. |
 | 3 | Done | Disable ArgoCD local admin | Low | Low | ArgoCD is last in the bootstrap flow, so disabling the built-in local admin now fits the current SSO path. |
 | 4 | Done | Codify ArgoCD Projects and namespace ownership | High | Medium | Makes app categories and empty-cluster namespace creation real, while leaving root and CoreDNS in `default`. |
-| 5 | Open | Add observability and notifications | Medium | Medium | Improves debugging and confidence, and gives ArgoCD notifications the same alerting path as the rest of the platform. |
+| 5 | Open | Add observability and notifications | Medium | Medium | The stack is selected; implementation should add cluster metrics, logs, alerts, and the shared Apprise/ntfy notification path. |
 | 6 | Open | Add backups | Low | Medium/High | Useful for full rebuilds, but current irreplaceable data is small and easily exported; implementation spans AWS, CNPG, and PVC tooling. |
 | 7 | Open | Enable automated sync | Low | Low | Make pruning/self-healing explicit only after projects, namespaces, observability, and backups are in place. |
 
@@ -132,17 +132,45 @@ Acceptance checks:
 
 ### 5. Add Observability And Notifications
 
-Add this after the core auth/database paths are stable. It can start before full
-backup automation if the first pass stays modest.
+Status: open. The readiness stack is selected, but no manifests have been added
+yet.
 
+Target stack:
+
+- Prometheus, Alertmanager, Grafana, kube-state-metrics, node-exporter, and the
+  Prometheus Operator via `kube-prometheus-stack`.
+- Loki for log storage, with modest retention and no restore-critical data
+  assumption.
+- Alloy for Kubernetes log collection into Loki.
+- Apprise API as the notification adapter.
+- ntfy as the human notification endpoint.
+
+Implementation scope:
+
+- Add the stack under the `platform` ArgoCD project.
+- Use an `observability` namespace unless a chart requires a narrower split.
 - Add `argocd/catalog/platform/monitoring.yaml` for `kube-prometheus-stack`.
-- Add `services/platform/monitoring/values.yaml` with:
-  - Grafana ingress and TLS
-  - Grafana admin/OIDC/SMTP via ExternalSecrets
-  - persistent storage on `zfs`
-- Add Loki and log collection, either:
-  - separate `loki` and `alloy` platform apps, or
-  - a single observability app if the chart boundaries stay clean
+- Add `services/platform/monitoring/values.yaml` with Grafana ingress, TLS,
+  Authentik OIDC, and persistent storage on `zfs`.
+- Add Loki and Alloy as platform apps, either as separate catalog entries or as
+  one observability entry if the chart boundaries stay clean.
+- Add Apprise API and ntfy as part of the observability notification path.
+- Route Alertmanager notifications through Apprise API to ntfy.
+- Configure ArgoCD notifications for sync failures and degraded applications to
+  use the same Apprise/ntfy path instead of creating a separate notification
+  channel.
+- Use initial storage and retention defaults:
+  - Prometheus: `10Gi` on `zfs`, `14d` retention, and about `8Gi`
+    retention-size.
+  - Loki: `10Gi` on `zfs-bulk` if supported cleanly by the chart, otherwise
+    `zfs`; `7d` retention.
+  - Grafana: `2Gi` on `zfs`.
+  - Alertmanager: `1Gi` on `zfs`.
+  - ntfy: `1Gi` on `zfs`.
+  - Apprise API and Alloy: no durable PVC by default.
+- Treat observability PVCs as disposable. Losing them loses metrics history,
+  log history, Grafana local state, Alertmanager silences, and ntfy cached
+  messages, but not workload data.
 - Enable metrics integrations in existing values:
   - ArgoCD metrics and ServiceMonitors
   - Traefik metrics ServiceMonitor/PodMonitor
@@ -160,14 +188,13 @@ Initial alerts to codify as PrometheusRules:
 - PostgreSQL cluster not healthy.
 - PVC free space low for app volumes.
 - Pod crash-looping in managed namespaces.
-- ArgoCD notifications for sync failures and degraded applications, using the
-  same notification path selected for observability alerts.
+- ArgoCD sync failures and degraded applications.
 
 Acceptance checks:
 
 - Grafana is reachable through Traefik with a cert-manager certificate.
 - Prometheus has targets for ArgoCD, Traefik, cert-manager, external-dns, external-secrets, CNPG, and app pods where applicable.
-- One synthetic alert reaches the selected notification target.
+- One synthetic Alertmanager alert reaches ntfy through Apprise API.
 - A deliberately failed ArgoCD sync sends one notification through that same
   path.
 
@@ -196,8 +223,10 @@ Volumes:
   - Vaultwarden attachments/files
   - Vikunja files
   - Authentik media, if applicable
-  - Grafana/Loki only if their state is not otherwise disposable
 - Make snapshot-controller/VolumeSnapshot CRD ownership explicit if using CSI snapshots.
+- Do not back up Prometheus, Loki, Grafana, Alertmanager, ntfy, or other
+  observability PVCs by default; they are readiness debugging state, not
+  restore-critical workload data.
 
 Acceptance checks:
 
