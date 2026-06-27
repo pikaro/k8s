@@ -75,7 +75,8 @@ belongs in Kubernetes manifests/Helm values.
 3. The `monitoring` catalog entry declares the Grafana Authentik app. The
    `terraform/sso` module must be applied after that catalog entry exists and
    before Grafana is expected to start, because the chart reads the
-   Terraform-created `grafana-sso` Secret.
+   Terraform-created `grafana-sso` Secret for client credentials and OIDC
+   endpoint URLs.
 4. The `loki` app provides the in-cluster write endpoint used by Alloy and the
    Grafana Loki data source.
 5. The `alloy` app can start after Loki exists. Its values point at
@@ -108,8 +109,9 @@ These are enough to review the standard metrics/logging shape before pushing.
 - Keep Prometheus, Alertmanager, Loki, and Alloy internal-only.
 - Use `o11y.d-reis.com` as the external Grafana hostname.
 - Use `grafana.k8s.d-reis.com` as the internal Grafana hostname.
-- Use `grafana-users` and `grafana-admins` as the Grafana Authentik directory
-  groups. `grafana-users` maps to Viewer and `grafana-admins` maps to Admin.
+- Use `global-users`, `global-admins`, `grafana-users`, and `grafana-admins`
+  for Grafana access. Global groups always imply the matching user/admin app
+  role; app-specific groups are additional narrower grants.
 - Use `zfs` for Prometheus, Grafana, and Alertmanager.
 - Use `zfs-bulk` for Loki if the chart accepts it cleanly.
 - Treat all observability PVCs as disposable readiness state.
@@ -128,8 +130,9 @@ These are enough to review the standard metrics/logging shape before pushing.
   pattern.
 - Grafana is exposed at both `o11y.d-reis.com` and
   `grafana.k8s.d-reis.com`.
-- Grafana uses `grafana-users` and `grafana-admins`; no editor group is added
-  for the first pass.
+- Grafana uses global plus app-specific groups: `global-users` and
+  `grafana-users` map to Viewer, while `global-admins` and `grafana-admins`
+  map to Admin. No editor group is added for the first pass.
 - The push service should use `push` naming for the user-facing domain and for
   any Terraform module. Do not expose implementation names such as `ntfy` in
   the public URL.
@@ -184,8 +187,10 @@ added.
    - ingress through Traefik;
    - cert-manager certificate;
    - external-dns target to `thule.d-reis.com`;
-   - Authentik generic OAuth using the Terraform-created `grafana-sso` Secret;
-   - `grafana-users` Viewer access and `grafana-admins` Admin access;
+   - Authentik generic OAuth using the Terraform-created `grafana-sso` Secret
+     for client credentials and OIDC endpoint URLs;
+   - Viewer access for `global-users` and `grafana-users`;
+   - Admin access for `global-admins` and `grafana-admins`;
    - `2Gi` PVC on `zfs`;
    - Loki data source pointing to the in-cluster Loki gateway.
 4. Enable Prometheus with:

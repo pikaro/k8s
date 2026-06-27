@@ -68,6 +68,18 @@ grafana:
       secretKeyRef:
         name: grafana-sso
         key: client_secret
+    GF_AUTH_GENERIC_OAUTH_AUTH_URL:
+      secretKeyRef:
+        name: grafana-sso
+        key: auth_url
+    GF_AUTH_GENERIC_OAUTH_TOKEN_URL:
+      secretKeyRef:
+        name: grafana-sso
+        key: token_url
+    GF_AUTH_GENERIC_OAUTH_API_URL:
+      secretKeyRef:
+        name: grafana-sso
+        key: api_url
 
   grafana.ini:
     server:
@@ -77,15 +89,15 @@ grafana:
       name: Authentik
       allow_sign_up: true
       scopes: openid email profile
-      auth_url: https://sso.d-reis.com/application/o/grafana/authorize/
-      token_url: https://sso.d-reis.com/application/o/grafana/token/
-      api_url: https://sso.d-reis.com/application/o/grafana/userinfo/
+      auth_url: $__env{GF_AUTH_GENERIC_OAUTH_AUTH_URL}
+      token_url: $__env{GF_AUTH_GENERIC_OAUTH_TOKEN_URL}
+      api_url: $__env{GF_AUTH_GENERIC_OAUTH_API_URL}
       login_attribute_path: preferred_username
       name_attribute_path: name
       email_attribute_path: email
       groups_attribute_path: groups
-      allowed_groups: grafana-users,grafana-admins
-      role_attribute_path: "contains(groups[*], 'grafana-admins') && 'Admin' || contains(groups[*], 'grafana-users') && 'Viewer' || 'None'"
+      allowed_groups: global-users,global-admins,grafana-users,grafana-admins
+      role_attribute_path: "contains(groups[*], 'global-admins') && 'Admin' || contains(groups[*], 'grafana-admins') && 'Admin' || contains(groups[*], 'global-users') && 'Viewer' || contains(groups[*], 'grafana-users') && 'Viewer' || 'None'"
       role_attribute_strict: true
       use_pkce: true
     users:
