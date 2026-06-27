@@ -300,62 +300,21 @@ order:
 ### Authentik
 
 - Immediately log into Authentik and provide the initial admin data.
-
 - Switch to admin interface.
-
-- Create a new provider:
-
-    - Protocol: OIDC
-    - Type: Public
-    - Name: `Terraform CLI`
-    - Grant Type: Device Code
-    - Access token lifetime: 1h
-    - Scopes:
-        - `openid`
-        - `profile`
-        - `email`
-        - `goauthentik.io/api`
-
-- Copy the `Client ID` for the new provider.
-
+- Create a new `akadmin` token with superuser privileges and export it as
+    `AUTHENTIK_TOKEN`.
+- Apply the SSO configuration: `tofu -chdir=terraform/sso apply`
 - Install and activate the venv in the repo root.
-
 - Initialize CLI tool:
-
     ```
     ./tools/authentik-cli init --base-url https://sso.d-reis.com --client-id <id>
     ```
-
-- Create a new application with existing provider:
-
-    - Name: `Terraform CLI`
-    - Provider: `Terraform CLI`
-    - UI: Hide from dashboard
-
-- Create a device code flow:
-
-    - Name / Title: Device code flow
-    - Slug `default-device-code-flow`
-    - Designation: Stage Configuration
-    - Authentication: Require authentication
-
-- Set the `default-device-code-flow` as the default flow:
-
-    - Brands -> `authentik-default` -> Default Flows -> Device Code Flow
-    - Select `default-device-code-flow` and save
-
 - Run `./tools/authentik-cli login`
-
 - Run `./tools/authentik-cli exec -- bash -c 'echo $AUTHENTIK_TOKEN`
-
 - Run `eval $(./tools/authentik-cli env)` to set the environment variables for
     Terraform.
-
-- Apply the SSO configuration:
-
-    - In `terraform/sso`, edit `values.sso.auto.tfvars` and configure
-        `var.existing`.
-    - `tofu -chdir=terraform/sso apply`
+- Re-run `tofu -chdir=terraform/sso apply` to check that the SSO configuration
+    is valid and applied.
 
 ### ArgoCD
 

@@ -19,6 +19,17 @@ resource "authentik_provider_oauth2" "main" {
 
   signing_key = authentik_certificate_key_pair.main.id
 
+  grant_types = each.value.provider.grant_types
+
+  allowed_redirect_uris = [
+    for v in each.value.provider.redirect_uris :
+    {
+      matching_mode     = "strict"
+      redirect_uri_type = "authorization"
+      url               = v
+    }
+  ]
+
   property_mappings = [for v in each.value.provider.oauth_scopes : local.oauth_scopes[v]]
 }
 

@@ -22,6 +22,10 @@ resource "authentik_brand" "default" {
   flow_user_settings  = data.authentik_flow.default_user_settings.id
 
   flow_device_code = authentik_flow.default_device_code.uuid
+
+  lifecycle {
+    destroy = false
+  }
 }
 
 

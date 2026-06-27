@@ -18,8 +18,9 @@ locals {
         auth_flow         = lookup(config.authentik, "auth_flow", "implicit")
         invalidation_flow = lookup(config.authentik, "invalidation_flow", "invalidation")
         oauth_scopes      = lookup(config.authentik, "oauth_scopes", ["openid", "email", "profile"])
-        callback_urls = lookup(
-          config.authentik, "callback_urls",
+        grant_types       = lookup(config.authentik, "grant_types", ["authorization_code"])
+        redirect_uris = lookup(
+          config.authentik, "redirect_uris",
           contains(keys(config.authentik), "url") ? ["${config.authentik.url}/auth/callback"] : null
         )
       }
@@ -48,6 +49,15 @@ locals {
 
   valid_kinds     = ["native", "proxy"]
   valid_protocols = ["oidc"]
+  valid_grant_types = [
+    "authorization_code",
+    "implicit",
+    "hybrid",
+    "refresh_token",
+    "client_credentials",
+    "password",
+    "urn:ietf:params:oauth:grant-type:device_code",
+  ]
 }
 
 resource "terraform_data" "validation_appsets" {
@@ -80,6 +90,11 @@ resource "terraform_data" "validation_appsets" {
     precondition {
       condition     = alltrue([for k, v in local.sso_configs : alltrue([for scope in v.provider.oauth_scopes : contains(keys(local.oauth_scopes), scope)])])
       error_message = "Invalid OAuth scopes in appset configuration. Valid scopes are: ${join(", ", keys(local.oauth_scopes))}"
+    }
+
+    precondition {
+      condition     = alltrue([for k, v in local.sso_configs : length(setsubtract(v.provider.grant_types, local.valid_grant_types)) == 0])
+      error_message = "Invalid grant types in appset configuration. Valid grant types are: ${join(", ", local.valid_grant_types)}"
     }
   }
 }

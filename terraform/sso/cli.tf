@@ -7,9 +7,13 @@ resource "authentik_flow" "default_device_code" {
   compatibility_mode = false
 }
 
-resource "authentik_provider_oauth2" "terraform_cli" {
-  name      = "Terraform CLI"
-  client_id = "undefined"
+resource "random_id" "client_id_cli" {
+  byte_length = 16
+}
+
+resource "authentik_provider_oauth2" "cli" {
+  name      = "Authentik CLI"
+  client_id = random_id.client_id_cli.hex
 
   client_type             = "public"
   access_token_validity   = "hours=8"
@@ -20,23 +24,25 @@ resource "authentik_provider_oauth2" "terraform_cli" {
 
   signing_key = authentik_certificate_key_pair.main.id
 
+  grant_types = ["urn:ietf:params:oauth:grant-type:device_code"]
+
   property_mappings = [
     local.oauth_scopes.openid,
     local.oauth_scopes.email,
     local.oauth_scopes.profile,
     local.oauth_scopes.api,
   ]
-
-  lifecycle {
-    # Not available through the API
-    ignore_changes = [client_id]
-  }
 }
 
-resource "authentik_application" "terraform_cli" {
-  name              = "Terraform CLI"
-  slug              = "terraform-cli"
-  protocol_provider = authentik_provider_oauth2.terraform_cli.id
+resource "authentik_application" "cli" {
+  name              = "CLI"
+  slug              = "cli"
+  protocol_provider = authentik_provider_oauth2.cli.id
 
   meta_hide = true
+}
+
+output "cli_client_id" {
+  value       = authentik_provider_oauth2.cli.client_id
+  description = "The client ID for the CLI application."
 }
