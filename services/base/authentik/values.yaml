@@ -42,17 +42,17 @@ server:
     enabled: true
     ingressClassName: traefik
     annotations:
-      external-dns.alpha.kubernetes.io/hostname: auth.d-reis.com,auth.k8s.d-reis.com
+      external-dns.alpha.kubernetes.io/hostname: sso.d-reis.com,sso.k8s.d-reis.com
       external-dns.alpha.kubernetes.io/target: thule.d-reis.com
       cert-manager.io/cluster-issuer: letsencrypt
     hosts:
-      - auth.d-reis.com
-      - auth.k8s.d-reis.com
+      - sso.d-reis.com
+      - sso.k8s.d-reis.com
     tls:
       - secretName: authentik-tls
         hosts:
-          - auth.d-reis.com
-          - auth.k8s.d-reis.com
+          - sso.d-reis.com
+          - sso.k8s.d-reis.com
     https: false
 
 worker:

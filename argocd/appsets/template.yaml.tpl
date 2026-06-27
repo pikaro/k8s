@@ -7,6 +7,11 @@ spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
 
+  syncPolicy:
+    # applicationsSync: create-update
+    # prune: true
+    # selfHeal: true
+
   generators:
     - git:
         repoURL: https://github.com/pikaro/k8s.git
