@@ -21,6 +21,9 @@ ports:
 
 hostNetwork: true
 
+deployment:
+  dnsPolicy: ClusterFirstWithHostNet
+
 service:
   enabled: false
 
