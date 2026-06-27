@@ -218,6 +218,8 @@ added.
    - Viewer access for `global-users` and `grafana-users`;
    - Admin access for `global-admins` and `grafana-admins`;
    - `2Gi` PVC on `zfs`;
+   - `Recreate` deployment strategy because the single Grafana pod uses an RWO
+     ZFS PVC;
    - Loki data source pointing to the in-cluster Loki gateway.
 4. Enable Prometheus with:
    - `10Gi` PVC on `zfs`;
