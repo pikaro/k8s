@@ -1,0 +1,157 @@
+fullnameOverride: monitoring
+
+crds:
+  enabled: true
+
+kubeApiServer:
+  enabled: true
+
+kubelet:
+  enabled: true
+
+kubeControllerManager:
+  enabled: false
+
+kubeScheduler:
+  enabled: false
+
+kubeEtcd:
+  enabled: false
+
+kubeProxy:
+  enabled: false
+
+coreDns:
+  enabled: false
+
+kube-state-metrics:
+  fullnameOverride: kube-state-metrics
+
+prometheus-node-exporter:
+  fullnameOverride: node-exporter
+
+grafana:
+  enabled: true
+  defaultDashboardsTimezone: browser
+
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt
+      external-dns.alpha.kubernetes.io/hostname: o11y.d-reis.com,grafana.k8s.d-reis.com
+      external-dns.alpha.kubernetes.io/target: thule.d-reis.com
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    hosts:
+      - o11y.d-reis.com
+      - grafana.k8s.d-reis.com
+    tls:
+      - secretName: grafana-tls
+        hosts:
+          - o11y.d-reis.com
+          - grafana.k8s.d-reis.com
+
+  persistence:
+    enabled: true
+    type: pvc
+    storageClassName: zfs
+    accessModes:
+      - ReadWriteOnce
+    size: 2Gi
+
+  envValueFrom:
+    GF_AUTH_GENERIC_OAUTH_CLIENT_ID:
+      secretKeyRef:
+        name: grafana-sso
+        key: client_id
+    GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET:
+      secretKeyRef:
+        name: grafana-sso
+        key: client_secret
+
+  grafana.ini:
+    server:
+      root_url: https://o11y.d-reis.com/
+    auth.generic_oauth:
+      enabled: true
+      name: Authentik
+      allow_sign_up: true
+      scopes: openid email profile
+      auth_url: https://sso.d-reis.com/application/o/grafana/authorize/
+      token_url: https://sso.d-reis.com/application/o/grafana/token/
+      api_url: https://sso.d-reis.com/application/o/grafana/userinfo/
+      login_attribute_path: preferred_username
+      name_attribute_path: name
+      email_attribute_path: email
+      groups_attribute_path: groups
+      allowed_groups: grafana-users,grafana-admins
+      role_attribute_path: "contains(groups[*], 'grafana-admins') && 'Admin' || contains(groups[*], 'grafana-users') && 'Viewer' || 'None'"
+      role_attribute_strict: true
+      use_pkce: true
+    users:
+      auto_assign_org_role: Viewer
+
+  sidecar:
+    dashboards:
+      enabled: true
+      searchNamespace: ALL
+      label: grafana_dashboard
+      labelValue: "1"
+    datasources:
+      enabled: true
+      searchNamespace: ALL
+      label: grafana_datasource
+      labelValue: "1"
+
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      access: proxy
+      url: http://loki-gateway.observability.svc.cluster.local/
+      isDefault: false
+
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    replicas: 1
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: zfs
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 1Gi
+
+prometheus:
+  enabled: true
+  prometheusSpec:
+    replicas: 1
+    shards: 1
+    retention: 14d
+    retentionSize: 8GB
+    scrapeInterval: 30s
+    evaluationInterval: 30s
+    enableAdminAPI: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelector: {}
+    serviceMonitorNamespaceSelector: {}
+    podMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelector: {}
+    podMonitorNamespaceSelector: {}
+    probeSelectorNilUsesHelmValues: false
+    probeSelector: {}
+    probeNamespaceSelector: {}
+    ruleSelectorNilUsesHelmValues: false
+    ruleSelector: {}
+    ruleNamespaceSelector: {}
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: zfs
+          accessModes:
+            - ReadWriteOnce
+          resources:
+            requests:
+              storage: 10Gi

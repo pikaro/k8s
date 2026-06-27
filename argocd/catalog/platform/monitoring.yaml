@@ -1,0 +1,22 @@
+name: monitoring
+releaseName: monitoring
+namespace: observability
+chartRepo: https://prometheus-community.github.io/helm-charts
+chart: kube-prometheus-stack
+chartVersion: 87.2.1
+authentik:
+  name: Grafana
+  slug: grafana
+  group: Management
+  url: https://o11y.d-reis.com
+  directoryGroups:
+    - grafana-users
+    - grafana-admins
+  oidc:
+    redirectUris:
+      - https://o11y.d-reis.com/login/generic_oauth
+      - https://grafana.k8s.d-reis.com/login/generic_oauth
+    secret: grafana-sso
+    secretLabels:
+      app.kubernetes.io/part-of: monitoring
+      app.kubernetes.io/name: grafana-sso

@@ -1,0 +1,4 @@
+name: loki
+namespace: observability
+chartRepo: https://grafana.github.io/helm-charts
+chartVersion: 7.0.0

@@ -28,7 +28,7 @@ secrets/backups, without remembered imperative app setup.
 | Vaultwarden | Managed by `argocd/catalog/app/vaultwarden.yaml`. Uses ZFS PVCs, TLS/DNS annotations, SMTP Secret, Bitwarden installation Secret, and currently `database.type: default` with a FIXME to move off SQLite. | App modernization remains open, but Vaultwarden is not a current readiness blocker. |
 | Vikunja | Managed by `argocd/catalog/app/vikunja.yaml`. Uses ZFS PVCs and TLS/DNS annotations. Current values define file and database PVCs, so it is still effectively local-state backed. | App modernization remains open, but Vikunja is not a current readiness blocker. |
 | Odoo | `services/app/odoo/values.yaml` exists, but there is no `argocd/catalog/app/odoo.yaml`. | Intentionally parked until the chart/database/security issues are handled. Do not treat this as a readiness blocker for the current app set. |
-| Observability | No Prometheus, Grafana, Loki, Alloy, ServiceMonitor, PodMonitor, or alerting config is present. The readiness stack is selected: Prometheus, Grafana, Loki, Alloy, Alertmanager, Apprise API, and ntfy. Observability PVCs are disposable readiness state, not backup targets. | Implement the selected stack as platform observability, then route ArgoCD notifications through the same Apprise/ntfy path. |
+| Observability | Draft catalog/value files exist for `monitoring`, `loki`, and `alloy`, and the implementation plan is in `docs/observability.md`. The readiness stack is selected: Prometheus, Grafana, Loki, Alloy, Alertmanager, Apprise API, and a `push` notification surface, likely backed by ntfy. Observability PVCs are disposable readiness state, not backup targets. | Decide push backend and credential/ACL ownership, then implement notifications and per-service metrics toggles. |
 | Backups | No backup controller is present. CNPG backups are disabled. Volume backups are absent. | Needs off-cluster backup target, CNPG object-store backups, and PVC backup coverage for workload state. Observability history/cache is intentionally excluded unless that policy changes later. |
 
 ## Prioritized Readiness Work
@@ -132,8 +132,9 @@ Acceptance checks:
 
 ### 5. Add Observability And Notifications
 
-Status: open. The readiness stack is selected, but no manifests have been added
-yet.
+Status: open. Draft catalog/value files exist for Prometheus/Grafana,
+Alertmanager, Loki, and Alloy. The implementation plan and remaining decisions
+are tracked in `docs/observability.md`.
 
 Target stack:
 
