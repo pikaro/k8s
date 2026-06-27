@@ -36,6 +36,8 @@ prometheus-node-exporter:
 grafana:
   enabled: true
   defaultDashboardsTimezone: browser
+  deploymentStrategy:
+    type: Recreate
 
   ingress:
     enabled: true
