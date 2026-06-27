@@ -14,3 +14,7 @@ variable "enable_oidc_roles" {
   type        = bool
   default     = true
 }
+
+locals {
+  terraform_state_bucket_name = "${var.prefix_slug}-terraform-state"
+}

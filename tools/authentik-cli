@@ -1,0 +1,518 @@
+#!/usr/bin/env python3
+
+from __future__ import annotations
+
+import argparse
+import contextlib
+import json
+import os
+import shlex
+import subprocess
+import sys
+import time
+import webbrowser
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any, Literal
+
+import requests
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, ValidationError, field_validator
+
+CONFIG_PATH = Path.home() / '.config' / 'authentik' / 'config.json'
+CACHE_PATH = Path.home() / '.cache' / 'authentik' / 'terraform-token.json'
+
+DEVICE_CODE_GRANT = 'urn:ietf:params:oauth:grant-type:device_code'
+DEFAULT_SCOPES = ['openid', 'profile', 'goauthentik.io/api']
+
+
+class StrictModel(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+
+class AppConfig(StrictModel):
+    base_url: HttpUrl
+    client_id: str
+    scopes: list[str] = Field(default_factory=DEFAULT_SCOPES.copy)
+    device_endpoint: str = '/application/o/device/'
+    token_endpoint: str = '/application/o/token/'  # noqa: S105
+    open_browser: bool = True
+    expiry_skew_seconds: int = 60
+
+    @field_validator('client_id')
+    @classmethod
+    def client_id_must_not_be_empty(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            _err = 'client_id must not be empty'
+            raise ValueError(_err)
+        return value
+
+    @field_validator('scopes')
+    @classmethod
+    def reject_offline_access(cls, scopes: list[str]) -> list[str]:
+        normalized = [scope.strip() for scope in scopes if scope.strip()]
+        if 'goauthentik.io/api' not in normalized:
+            _err = 'scopes must include goauthentik.io/api'
+            raise ValueError(_err)
+        if 'offline_access' in normalized:
+            _err = 'offline_access is intentionally rejected'
+            raise ValueError(_err)
+        return normalized
+
+    @field_validator('device_endpoint', 'token_endpoint')
+    @classmethod
+    def endpoint_must_be_absolute_path(cls, value: str) -> str:
+        if not value.startswith('/'):
+            _err = f'endpoint must be an absolute path starting with /, got {value!r}'
+            raise ValueError(_err)
+        return value
+
+    def url(self, endpoint: str) -> str:
+        return str(self.base_url).rstrip('/') + endpoint
+
+
+class DeviceCodeRequest(StrictModel):
+    client_id: str
+    scope: str
+
+
+class DeviceCodeResponse(StrictModel):
+    device_code: str
+    user_code: str
+    verification_uri: str
+    verification_uri_complete: str | None = None
+    expires_in: int
+    interval: int = 5
+
+
+class TokenRequest(StrictModel):
+    grant_type: Literal['urn:ietf:params:oauth:grant-type:device_code']
+    client_id: str
+    device_code: str
+
+
+class TokenSuccessResponse(StrictModel):
+    access_token: str
+    token_type: str
+    expires_in: int
+    scope: str | None = None
+    id_token: str | None = None
+
+    @field_validator('token_type')
+    @classmethod
+    def token_type_must_be_bearer(cls, value: str) -> str:
+        if value.lower() != 'bearer':
+            _err = f'token_type must be "Bearer", got {value!r}'
+            raise ValueError(_err)
+        return value
+
+
+class TokenErrorResponse(StrictModel):
+    error: str
+    error_description: str | None = None
+    request_id: str | None = None
+
+
+class TokenCache(StrictModel):
+    access_token: str
+    expires_at: int
+    token_type: str = 'Bearer'  # noqa: S105
+    scope: str | None = None
+    created_at: int
+
+    def is_valid(self, skew_seconds: int) -> bool:
+        return int(time.time()) < self.expires_at - skew_seconds
+
+
+def read_json_file(path: Path) -> dict[str, Any]:
+    value = None
+    try:
+        with path.open('r', encoding='utf-8') as f:
+            value = json.load(f)
+    except FileNotFoundError as e:
+        _err = f'file not found: {path}'
+        raise SystemExit(_err) from e
+    except json.JSONDecodeError as e:
+        _err = f'invalid JSON in {path}: {e}'
+        raise SystemExit(_err) from e
+    if not isinstance(value, dict):
+        _err = f'invalid JSON in {path}: expected object at top level'
+        raise SystemExit(_err)
+    return value
+
+
+def load_config() -> AppConfig:
+    try:
+        return AppConfig.model_validate(read_json_file(CONFIG_PATH))
+    except ValidationError as e:
+        _err = f'invalid config in {CONFIG_PATH}:\n{e}'
+        raise SystemExit(_err) from e
+
+
+def write_config(config: AppConfig) -> None:
+    CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CONFIG_PATH.write_text(
+        json.dumps(config.model_dump(mode='json'), indent=2, sort_keys=True) + '\n',
+        encoding='utf-8',
+    )
+    CONFIG_PATH.chmod(0o600)
+
+
+def load_cache() -> TokenCache | None:
+    try:
+        raw = read_json_file(CACHE_PATH)
+    except SystemExit:
+        return None
+
+    try:
+        return TokenCache.model_validate(raw)
+    except ValidationError:
+        return None
+
+
+def write_cache(cache: TokenCache) -> None:
+    CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    CACHE_PATH.write_text(
+        json.dumps(cache.model_dump(mode='json'), indent=2, sort_keys=True) + '\n',
+        encoding='utf-8',
+    )
+    CACHE_PATH.chmod(0o600)
+
+
+def remove_cache() -> None:
+    with contextlib.suppress(FileNotFoundError):
+        CACHE_PATH.unlink()
+
+
+def post_form(url: str, model: BaseModel) -> dict[str, Any]:
+    try:
+        response = requests.post(
+            url,
+            data=model.model_dump(exclude_none=True),
+            headers={'Accept': 'application/json'},
+            timeout=30,
+        )
+    except requests.RequestException as e:
+        _err = f'HTTP request to {url} failed: {e}'
+        raise SystemExit(_err) from e
+
+    try:
+        body = response.json()
+    except ValueError as e:
+        _err = f'unexpected response from {url}: expected JSON, got {response.text!r}'
+        raise SystemExit(_err) from e
+
+    if not isinstance(body, dict):
+        _err = f'unexpected response from {url}: expected JSON object, got {body!r}'
+        raise SystemExit(_err)
+
+    return body
+
+
+class OAuthErrorResponse(StrictModel):
+    error: str
+    error_description: str | None = None
+    request_id: str | None = None
+
+
+def format_oauth_error(error: OAuthErrorResponse) -> str:
+    parts = [error.error]
+    if error.error_description:
+        parts.append(error.error_description)
+    if error.request_id:
+        parts.append(f'request_id={error.request_id}')
+    return ': '.join(parts)
+
+
+def request_device_code(config: AppConfig) -> DeviceCodeResponse:
+    request_model = DeviceCodeRequest(
+        client_id=config.client_id,
+        scope=' '.join(config.scopes),
+    )
+
+    body = post_form(config.url(config.device_endpoint), request_model)
+
+    if 'error' in body:
+        try:
+            error = OAuthErrorResponse.model_validate(body)
+        except ValidationError as e:
+            _err = f'invalid device-code response:\n{e}\nBody:\n{json.dumps(body, indent=2)}'
+            raise SystemExit(_err) from e
+        _err = f'device-code request failed: {format_oauth_error(error)}'
+        raise SystemExit(_err)
+
+    try:
+        return DeviceCodeResponse.model_validate(body)
+    except ValidationError as e:
+        _err = f'invalid device-code response:\n{e}\nBody:\n{json.dumps(body, indent=2)}'
+        raise SystemExit(_err) from e
+
+
+def poll_token(config: AppConfig, device: DeviceCodeResponse) -> TokenSuccessResponse:  # noqa: C901
+    request_model = TokenRequest(
+        grant_type=DEVICE_CODE_GRANT,
+        client_id=config.client_id,
+        device_code=device.device_code,
+    )
+
+    deadline = time.time() + device.expires_in
+    interval = max(device.interval, 1)
+
+    while time.time() < deadline:
+        time.sleep(interval)
+
+        body = post_form(config.url(config.token_endpoint), request_model)
+
+        try:
+            return TokenSuccessResponse.model_validate(body)
+        except ValidationError:
+            pass
+
+        try:
+            error = TokenErrorResponse.model_validate(body)
+        except ValidationError as e:
+            _err = f'unexpected token response:\n{e}\nResponse body:\n{json.dumps(body, indent=2)}'
+            raise SystemExit(_err) from e
+
+        if error.error == 'authorization_pending':
+            continue
+
+        if error.error == 'slow_down':
+            interval += 5
+            continue
+
+        if error.error == 'access_denied':
+            _err = 'device login denied by user'
+            raise SystemExit(_err)
+
+        if error.error == 'expired_token':
+            _err = 'device login expired before authorization completed'
+            raise SystemExit(_err)
+
+        description = f': {error.error_description}' if error.error_description else ''
+        _err = f'unexpected token error: {error.error}{description}'
+        raise SystemExit(_err)
+
+    _err = 'device login expired before authorization completed'
+    raise SystemExit(_err)
+
+
+def interactive_login(config: AppConfig) -> TokenCache:
+    device = request_device_code(config)
+
+    verification_url = device.verification_uri_complete or device.verification_uri
+
+    print('Open this URL to authenticate:', file=sys.stderr)
+    print(verification_url, file=sys.stderr)
+    print(file=sys.stderr)
+    print(f'User code: {device.user_code}', file=sys.stderr)
+
+    if config.open_browser:
+        webbrowser.open(verification_url)
+
+    token = poll_token(config, device)
+
+    now = int(time.time())
+    cache = TokenCache(
+        access_token=token.access_token,
+        token_type=token.token_type,
+        expires_at=now + token.expires_in,
+        created_at=now,
+        scope=token.scope,
+    )
+    write_cache(cache)
+    return cache
+
+
+def get_valid_or_login(config: AppConfig, *, force_login: bool = False) -> TokenCache:
+    if not force_login:
+        cache = load_cache()
+        if cache and cache.is_valid(config.expiry_skew_seconds):
+            return cache
+
+    return interactive_login(config)
+
+
+def command_init(args: argparse.Namespace) -> int:
+    config = AppConfig(
+        base_url=args.base_url,
+        client_id=args.client_id,
+        scopes=args.scope,
+        open_browser=not args.no_browser,
+        expiry_skew_seconds=args.expiry_skew_seconds,
+    )
+    write_config(config)
+    print(f'Wrote {CONFIG_PATH}')
+    return 0
+
+
+def command_login(_: argparse.Namespace) -> int:
+    config = load_config()
+    cache = get_valid_or_login(config, force_login=True)
+    print_status(cache)
+    return 0
+
+
+def command_status(_: argparse.Namespace) -> int:
+    config = load_config()
+    cache = load_cache()
+
+    if not cache:
+        print('No cached token')
+        return 1
+
+    print_status(cache)
+
+    if not cache.is_valid(config.expiry_skew_seconds):
+        return 1
+
+    return 0
+
+
+def command_token(args: argparse.Namespace) -> int:
+    config = load_config()
+    cache = get_valid_or_login(config, force_login=args.login)
+    print(cache.access_token)
+    return 0
+
+
+def command_env(args: argparse.Namespace) -> int:
+    config = load_config()
+    cache = get_valid_or_login(config, force_login=args.login)
+
+    print(f'export AUTHENTIK_TOKEN={shlex.quote(cache.access_token)}')
+    print(f'export AUTHENTIK_TOKEN_EXPIRES_AT={shlex.quote(str(cache.expires_at))}')
+    return 0
+
+
+def command_exec(args: argparse.Namespace) -> int:
+    if not args.command:
+        _err = 'no command specified to exec'
+        raise SystemExit(_err)
+
+    config = load_config()
+    cache = get_valid_or_login(config, force_login=args.login)
+
+    env = os.environ.copy()
+    env['AUTHENTIK_TOKEN'] = cache.access_token
+    env['AUTHENTIK_TOKEN_EXPIRES_AT'] = str(cache.expires_at)
+
+    completed = subprocess.run(args.command, env=env, check=False)  # noqa: S603
+
+    return completed.returncode
+
+
+def command_logout(_: argparse.Namespace) -> int:
+    remove_cache()
+    print(f'Removed {CACHE_PATH}')
+    return 0
+
+
+def print_status(cache: TokenCache) -> None:
+    expires = datetime.fromtimestamp(cache.expires_at, tz=UTC).isoformat()
+    remaining = cache.expires_at - int(time.time())
+    print(f'Token expires at: {expires}')
+    print(f'Seconds remaining: {max(remaining, 0)}')
+    if cache.scope:
+        print(f'Scope: {cache.scope}')
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description='Obtain a short-lived Authentik OAuth token for Terraform AUTHENTIK_TOKEN.',
+    )
+
+    sub = parser.add_subparsers(dest='command', required=True)
+
+    p_init = sub.add_parser('init', help='write ~/.config/authentik/config.json')
+    p_init.add_argument(
+        '--base-url',
+        required=True,
+        help='Authentik base URL, e.g. https://authentik.example.com',
+    )
+    p_init.add_argument(
+        '--client-id',
+        required=True,
+        help='OAuth client ID of the Authentik provider',
+    )
+    p_init.add_argument(
+        '--scope',
+        action='append',
+        default=None,
+        help='OAuth scope; may be repeated. Defaults to: openid profile goauthentik.io/api',
+    )
+    p_init.add_argument(
+        '--no-browser',
+        action='store_true',
+        help='do not attempt to open the browser automatically',
+    )
+    p_init.add_argument('--expiry-skew-seconds', type=int, default=60)
+    p_init.set_defaults(func=command_init)
+
+    p_login = sub.add_parser(
+        'login',
+        help='force a new Device Code login and cache the access token',
+    )
+    p_login.set_defaults(func=command_login)
+
+    p_status = sub.add_parser('status', help='show cached token status')
+    p_status.set_defaults(func=command_status)
+
+    p_token = sub.add_parser('token', help='print a valid access token, logging in if needed')
+    p_token.add_argument(
+        '--login',
+        action='store_true',
+        help='force login even if cached token is still valid',
+    )
+    p_token.set_defaults(func=command_token)
+
+    p_env = sub.add_parser('env', help='print shell exports for AUTHENTIK_TOKEN')
+    p_env.add_argument(
+        '--login',
+        action='store_true',
+        help='force login even if cached token is still valid',
+    )
+    p_env.set_defaults(func=command_env)
+
+    p_exec = sub.add_parser('exec', help='run a command with AUTHENTIK_TOKEN set')
+    p_exec.add_argument(
+        '--login',
+        action='store_true',
+        help='force login even if cached token is still valid',
+    )
+    p_exec.add_argument(
+        'command',
+        nargs=argparse.REMAINDER,
+        help='command to run, usually after --',
+    )
+    p_exec.set_defaults(func=command_exec)
+
+    p_logout = sub.add_parser('logout', help='delete the cached access token')
+    p_logout.set_defaults(func=command_logout)
+
+    return parser
+
+
+def normalize_args(args: argparse.Namespace) -> argparse.Namespace:
+    if getattr(args, 'scope', None) is None:
+        args.scope = DEFAULT_SCOPES.copy()
+
+    if getattr(args, 'command', None) and args.command[:1] == ['--']:
+        args.command = args.command[1:]
+
+    return args
+
+
+def main() -> int:
+    parser = build_parser()
+    args = normalize_args(parser.parse_args())
+
+    try:
+        return args.func(args)
+    except KeyboardInterrupt:
+        print('interrupted', file=sys.stderr)
+        return 130
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

@@ -5,6 +5,26 @@ configs:
   params:
     server.insecure: true
 
+  cm:
+    oidc.config: |
+      name: Authentik
+
+      issuer: $argocd-sso:issuer
+      clientID: $argocd-sso:client_id
+      clientSecret: $argocd-sso:client_secret
+
+      requestedIDTokenClaims:
+        groups:
+          essential: true
+
+  rbac:
+    policy.default: role:none
+    policy.csv: |
+      g, global-users, role:readonly
+      g, argocd-users, role:readonly
+      g, global-admins, role:admin
+      g, argocd-admins, role:admin
+
 redis-ha:
   enabled: false
 

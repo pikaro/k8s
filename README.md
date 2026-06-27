@@ -291,18 +291,83 @@ following order:
 - CNPG Operator
 - external-secrets
 
-Sync the Applications in the `base` ApplicationSet one by one, in the
-following order:
+Sync the Applications in the `base` ApplicationSet one by one, in the following
+order:
 
 - CNPG database cluster
+- Authentik
+
+### Authentik
+
+- Immediately log into Authentik and provide the initial admin data.
+
+- Switch to admin interface.
+
+- Create a new provider:
+
+    - Protocol: OIDC
+    - Type: Public
+    - Name: `Terraform CLI`
+    - Grant Type: Device Code
+    - Access token lifetime: 1h
+    - Scopes:
+        - `openid`
+        - `profile`
+        - `email`
+        - `goauthentik.io/api`
+
+- Copy the `Client ID` for the new provider.
+
+- Install and activate the venv in the repo root.
+
+- Initialize CLI tool:
+
+    ```
+    ./tools/authentik-cli init --base-url https://sso.d-reis.com --client-id <id>
+    ```
+
+- Create a new application with existing provider:
+
+    - Name: `Terraform CLI`
+    - Provider: `Terraform CLI`
+    - UI: Hide from dashboard
+
+- Create a device code flow:
+
+    - Name / Title: Device code flow
+    - Slug `default-device-code-flow`
+    - Designation: Stage Configuration
+    - Authentication: Require authentication
+
+- Set the `default-device-code-flow` as the default flow:
+
+    - Brands -> `authentik-default` -> Default Flows -> Device Code Flow
+    - Select `default-device-code-flow` and save
+
+- Run `./tools/authentik-cli login`
+
+- Run `./tools/authentik-cli exec -- bash -c 'echo $AUTHENTIK_TOKEN`
+
+- Run `eval $(./tools/authentik-cli env)` to set the environment variables for
+    Terraform.
+
+- Apply the SSO configuration:
+
+    - In `terraform/sso`, edit `values.sso.auto.tfvars` and configure
+        `var.existing`.
+    - `tofu -chdir=terraform/sso apply`
+
+### ArgoCD
 
 Go back to the `platform` ApplicationSet and sync the `argocd` Application.
 
 This will bring up ArgoCD with its ingress, so you can terminate your local
 port-forward and use the web interface.
 
-It will auto enable auto-syncing and self-healing, so you can just let it run
-while it brings up the rest of the applications.
+## Pruning and self-healing
+
+- In `argocd/appsets/template.yaml.tpl`, uncomment / adjust the policy settings.
+- Run `generate.sh` to update the ApplicationSets.
 
 ## Testing
 

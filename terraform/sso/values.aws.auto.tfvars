@@ -1,0 +1,1 @@
+../aws/values.auto.tfvars

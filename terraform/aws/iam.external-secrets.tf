@@ -1,8 +1,3 @@
-variable "external_secrets_ssm_prefix" {
-  description = "The prefix for SSM parameters that External Secrets will read from."
-  type        = string
-}
-
 data "aws_iam_policy_document" "external_secrets_assume_role" {
   statement {
     effect = "Allow"
