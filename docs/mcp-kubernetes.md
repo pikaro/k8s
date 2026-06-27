@@ -57,6 +57,51 @@ uvx kubernetes-mcp-server@latest \
   --disable-multi-cluster
 ```
 
+When configuring the server through an MCP client JSON/TOML file, do not use
+`~`. Also avoid `--kubeconfig=~/.kube/...` on the command line: shells expand
+`~` at the start of a word, but not inside a long-option assignment. Use
+`$HOME`, a separate flag argument, or an absolute path.
+
+Command-line forms that work:
+
+```sh
+npx -y kubernetes-mcp-server@latest \
+  --kubeconfig "$HOME/.kube/codex-mcp-readonly.kubeconfig" \
+  --read-only \
+  --disable-multi-cluster
+
+npx -y kubernetes-mcp-server@latest \
+  --kubeconfig ~/.kube/codex-mcp-readonly.kubeconfig \
+  --read-only \
+  --disable-multi-cluster
+```
+
+For MCP client JSON/TOML config, use the absolute path:
+
+```json
+{
+  "args": [
+    "--kubeconfig=/Users/david.reis/.kube/codex-mcp-readonly.kubeconfig",
+    "--read-only",
+    "--disable-multi-cluster"
+  ]
+}
+```
+
+Alternatively set `KUBECONFIG` in the MCP server environment:
+
+```json
+{
+  "env": {
+    "KUBECONFIG": "/Users/david.reis/.kube/codex-mcp-readonly.kubeconfig"
+  },
+  "args": [
+    "--read-only",
+    "--disable-multi-cluster"
+  ]
+}
+```
+
 If using a TOML config, also deny sensitive resource kinds at the MCP layer so
 the tool surface matches the Kubernetes RBAC boundary:
 

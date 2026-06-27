@@ -1,0 +1,73 @@
+authentik:
+  existingSecret:
+    secretName: authentik-config
+
+postgresql:
+  enabled: false
+
+serviceAccount:
+  create: true
+  annotations: {}
+
+global:
+  volumeMounts:
+    - name: cnpg-server-ca
+      mountPath: /postgres-ca
+      readOnly: true
+  volumes:
+    - name: cnpg-server-ca
+      secret:
+        secretName: cnpg-cluster-ca
+        items:
+          - key: ca.crt
+            path: ca.crt
+
+server:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: auth.d-reis.com,auth.k8s.d-reis.com
+      external-dns.alpha.kubernetes.io/target: thule.d-reis.com
+      cert-manager.io/cluster-issuer: letsencrypt
+    hosts:
+      - auth.d-reis.com
+      - auth.k8s.d-reis.com
+    tls:
+      - secretName: authentik-tls
+        hosts:
+          - auth.d-reis.com
+          - auth.k8s.d-reis.com
+    https: false
+
+worker:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      memory: 1Gi
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault

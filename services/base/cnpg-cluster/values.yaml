@@ -41,7 +41,16 @@ cluster:
 
   enablePDB: true
 
-  roles: []
+  roles:
+    - name: authentik
+      ensure: present
+      login: true
+      superuser: false
+      createdb: false
+      createrole: false
+      replication: false
+      passwordSecret:
+        name: authentik-db-auth
 
   monitoring:
     # TODO: Enable monitoring

@@ -1,0 +1,7 @@
+name: authentik
+releaseName: authentik
+namespace: authentik
+chartRepo: https://charts.goauthentik.io
+chart: authentik
+chartVersion: 2026.5.3
+requirementsPath: services/base/authentik/requirements

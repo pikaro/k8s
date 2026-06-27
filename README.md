@@ -291,7 +291,7 @@ following order:
 - CNPG Operator
 - external-secrets
 
-Sync the Applications in the `base-app` ApplicationSet one by one, in the
+Sync the Applications in the `base` ApplicationSet one by one, in the
 following order:
 
 - CNPG database cluster
@@ -338,7 +338,7 @@ while it brings up the rest of the applications.
 
 ### PostgreSQL cluster
 
-- `services/base-app/cnpg-cluster/test.yaml` executes a ping to the database
+- `services/base/cnpg-cluster/test.yaml` executes a ping to the database
     cluster.
 
 <!---
