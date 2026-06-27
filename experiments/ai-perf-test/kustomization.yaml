@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ai-perf-test
+
+resources:
+  - namespace.yaml
+  - pvc.yaml
+  - nemo-asr.yaml
+  - llama-server.yaml
+  - chatterbox-tts.yaml
+  - client-job.yaml
+  - results-reader.yaml
+
+configMapGenerator:
+  - name: ai-perf-scripts
+    files:
+      - scripts/run_benchmark.py
+      - scripts/nemo_asr_server.py
+      - scripts/tts_server.py

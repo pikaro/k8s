@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai-perf-test
+  labels:
+    app.kubernetes.io/name: ai-perf-test
+    app.kubernetes.io/part-of: ai-perf-test

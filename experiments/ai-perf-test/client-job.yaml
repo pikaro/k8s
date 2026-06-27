@@ -1,0 +1,90 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ai-perf-client
+  namespace: ai-perf-test
+  labels:
+    app.kubernetes.io/name: ai-perf-client
+    app.kubernetes.io/part-of: ai-perf-test
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ai-perf-client
+        app.kubernetes.io/part-of: ai-perf-test
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: client
+          image: python:3.11-bookworm
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-ec"]
+          args:
+            - |
+              python -m pip install --upgrade pip
+              python -m pip install httpx==0.28.1 websockets==15.0.1
+              exec python /scripts/run_benchmark.py
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: ASR_BASE_URL
+              value: http://nemo-asr:8002
+            - name: ASR_BACKEND_NAME
+              value: nemo-asr
+            - name: LLAMA_BASE_URL
+              value: http://llama-server:8080
+            - name: TTS_BASE_URL
+              value: http://chatterbox-tts:8001
+            - name: ASR_MODEL
+              value: nvidia/stt_en_fastconformer_hybrid_large_streaming_multi
+            - name: ASR_STREAM_SAMPLE_RATE
+              value: "16000"
+            - name: LLM_MODEL
+              value: qwen3-1.7b
+            - name: TTS_MODEL
+              value: kyutai/pocket-tts
+            - name: INPUT_WAV
+              value: /input/input.wav
+            - name: RESULTS_DIR
+              value: /results
+            - name: CHUNK_MS
+              value: "250"
+            - name: ASR_TRAILING_SILENCE_MS
+              value: "500"
+            - name: ASR_COMPLETION_GRACE_MS
+              value: "5000"
+            - name: LLM_WARMUP_SLOT
+              value: "0"
+            - name: LLM_COLD_SLOT
+              value: "1"
+            - name: LLM_CACHED_SLOT
+              value: "2"
+            - name: LLM_FULL_SLOT
+              value: "3"
+            - name: LLM_MAX_TOKENS
+              value: "32"
+            - name: CACHE_WARM_TOKENS
+              value: "0"
+            - name: CACHE_WARM_FALLBACK_TOKENS
+              value: "1"
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+            - name: input
+              mountPath: /input
+              readOnly: true
+            - name: results
+              mountPath: /results
+      volumes:
+        - name: scripts
+          configMap:
+            name: ai-perf-scripts
+        - name: input
+          configMap:
+            name: ai-perf-input
+            optional: true
+        - name: results
+          persistentVolumeClaim:
+            claimName: ai-perf-results

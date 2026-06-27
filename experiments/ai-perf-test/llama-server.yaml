@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llama-server
+  namespace: ai-perf-test
+  labels:
+    app.kubernetes.io/name: llama-server
+    app.kubernetes.io/part-of: ai-perf-test
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: llama-server
+      app.kubernetes.io/part-of: ai-perf-test
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: llama-server
+        app.kubernetes.io/part-of: ai-perf-test
+    spec:
+      containers:
+        - name: llama-server
+          image: ghcr.io/ggml-org/llama.cpp:server
+          imagePullPolicy: IfNotPresent
+          args:
+            - --host
+            - "0.0.0.0"
+            - --port
+            - "8080"
+            - --hf-repo
+            - Qwen/Qwen3-1.7B-GGUF
+            - --hf-file
+            - Qwen3-1.7B-Q8_0.gguf
+            - --alias
+            - qwen3-1.7b
+            - --ctx-size
+            - "8192"
+            - --parallel
+            - "4"
+            - --threads
+            - "5"
+            - --threads-batch
+            - "5"
+            - --cache-prompt
+            - --slots
+            - --slot-save-path
+            - /models
+            - --metrics
+            - --no-webui
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: LLAMA_CACHE
+              value: /models
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 18
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 180
+          volumeMounts:
+            - name: cache
+              mountPath: /models
+      volumes:
+        - name: cache
+          persistentVolumeClaim:
+            claimName: llama-cache
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llama-server
+  namespace: ai-perf-test
+  labels:
+    app.kubernetes.io/name: llama-server
+    app.kubernetes.io/part-of: ai-perf-test
+spec:
+  selector:
+    app.kubernetes.io/name: llama-server
+    app.kubernetes.io/part-of: ai-perf-test
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

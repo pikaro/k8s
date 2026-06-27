@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ai-perf-results-reader
+  namespace: ai-perf-test
+  labels:
+    app.kubernetes.io/name: ai-perf-results-reader
+    app.kubernetes.io/part-of: ai-perf-test
+spec:
+  containers:
+    - name: reader
+      image: busybox:latest
+      imagePullPolicy: IfNotPresent
+      command:
+        - /bin/sh
+        - -ec
+        - sleep 2147483647
+      volumeMounts:
+        - name: results
+          mountPath: /results
+          readOnly: true
+  restartPolicy: Always
+  volumes:
+    - name: results
+      persistentVolumeClaim:
+        claimName: ai-perf-results

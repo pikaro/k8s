@@ -1,0 +1,119 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nemo-asr
+  namespace: ai-perf-test
+  labels:
+    app.kubernetes.io/name: nemo-asr
+    app.kubernetes.io/part-of: ai-perf-test
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nemo-asr
+      app.kubernetes.io/part-of: ai-perf-test
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nemo-asr
+        app.kubernetes.io/part-of: ai-perf-test
+    spec:
+      containers:
+        - name: nemo-asr
+          image: python:3.11-bookworm
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-ec"]
+          args:
+            - |
+              apt-get update
+              apt-get install -y --no-install-recommends ffmpeg libsndfile1
+              rm -rf /var/lib/apt/lists/*
+              if [ ! -x /cache/nemo-asr-venv/bin/python ]; then
+                python -m venv /cache/nemo-asr-venv
+                /cache/nemo-asr-venv/bin/python -m pip install --upgrade pip
+                /cache/nemo-asr-venv/bin/python -m pip install --index-url https://download.pytorch.org/whl/cpu torch torchaudio
+                /cache/nemo-asr-venv/bin/python -m pip install fastapi==0.124.2 "uvicorn[standard]==0.38.0" python-multipart==0.0.20 "nemo_toolkit[asr]"
+              fi
+              exec /cache/nemo-asr-venv/bin/python /scripts/nemo_asr_server.py
+          ports:
+            - name: http
+              containerPort: 8002
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: ASR_MODEL
+              value: nvidia/stt_en_fastconformer_hybrid_large_streaming_multi
+            - name: ASR_PORT
+              value: "8002"
+            - name: ASR_DEVICE
+              value: cpu
+            - name: ASR_TORCH_THREADS
+              value: "4"
+            - name: ASR_DECODER_TYPE
+              value: rnnt
+            - name: ASR_ATT_CONTEXT_SIZE
+              value: "[70,1]"
+            - name: ASR_INPUT_AUDIO_SECONDS
+              value: "0.25"
+            - name: ASR_FINAL_FLUSH_SECONDS
+              value: "0.25"
+            - name: ASR_PREPROCESS_HOLDBACK_SECONDS
+              value: "0.1"
+            - name: ASR_STREAM_SAMPLE_RATE
+              value: "16000"
+            - name: HF_HOME
+              value: /cache/huggingface
+            - name: HF_HUB_CACHE
+              value: /cache/huggingface/hub
+            - name: NEMO_HOME
+              value: /cache/nemo
+            - name: PIP_CACHE_DIR
+              value: /cache/pip
+            - name: XDG_CACHE_HOME
+              value: /cache
+            - name: TORCH_HOME
+              value: /cache/torch
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 18
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 360
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+            - name: cache
+              mountPath: /cache
+      volumes:
+        - name: scripts
+          configMap:
+            name: ai-perf-scripts
+        - name: cache
+          persistentVolumeClaim:
+            claimName: nemo-asr-cache
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nemo-asr
+  namespace: ai-perf-test
+  labels:
+    app.kubernetes.io/name: nemo-asr
+    app.kubernetes.io/part-of: ai-perf-test
+spec:
+  selector:
+    app.kubernetes.io/name: nemo-asr
+    app.kubernetes.io/part-of: ai-perf-test
+  ports:
+    - name: http
+      port: 8002
+      targetPort: http

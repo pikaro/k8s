@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chatterbox-tts
+  namespace: ai-perf-test
+  labels:
+    app.kubernetes.io/name: chatterbox-tts
+    app.kubernetes.io/part-of: ai-perf-test
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: chatterbox-tts
+      app.kubernetes.io/part-of: ai-perf-test
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: chatterbox-tts
+        app.kubernetes.io/part-of: ai-perf-test
+    spec:
+      containers:
+        - name: chatterbox-tts
+          image: python:3.11-bookworm
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/bash", "-ec"]
+          args:
+            - |
+              apt-get update
+              apt-get install -y --no-install-recommends git libsndfile1 ffmpeg
+              rm -rf /var/lib/apt/lists/*
+              if [ ! -x /cache/pocket-tts-venv/bin/python ]; then
+                python -m venv /cache/pocket-tts-venv
+                /cache/pocket-tts-venv/bin/python -m pip install --upgrade pip
+                /cache/pocket-tts-venv/bin/python -m pip install fastapi==0.124.2 "uvicorn[standard]==0.38.0" pocket-tts==2.1.0
+              fi
+              exec /cache/pocket-tts-venv/bin/python /scripts/tts_server.py
+          ports:
+            - name: http
+              containerPort: 8001
+          env:
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: HF_HOME
+              value: /cache/huggingface
+            - name: PIP_CACHE_DIR
+              value: /cache/pip
+            - name: XDG_CACHE_HOME
+              value: /cache
+            - name: TORCH_HOME
+              value: /cache/torch
+            - name: NUMBA_CACHE_DIR
+              value: /tmp/numba
+            - name: TTS_THREADS
+              value: "2"
+            - name: TTS_LANGUAGE
+              value: english
+            - name: TTS_VOICE
+              value: mary
+            - name: TTS_PORT
+              value: "8001"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 18
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 240
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+              readOnly: true
+            - name: cache
+              mountPath: /cache
+      volumes:
+        - name: scripts
+          configMap:
+            name: ai-perf-scripts
+        - name: cache
+          persistentVolumeClaim:
+            claimName: chatterbox-cache
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chatterbox-tts
+  namespace: ai-perf-test
+  labels:
+    app.kubernetes.io/name: chatterbox-tts
+    app.kubernetes.io/part-of: ai-perf-test
+spec:
+  selector:
+    app.kubernetes.io/name: chatterbox-tts
+    app.kubernetes.io/part-of: ai-perf-test
+  ports:
+    - name: http
+      port: 8001
+      targetPort: http

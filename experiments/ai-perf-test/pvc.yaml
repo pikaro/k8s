@@ -1,0 +1,59 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nemo-asr-cache
+  namespace: ai-perf-test
+  labels:
+    app.kubernetes.io/name: ai-perf-test
+spec:
+  storageClassName: zfs-bulk
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: llama-cache
+  namespace: ai-perf-test
+  labels:
+    app.kubernetes.io/name: ai-perf-test
+spec:
+  storageClassName: zfs-bulk
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 30Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: chatterbox-cache
+  namespace: ai-perf-test
+  labels:
+    app.kubernetes.io/name: ai-perf-test
+spec:
+  storageClassName: zfs-bulk
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 40Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ai-perf-results
+  namespace: ai-perf-test
+  labels:
+    app.kubernetes.io/name: ai-perf-test
+spec:
+  storageClassName: zfs-bulk
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 5Gi

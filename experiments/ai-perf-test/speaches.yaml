@@ -1,0 +1,101 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: speaches
+  namespace: ai-perf-test
+  labels:
+    app.kubernetes.io/name: speaches
+    app.kubernetes.io/part-of: ai-perf-test
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: speaches
+      app.kubernetes.io/part-of: ai-perf-test
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: speaches
+        app.kubernetes.io/part-of: ai-perf-test
+    spec:
+      initContainers:
+        - name: prepare-cache
+          image: busybox:latest
+          command: ["/bin/sh", "-ec"]
+          args:
+            - |
+              mkdir -p /cache/hub
+              chown -R 1000:1000 /cache || true
+          volumeMounts:
+            - name: cache
+              mountPath: /cache
+      containers:
+        - name: speaches
+          image: ghcr.io/speaches-ai/speaches:latest-cpu
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+          env:
+            - name: UVICORN_HOST
+              value: "0.0.0.0"
+            - name: UVICORN_PORT
+              value: "8000"
+            - name: LOOPBACK_HOST_URL
+              value: http://127.0.0.1:8000
+            - name: ENABLE_UI
+              value: "false"
+            - name: STT_MODEL_TTL
+              value: "-1"
+            - name: WHISPER__TTL
+              value: "-1"
+            - name: WHISPER__INFERENCE_DEVICE
+              value: "cpu"
+            - name: WHISPER__COMPUTE_TYPE
+              value: "int8"
+            - name: WHISPER__CPU_THREADS
+              value: "4"
+            - name: PRELOAD_MODELS
+              value: '["Systran/faster-distil-whisper-small.en"]'
+            - name: HF_HOME
+              value: /home/ubuntu/.cache/huggingface
+            - name: HF_HUB_CACHE
+              value: /home/ubuntu/.cache/huggingface/hub
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 18
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 180
+          volumeMounts:
+            - name: cache
+              mountPath: /home/ubuntu/.cache/huggingface
+      volumes:
+        - name: cache
+          persistentVolumeClaim:
+            claimName: speaches-cache
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: speaches
+  namespace: ai-perf-test
+  labels:
+    app.kubernetes.io/name: speaches
+    app.kubernetes.io/part-of: ai-perf-test
+spec:
+  selector:
+    app.kubernetes.io/name: speaches
+    app.kubernetes.io/part-of: ai-perf-test
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http

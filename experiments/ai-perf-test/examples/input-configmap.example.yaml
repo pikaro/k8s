@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-perf-input
+  namespace: ai-perf-test
+binaryData:
+  # Replace this placeholder with base64-encoded WAV data, or create the
+  # ConfigMap with kubectl as shown in README.md.
+  input.wav: ""
