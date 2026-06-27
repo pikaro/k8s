@@ -38,6 +38,7 @@ grafana:
   defaultDashboardsTimezone: browser
   deploymentStrategy:
     type: Recreate
+    rollingUpdate: null
 
   ingress:
     enabled: true
