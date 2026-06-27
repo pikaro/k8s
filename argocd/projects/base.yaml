@@ -11,7 +11,9 @@ spec:
     - "*"
   destinations:
     - server: https://kubernetes.default.svc
-      namespace: "*"
+      namespace: authentik
+    - server: https://kubernetes.default.svc
+      namespace: cnpg-database
   clusterResourceWhitelist:
     - group: "*"
       kind: "*"

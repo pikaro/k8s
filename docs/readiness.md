@@ -14,7 +14,7 @@ secrets/backups, without remembered imperative app setup.
 | --- | --- | --- |
 | CoreDNS | Managed by `argocd/applications/coredns.yaml` with values in `bootstrap/coredns/values.yaml`. | It still uses the `default` ArgoCD project. |
 | ArgoCD | Self-managed via `argocd/catalog/platform/argocd.yaml` and `services/platform/argocd/values.yaml`. The chart renders `Ingress` for `argo.d-reis.com` and `argo.k8s.d-reis.com`, plus a cert-manager `Certificate` named `argocd-server`. Authentik OIDC and group RBAC are codified, the local admin account is disabled, and generated catalog Applications use non-default AppProjects. Root and CoreDNS intentionally stay in `project: default`. | Notifications belong with observability. Automated sync is deferred to the final readiness step. |
-| AppSets | `argocd/appsets/generate.sh` renders separate `platform`, `base`, and `app` AppProjects and ApplicationSets from templates. Generated Applications use their category project by default, create their destination namespace by default, and support catalog project overrides. The ApplicationSet template supports Helm, Kustomize, optional `requirementsPath`, optional `resourcesPath`, and optional server-side apply. | Automated sync is intentionally deferred to the final readiness step. |
+| AppSets | `argocd/appsets/generate.sh` renders separate `platform`, `base`, and `app` AppProjects and ApplicationSets from templates. Project destinations are generated from catalog namespaces. Generated Applications use their category project by default, create their destination namespace by default, and support catalog project overrides. The ApplicationSet template supports Helm, Kustomize, optional `requirementsPath`, optional `resourcesPath`, and optional server-side apply. | Automated sync is intentionally deferred to the final readiness step. |
 | OpenTofu/AWS/Auth | OpenTofu modules under `terraform/` manage the Kubernetes OIDC provider, Route53 access, external-dns DynamoDB registry, IAM roles for external-dns/cert-manager/external-secrets, and Authentik SSO catalog resources. `enable_iam_users = false` and `enable_oidc_roles = true` are checked in. | Restore inputs and the SSO OpenTofu apply path are documented in `docs/restore-contract.md`. No backup bucket/role/user exists yet. |
 | external-dns | `services/platform/external-dns/values.yaml` uses AWS web identity env vars and a projected service account token. It uses the DynamoDB registry and writes root-domain CNAMEs plus `k8s.d-reis.com` records. | Nothing structural. Keep root-domain names explicit in ingress annotations; do not infer or rewrite them. |
 | cert-manager | `services/platform/cert-manager/values.yaml` uses AWS web identity env vars and a projected service account token. `services/platform/cert-manager/resources/issuers.yaml` defines staging and production Route53 DNS01 `ClusterIssuer`s. | Nothing structural. Bootstrap IAM-user comments can stay until README cleanup, but runtime should not depend on those Secrets. |
@@ -118,6 +118,7 @@ source of truth.
 
 - Add `argocd/projects/platform.yaml`, `argocd/projects/base.yaml`, and `argocd/projects/app.yaml`.
 - Change `argocd/appsets/template.yaml.tpl` so generated Applications use `project: platform`, `project: base`, or `project: app`, with an explicit catalog override if needed.
+- Generate each AppProject's destination namespaces from its catalog entries.
 - Keep the root and CoreDNS Applications in `default`.
 - Set `CreateNamespace=true` in the ApplicationSet template so namespace creation is the default rule for generated Applications.
 - Keep `requirementsPath` and `resourcesPath` for exceptions that need real extra manifests, not for namespace-only boilerplate.
@@ -125,6 +126,7 @@ source of truth.
 Acceptance checks:
 
 - Generated Applications use non-default projects unless a specific exception is documented.
+- Generated AppProjects allow only their catalog-derived destination namespaces.
 - Generated Applications include `CreateNamespace=true`.
 - Existing Kustomize paths render locally.
 

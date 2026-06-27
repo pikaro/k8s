@@ -11,7 +11,11 @@ spec:
     - "*"
   destinations:
     - server: https://kubernetes.default.svc
-      namespace: "*"
+      namespace: sso-debug
+    - server: https://kubernetes.default.svc
+      namespace: vaultwarden
+    - server: https://kubernetes.default.svc
+      namespace: vikunja
   clusterResourceWhitelist:
     - group: "*"
       kind: "*"

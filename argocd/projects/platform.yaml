@@ -11,7 +11,23 @@ spec:
     - "*"
   destinations:
     - server: https://kubernetes.default.svc
-      namespace: "*"
+      namespace: argocd
+    - server: https://kubernetes.default.svc
+      namespace: cert-manager
+    - server: https://kubernetes.default.svc
+      namespace: cnpg-system
+    - server: https://kubernetes.default.svc
+      namespace: external-dns
+    - server: https://kubernetes.default.svc
+      namespace: external-secrets
+    - server: https://kubernetes.default.svc
+      namespace: mcp-access
+    - server: https://kubernetes.default.svc
+      namespace: oidc
+    - server: https://kubernetes.default.svc
+      namespace: openebs
+    - server: https://kubernetes.default.svc
+      namespace: traefik
   clusterResourceWhitelist:
     - group: "*"
       kind: "*"
