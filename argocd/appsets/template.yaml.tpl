@@ -3,14 +3,16 @@ kind: ApplicationSet
 metadata:
   name: "${TYPE}"
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
 spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
 
-  syncPolicy:
-    # applicationsSync: create-update
-    # prune: true
-    # selfHeal: true
+  # syncPolicy:
+  #   applicationsSync: create-update
+  #   prune: true
+  #   selfHeal: true
 
   generators:
     - git:
@@ -23,7 +25,7 @@ spec:
     metadata:
       name: "{{ .name }}"
     spec:
-      project: default
+      project: '{{ dig "project" "${TYPE}" . }}'
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{ dig "namespace" .name . }}'
@@ -39,9 +41,10 @@ spec:
     {{- $resourcesPath := dig "resourcesPath" "" . }}
     {{- $serverSideApply := eq (dig "serverSideApply" "false" .) "true" }}
     spec:
-      {{- if $serverSideApply }}
       syncPolicy:
         syncOptions:
+          - CreateNamespace=true
+      {{- if $serverSideApply }}
           - ServerSideApply=true
       {{- end }}
       sources:

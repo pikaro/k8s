@@ -13,8 +13,8 @@ secrets/backups, without remembered imperative app setup.
 | Area | Current repo state | Remaining gap |
 | --- | --- | --- |
 | CoreDNS | Managed by `argocd/applications/coredns.yaml` with values in `bootstrap/coredns/values.yaml`. | It still uses the `default` ArgoCD project. |
-| ArgoCD | Self-managed via `argocd/catalog/platform/argocd.yaml` and `services/platform/argocd/values.yaml`. The chart renders `Ingress` for `argo.d-reis.com` and `argo.k8s.d-reis.com`, plus a cert-manager `Certificate` named `argocd-server`. Authentik OIDC and group RBAC are codified, and the local admin account is disabled. | Non-default AppProjects are not codified yet. Notifications belong with observability. Automated sync is deferred to the final readiness step. Root/appset Applications still use `project: default`. |
-| AppSets | `argocd/appsets/template.yaml.tpl` generates separate `platform`, `base`, and `app` ApplicationSets from `argocd/catalog/*/*.yaml`. It supports Helm, Kustomize, optional `requirementsPath`, optional `resourcesPath`, and optional server-side apply. | Namespace ownership and project assignment are not codified per category. Automated sync is intentionally deferred to the final readiness step. |
+| ArgoCD | Self-managed via `argocd/catalog/platform/argocd.yaml` and `services/platform/argocd/values.yaml`. The chart renders `Ingress` for `argo.d-reis.com` and `argo.k8s.d-reis.com`, plus a cert-manager `Certificate` named `argocd-server`. Authentik OIDC and group RBAC are codified, the local admin account is disabled, and generated catalog Applications use non-default AppProjects. Root and CoreDNS intentionally stay in `project: default`. | Notifications belong with observability. Automated sync is deferred to the final readiness step. |
+| AppSets | `argocd/appsets/generate.sh` renders separate `platform`, `base`, and `app` AppProjects and ApplicationSets from templates. Generated Applications use their category project by default, create their destination namespace by default, and support catalog project overrides. The ApplicationSet template supports Helm, Kustomize, optional `requirementsPath`, optional `resourcesPath`, and optional server-side apply. | Automated sync is intentionally deferred to the final readiness step. |
 | OpenTofu/AWS/Auth | OpenTofu modules under `terraform/` manage the Kubernetes OIDC provider, Route53 access, external-dns DynamoDB registry, IAM roles for external-dns/cert-manager/external-secrets, and Authentik SSO catalog resources. `enable_iam_users = false` and `enable_oidc_roles = true` are checked in. | Restore inputs and the SSO OpenTofu apply path are documented in `docs/restore-contract.md`. No backup bucket/role/user exists yet. |
 | external-dns | `services/platform/external-dns/values.yaml` uses AWS web identity env vars and a projected service account token. It uses the DynamoDB registry and writes root-domain CNAMEs plus `k8s.d-reis.com` records. | Nothing structural. Keep root-domain names explicit in ingress annotations; do not infer or rewrite them. |
 | cert-manager | `services/platform/cert-manager/values.yaml` uses AWS web identity env vars and a projected service account token. `services/platform/cert-manager/resources/issuers.yaml` defines staging and production Route53 DNS01 `ClusterIssuer`s. | Nothing structural. Bootstrap IAM-user comments can stay until README cleanup, but runtime should not depend on those Secrets. |
@@ -42,7 +42,7 @@ repeatable convergence, day-to-day iteration, or debugging.
 | 1 | Done | Add repo validation | High | Low | Catches chart value, YAML, Kustomize, and generated-manifest regressions before they reach ArgoCD. |
 | 2 | Done | Define restore inputs and secret ownership | High | Low | Turns the current implicit restore knowledge into a repeatable checklist without changing live workloads. |
 | 3 | Done | Disable ArgoCD local admin | Low | Low | ArgoCD is last in the bootstrap flow, so disabling the built-in local admin now fits the current SSO path. |
-| 4 | Open | Codify ArgoCD Projects and namespace ownership | High | Medium | Makes app categories and empty-cluster namespace creation real, but touches templates and multiple catalog entries. |
+| 4 | Done | Codify ArgoCD Projects and namespace ownership | High | Medium | Makes app categories and empty-cluster namespace creation real, while leaving root and CoreDNS in `default`. |
 | 5 | Open | Add observability and notifications | Medium | Medium | Improves debugging and confidence, and gives ArgoCD notifications the same alerting path as the rest of the platform. |
 | 6 | Open | Add backups | Low | Medium/High | Useful for full rebuilds, but current irreplaceable data is small and easily exported; implementation spans AWS, CNPG, and PVC tooling. |
 | 7 | Open | Enable automated sync | Low | Low | Make pruning/self-healing explicit only after projects, namespaces, observability, and backups are in place. |
@@ -111,24 +111,22 @@ Acceptance checks:
 
 ### 4. Codify ArgoCD Projects and Namespace Ownership
 
+Status: done.
+
 Add concrete ownership boundaries before treating the repo as an empty-cluster
 source of truth.
 
 - Add `argocd/projects/platform.yaml`, `argocd/projects/base.yaml`, and `argocd/projects/app.yaml`.
 - Change `argocd/appsets/template.yaml.tpl` so generated Applications use `project: platform`, `project: base`, or `project: app`, with an explicit catalog override if needed.
-- Decide whether the root and CoreDNS Applications stay in `default` or move to a named project, then codify that decision.
-- Add namespace requirements where charts do not create namespaces:
-  - `services/platform/external-dns/requirements/namespace.yaml`
-  - `services/platform/cert-manager/requirements/namespace.yaml`
-  - `services/platform/argocd/requirements/namespace.yaml` if ArgoCD should own labels on its namespace
-  - other platform/base/app namespaces that are expected to exist on an empty cluster
-- Set `requirementsPath` in the matching catalog YAMLs.
-- Put namespace manifests in sync wave `-10`.
+- Keep the root and CoreDNS Applications in `default`.
+- Set `CreateNamespace=true` in the ApplicationSet template so namespace creation is the default rule for generated Applications.
+- Keep `requirementsPath` and `resourcesPath` for exceptions that need real extra manifests, not for namespace-only boilerplate.
 
 Acceptance checks:
 
 - Generated Applications use non-default projects unless a specific exception is documented.
-- A non-critical namespace can be deleted and recreated by resyncing its owning Application.
+- Generated Applications include `CreateNamespace=true`.
+- Existing Kustomize paths render locally.
 
 ### 5. Add Observability And Notifications
 
