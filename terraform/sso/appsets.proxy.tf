@@ -4,14 +4,14 @@ locals {
 
     (k) => {
       provider = {
-        mode              = lookup(v.protoconf, "mode", "forward_single")
-        internal_host     = lookup(v.protoconf, "internal_host", null)
-        external_host     = lookup(v.protoconf, "external_host", v.app.url)
-        session_hours     = lookup(v.protoconf, "session_hours", 8)
-        refresh_hours     = lookup(v.protoconf, "refresh_hours", 0)
-        skip_path_regex   = lookup(v.protoconf, "skip_path_regex", null)
-        auth_flow         = lookup(v.protoconf, "auth_flow", "implicit")
-        invalidation_flow = lookup(v.protoconf, "invalidation_flow", "invalidation")
+        mode              = lookup(v.protoconf, "mode", "forwardSingle")
+        internal_host     = lookup(v.protoconf, "internalHost", null)
+        external_host     = lookup(v.protoconf, "externalHost", v.app.url)
+        session_hours     = lookup(v.protoconf, "sessionHours", 8)
+        refresh_hours     = lookup(v.protoconf, "refreshHours", 0)
+        skip_path_regex   = lookup(v.protoconf, "skipPathRegex", null)
+        auth_flow         = lookup(v.protoconf, "authFlow", "implicit")
+        invalidation_flow = lookup(v.protoconf, "invalidationFlow", "invalidation")
       }
     }
   }

@@ -21,4 +21,6 @@ resource "authentik_application" "main" {
   meta_icon       = each.value.app.icon
   meta_publisher  = each.value.app.publisher
   meta_launch_url = each.value.app.url
+
+  open_in_new_tab = each.value.app.new_tab
 }

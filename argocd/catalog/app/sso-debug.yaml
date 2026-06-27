@@ -7,4 +7,4 @@ authentik:
   url: https://sso-debug.k8s.d-reis.com
   proxy:
     mode: forward_single
-    external_host: https://sso-debug.k8s.d-reis.com
+    externalHost: https://sso-debug.k8s.d-reis.com

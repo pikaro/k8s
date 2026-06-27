@@ -5,19 +5,19 @@ locals {
     (k) => {
       secret = {
         name        = lookup(v.protoconf, "secret", "${v.appset_name}-sso")
-        labels      = lookup(v.protoconf, "secret_labels", {})
-        annotations = lookup(v.protoconf, "secret_annotations", {})
+        labels      = lookup(v.protoconf, "secretLabels", {})
+        annotations = lookup(v.protoconf, "secretAnnotations", {})
       }
 
       provider = {
-        session_hours     = lookup(v.protoconf, "session_hours", 8)
-        refresh_hours     = lookup(v.protoconf, "refresh_hours", 0)
-        auth_flow         = lookup(v.protoconf, "auth_flow", "implicit")
-        invalidation_flow = lookup(v.protoconf, "invalidation_flow", "invalidation")
-        oauth_scopes      = lookup(v.protoconf, "oauth_scopes", ["openid", "email", "profile"])
-        grant_types       = lookup(v.protoconf, "grant_types", ["authorization_code"])
+        session_hours     = lookup(v.protoconf, "sessionHours", 8)
+        refresh_hours     = lookup(v.protoconf, "refreshHours", 0)
+        auth_flow         = lookup(v.protoconf, "authFlow", "implicit")
+        invalidation_flow = lookup(v.protoconf, "invalidationFlow", "invalidation")
+        oauth_scopes      = lookup(v.protoconf, "oauthScopes", ["openid", "email", "profile"])
+        grant_types       = lookup(v.protoconf, "grantTypes", ["authorization_code"])
         redirect_uris = lookup(
-          v.protoconf, "redirect_uris",
+          v.protoconf, "redirectUris",
           v.app.url != null ? ["${v.app.url}/auth/callback"] : []
         )
       }

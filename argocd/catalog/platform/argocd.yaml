@@ -6,13 +6,13 @@ authentik:
   name: ArgoCD
   group: Management
   url: https://argo.d-reis.com
-  directory_groups:
+  directoryGroups:
     - argocd-users
     - argocd-admins
   oidc:
-    redirect_uris:
+    redirectUris:
       - https://argo.d-reis.com/auth/callback
       - https://localhost:8085/auth/callback
-    secret_labels:
+    secretLabels:
       app.kubernetes.io/part-of: argocd
       app.kubernetes.io/name: argocd-sso

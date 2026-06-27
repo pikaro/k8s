@@ -15,7 +15,7 @@ locals {
       namespace        = lookup(config, "namespace", config.name)
       protocol         = lookup(config.authentik, "protocol", "oidc")
       name             = lookup(config.authentik, "name", config.name)
-      directory_groups = lookup(config.authentik, "directory_groups", [])
+      directory_groups = lookup(config.authentik, "directoryGroups", [])
 
       app = {
         name      = lookup(config.authentik, "name", title(config.name))
@@ -25,6 +25,7 @@ locals {
         url       = lookup(config.authentik, "url", null)
         icon      = lookup(config.authentik, "icon", null)
         publisher = lookup(config.authentik, "publisher", null)
+        new_tab   = lookup(config.authentik, "newTab", true)
       }
 
       protoconf = lookup(config.authentik, lookup(config.authentik, "protocol", "oidc"), {})

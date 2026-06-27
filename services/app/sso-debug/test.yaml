@@ -65,7 +65,9 @@ metadata:
     external-dns.alpha.kubernetes.io/hostname: sso-debug.k8s.d-reis.com
     external-dns.alpha.kubernetes.io/target: thule.d-reis.com
     cert-manager.io/cluster-issuer: letsencrypt
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
     traefik.ingress.kubernetes.io/router.middlewares: traefik-forward-auth@kubernetescrd
+    traefik.ingress.kubernetes.io/router.priority: "10"
 spec:
   ingressClassName: traefik
   tls:
@@ -83,3 +85,22 @@ spec:
                 name: whoami
                 port:
                   number: 80
+
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: authentik-outpost
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`sso-debug.k8s.d-reis.com`) && PathPrefix(`/outpost.goauthentik.io`)
+      kind: Rule
+      priority: 100
+      services:
+        - name: authentik-server
+          namespace: authentik
+          port: 80
+  tls:
+    secretName: sso-debug-tls
