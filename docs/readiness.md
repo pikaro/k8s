@@ -13,8 +13,8 @@ secrets/backups, without remembered imperative app setup.
 | Area | Current repo state | Remaining gap |
 | --- | --- | --- |
 | CoreDNS | Managed by `argocd/applications/coredns.yaml` with values in `bootstrap/coredns/values.yaml`. | It still uses the `default` ArgoCD project. |
-| ArgoCD | Self-managed via `argocd/catalog/platform/argocd.yaml` and `services/platform/argocd/values.yaml`. The chart renders `Ingress` for `argo.d-reis.com` and `argo.k8s.d-reis.com`, plus a cert-manager `Certificate` named `argocd-server`. Authentik OIDC and group RBAC are codified. | Notifications, local-admin policy, non-default AppProjects, and automated-sync policy are not codified yet. Root/appset Applications still use `project: default`. |
-| AppSets | `argocd/appsets/template.yaml.tpl` generates separate `platform`, `base`, and `app` ApplicationSets from `argocd/catalog/*/*.yaml`. It supports Helm, Kustomize, optional `requirementsPath`, optional `resourcesPath`, and optional server-side apply. | Namespace ownership and project assignment are not codified per category. Most generated apps do not enable automated sync. |
+| ArgoCD | Self-managed via `argocd/catalog/platform/argocd.yaml` and `services/platform/argocd/values.yaml`. The chart renders `Ingress` for `argo.d-reis.com` and `argo.k8s.d-reis.com`, plus a cert-manager `Certificate` named `argocd-server`. Authentik OIDC and group RBAC are codified, and the local admin account is disabled. | Non-default AppProjects are not codified yet. Notifications belong with observability. Automated sync is deferred to the final readiness step. Root/appset Applications still use `project: default`. |
+| AppSets | `argocd/appsets/template.yaml.tpl` generates separate `platform`, `base`, and `app` ApplicationSets from `argocd/catalog/*/*.yaml`. It supports Helm, Kustomize, optional `requirementsPath`, optional `resourcesPath`, and optional server-side apply. | Namespace ownership and project assignment are not codified per category. Automated sync is intentionally deferred to the final readiness step. |
 | OpenTofu/AWS/Auth | OpenTofu modules under `terraform/` manage the Kubernetes OIDC provider, Route53 access, external-dns DynamoDB registry, IAM roles for external-dns/cert-manager/external-secrets, and Authentik SSO catalog resources. `enable_iam_users = false` and `enable_oidc_roles = true` are checked in. | Restore inputs and the SSO OpenTofu apply path are documented in `docs/restore-contract.md`. No backup bucket/role/user exists yet. |
 | external-dns | `services/platform/external-dns/values.yaml` uses AWS web identity env vars and a projected service account token. It uses the DynamoDB registry and writes root-domain CNAMEs plus `k8s.d-reis.com` records. | Nothing structural. Keep root-domain names explicit in ingress annotations; do not infer or rewrite them. |
 | cert-manager | `services/platform/cert-manager/values.yaml` uses AWS web identity env vars and a projected service account token. `services/platform/cert-manager/resources/issuers.yaml` defines staging and production Route53 DNS01 `ClusterIssuer`s. | Nothing structural. Bootstrap IAM-user comments can stay until README cleanup, but runtime should not depend on those Secrets. |
@@ -37,19 +37,22 @@ This order is based on impact versus implementation effort, not criticality or
 data-loss risk. For this cluster, impact means how much the work improves
 repeatable convergence, day-to-day iteration, or debugging.
 
-| Order | Work | Impact | Effort | Rationale |
-| --- | --- | --- | --- | --- |
-| 1 | Add repo validation | High | Low | Catches chart value, YAML, Kustomize, and generated-manifest regressions before they reach ArgoCD. |
-| 2 | Define restore inputs and secret ownership | High | Low | Turns the current implicit restore knowledge into a repeatable checklist without changing live workloads. |
-| 3 | Finish small ArgoCD operational policy choices | Low | Low | Local-admin policy, notifications, and automated-sync choices are useful polish now that SSO works. |
-| 4 | Codify ArgoCD Projects and namespace ownership | High | Medium | Makes app categories and empty-cluster namespace creation real, but touches templates and multiple catalog entries. |
-| 5 | Add observability | Medium | Medium | Improves debugging and confidence, but adds a sizable platform app and per-service metrics toggles. |
-| 6 | Add backups | Low | Medium/High | Useful for full rebuilds, but current irreplaceable data is small and easily exported; implementation spans AWS, CNPG, and PVC tooling. |
+| Order | Status | Work | Impact | Effort | Rationale |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Done | Add repo validation | High | Low | Catches chart value, YAML, Kustomize, and generated-manifest regressions before they reach ArgoCD. |
+| 2 | Done | Define restore inputs and secret ownership | High | Low | Turns the current implicit restore knowledge into a repeatable checklist without changing live workloads. |
+| 3 | Done | Disable ArgoCD local admin | Low | Low | ArgoCD is last in the bootstrap flow, so disabling the built-in local admin now fits the current SSO path. |
+| 4 | Open | Codify ArgoCD Projects and namespace ownership | High | Medium | Makes app categories and empty-cluster namespace creation real, but touches templates and multiple catalog entries. |
+| 5 | Open | Add observability and notifications | Medium | Medium | Improves debugging and confidence, and gives ArgoCD notifications the same alerting path as the rest of the platform. |
+| 6 | Open | Add backups | Low | Medium/High | Useful for full rebuilds, but current irreplaceable data is small and easily exported; implementation spans AWS, CNPG, and PVC tooling. |
+| 7 | Open | Enable automated sync | Low | Low | Make pruning/self-healing explicit only after projects, namespaces, observability, and backups are in place. |
 
 Vaultwarden and Vikunja modernization is useful, but it is not part of the
 current readiness gate.
 
 ### 1. Add Repo Validation
+
+Status: done.
 
 Add a single repo-local validation command so chart/key regressions are caught
 before pushing.
@@ -73,7 +76,7 @@ Acceptance checks:
 
 ### 2. Define Restore Inputs and Secret Ownership
 
-Status: documented in `docs/restore-contract.md`.
+Status: done. Documented in `docs/restore-contract.md`.
 
 Make the restore contract explicit for the platform/base parts that are not
 purely Kubernetes manifests. This excludes post-readiness app-specific secrets
@@ -93,19 +96,18 @@ Acceptance checks:
 - No platform secret needed for restore exists only as an undocumented manual `kubectl` command.
 - The Authentik SSO restore path is documented well enough to recreate ArgoCD and Traefik dashboard login.
 
-### 3. Finish Small ArgoCD Operational Policy Choices
+### 3. Disable ArgoCD Local Admin
 
-Keep this as a small follow-up, not a large ArgoCD redesign.
+Status: done.
 
-- Decide whether the local admin account should stay enabled as break-glass access or be disabled after documenting another break-glass path.
-- Add ArgoCD notifications using the same SMTP/ExternalSecret pattern as the rest of the platform, if notifications are wanted before observability exists.
-- Decide whether the root app and generated apps should use automated sync.
+The local `admin` account is disabled in `services/platform/argocd/values.yaml`.
+ArgoCD is the last bootstrap README item, so SSO is expected to exist before the
+self-managed ArgoCD application takes over this setting.
 
 Acceptance checks:
 
-- The chosen local-admin policy is visible in `services/platform/argocd/values.yaml`.
-- A deliberately failed sync sends one notification if notifications are enabled.
-- Automated sync behavior is explicit rather than inherited from defaults.
+- `configs.cm.admin.enabled` is set to `"false"` in `services/platform/argocd/values.yaml`.
+- Browser login through Authentik still works after ArgoCD syncs the value.
 
 ### 4. Codify ArgoCD Projects and Namespace Ownership
 
@@ -128,7 +130,7 @@ Acceptance checks:
 - Generated Applications use non-default projects unless a specific exception is documented.
 - A non-critical namespace can be deleted and recreated by resyncing its owning Application.
 
-### 5. Add Observability
+### 5. Add Observability And Notifications
 
 Add this after the core auth/database paths are stable. It can start before full
 backup automation if the first pass stays modest.
@@ -158,12 +160,16 @@ Initial alerts to codify as PrometheusRules:
 - PostgreSQL cluster not healthy.
 - PVC free space low for app volumes.
 - Pod crash-looping in managed namespaces.
+- ArgoCD notifications for sync failures and degraded applications, using the
+  same notification path selected for observability alerts.
 
 Acceptance checks:
 
 - Grafana is reachable through Traefik with a cert-manager certificate.
 - Prometheus has targets for ArgoCD, Traefik, cert-manager, external-dns, external-secrets, CNPG, and app pods where applicable.
 - One synthetic alert reaches the selected notification target.
+- A deliberately failed ArgoCD sync sends one notification through that same
+  path.
 
 ### 6. Add Backups
 
@@ -198,6 +204,25 @@ Acceptance checks:
 - A manual CNPG backup completes and appears in the bucket.
 - A VolSync backup completes for one non-critical PVC.
 - One throwaway restore is performed into a temporary namespace before trusting the setup.
+
+### 7. Enable Automated Sync
+
+Do this last in readiness, after projects, namespace ownership, observability,
+and backups are in place.
+
+- Decide which root, ApplicationSet, and generated Applications should enable:
+  - automated sync
+  - pruning
+  - self-healing
+- Update `argocd/appsets/template.yaml.tpl` and generated ApplicationSets.
+- Keep exceptions explicit in catalog YAML when a workload should stay manual.
+
+Acceptance checks:
+
+- Automated sync behavior is explicit rather than inherited from defaults.
+- A non-critical generated Application self-heals a harmless drift.
+- Prune behavior is tested on a non-critical managed resource before enabling
+  it broadly.
 
 ## Completed Or Non-Blocking Work
 
