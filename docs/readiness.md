@@ -19,7 +19,7 @@ plus externally stored secrets/backups, without remembered imperative app setup.
 | cert-manager | `services/platform/cert-manager/values.yaml` uses AWS web identity env vars and a projected service account token. `services/platform/cert-manager/resources/issuers.yaml` defines staging and production Route53 DNS01 `ClusterIssuer`s. | Nothing structural. Bootstrap IAM-user comments can stay until README cleanup, but runtime should not depend on those Secrets. |
 | external-secrets | Chart and `ClusterSecretStore` are present under `services/platform/external-secrets/`. Store reads AWS SSM Parameter Store via service account JWT. Authentik uses ESO generators and the Kubernetes provider to copy its CNPG password from `cnpg-database` into the `authentik` namespace. | App secrets are mostly not modeled as `ExternalSecret` resources yet. Verify the store against a real parameter before migrating app secrets that come from AWS SSM. |
 | OIDC issuer | `services/platform/oidc/` publishes the Kubernetes service-account issuer metadata and JWKS via Kustomize. Terraform trusts `https://oidc.k8s.d-reis.com`. | JWKS refresh is still a manual repo update when service-account signing keys change. |
-| Traefik | `services/platform/traefik/values.yaml` runs Traefik on host networking with ports 80/443 and publishes `thule.d-reis.com` as the ingress endpoint. | Shared middlewares are not codified yet. Authentik forward-auth is not present. |
+| Traefik | `services/platform/traefik/values.yaml` runs Traefik on host networking with ports 80/443, publishes `thule.d-reis.com` as the ingress endpoint, sets host-network DNS policy for service-name forward-auth calls, and ships shared Authentik forward-auth plus the SSO-protected dashboard resources under `services/platform/traefik/resources/`. | Nothing structural for current readiness. |
 | OpenEBS/ZFS | `services/platform/openebs/` enables ZFS LocalPV and defines `zfs`, `zfs-bulk`, `zfs-spof`, and temporary variants. | Volume backup tooling is absent. `VolumeSnapshotClass` is defined, but snapshot-controller/CRD ownership needs to be made explicit before relying on snapshots. |
 | CNPG operator | Managed by `argocd/catalog/platform/cnpg-operator.yaml` with server-side apply. | Monitoring and operator resources are not enabled/tuned. |
 | CNPG cluster | Managed by `argocd/catalog/base/cnpg-cluster.yaml`. It creates a 3-instance PostgreSQL 16 cluster on `zfs`. Because CNPG 1.29.1 has no `DatabaseRole`, `services/base/cnpg-cluster/values.yaml` still declares the Authentik managed role inline. Backups and monitoring are disabled. | Move app roles to `DatabaseRole` after CNPG 1.30 is adopted. No app databases are declared for Vaultwarden or Vikunja. Object-store backups are disabled. |
@@ -225,20 +225,17 @@ Acceptance checks:
 
 ### 8. Add Shared Traefik Middlewares
 
-Do this once Authentik exists.
+Authentik forward-auth and the dashboard route are now codified.
 
-- Add `services/platform/traefik/resources/`.
-- Add shared Middleware resources for:
+- Extend `services/platform/traefik/resources/` if more shared Middleware resources are wanted:
   - secure headers
   - compression if wanted
-  - Authentik forward-auth
-- Set `resourcesPath: services/platform/traefik/resources` in `argocd/catalog/platform/traefik.yaml`.
 - Reference these middlewares from apps that need them.
 
 Acceptance checks:
 
 - A test ingress can attach the shared middleware chain.
-- Authentik forward-auth works on a non-critical test route before being used for real apps.
+- Authentik forward-auth works on a non-critical test route and the Traefik dashboard before being used for real apps.
 
 ### 9. Add Repo Validation
 

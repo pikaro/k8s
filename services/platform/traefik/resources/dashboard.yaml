@@ -1,0 +1,90 @@
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: dashboard-root-redirect
+  namespace: traefik
+spec:
+  redirectRegex:
+    regex: ^https://traefik\.k8s\.d-reis\.com/?$
+    replacement: https://traefik.k8s.d-reis.com/dashboard/
+    permanent: true
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard-dns
+  namespace: traefik
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 65535
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: dashboard-dns
+  namespace: traefik
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: traefik.k8s.d-reis.com
+    external-dns.alpha.kubernetes.io/target: thule.d-reis.com
+    cert-manager.io/cluster-issuer: letsencrypt
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.priority: "1"
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts:
+        - traefik.k8s.d-reis.com
+      secretName: traefik-dashboard-tls
+  rules:
+    - host: traefik.k8s.d-reis.com
+      http:
+        paths:
+          - path: /__dns-cert-shim
+            pathType: Prefix
+            backend:
+              service:
+                name: dashboard-dns
+                port:
+                  number: 80
+
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: dashboard
+  namespace: traefik
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`traefik.k8s.d-reis.com`) && PathPrefix(`/outpost.goauthentik.io`)
+      kind: Rule
+      priority: 200
+      services:
+        - name: authentik-server
+          namespace: authentik
+          port: 80
+    - match: Host(`traefik.k8s.d-reis.com`) && Path(`/`)
+      kind: Rule
+      priority: 100
+      middlewares:
+        - name: forward-auth
+        - name: dashboard-root-redirect
+      services:
+        - name: api@internal
+          kind: TraefikService
+    - match: Host(`traefik.k8s.d-reis.com`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
+      kind: Rule
+      priority: 100
+      middlewares:
+        - name: forward-auth
+      services:
+        - name: api@internal
+          kind: TraefikService
+  tls:
+    secretName: traefik-dashboard-tls

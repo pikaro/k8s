@@ -2,3 +2,11 @@ name: traefik
 chartRepo: https://traefik.github.io/charts
 chartVersion: 37.4.0
 resourcesPath: services/platform/traefik/resources
+authentik:
+  name: Traefik Dashboard
+  protocol: proxy
+  group: Management
+  url: https://traefik.k8s.d-reis.com
+  proxy:
+    mode: forward_single
+    externalHost: https://traefik.k8s.d-reis.com
