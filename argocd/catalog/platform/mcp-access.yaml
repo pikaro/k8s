@@ -1,0 +1,4 @@
+sourceType: kustomize
+name: mcp-access
+namespace: mcp-access
+basePath: services/platform/mcp-access
