@@ -7,21 +7,25 @@ post-readiness app modernization, or automated sync.
 ## Target Shape
 
 - `monitoring`: `kube-prometheus-stack` in `observability`.
+- `node-exporter`: standalone `prometheus-node-exporter` in
+  `node-observability`.
 - `loki`: single-binary Loki in `observability`.
 - `alloy`: Alloy DaemonSet in `observability`, shipping pod logs to Loki.
 - Push notifications: Alertmanager to Apprise API to an exposed push service,
   currently expected to be ntfy. Backend choice and credential ownership still
   need to be resolved before manifests are added.
 
-All three implemented apps are `platform` apps. Namespace creation stays with
-the generated ApplicationSet `CreateNamespace=true` rule. No service should add
-its own repeated `Namespace` manifest unless the namespace needs exceptional
-metadata later.
+All implemented apps are `platform` apps. Namespace creation stays with the
+generated ApplicationSet `CreateNamespace=true` rule unless the namespace needs
+exceptional metadata. `node-observability` is such an exception because
+node-exporter needs privileged PodSecurity labels for host metrics.
 
 ## Source Notes
 
 - `kube-prometheus-stack` is the standard chart for Prometheus Operator,
   Prometheus, Alertmanager, Grafana, kube-state-metrics, and node-exporter.
+  This repo disables its embedded node-exporter and runs the standalone
+  `prometheus-node-exporter` chart in a narrower privileged namespace.
 - The Grafana subchart supports `grafana.ini`, environment variables from
   Secrets, ingress, persistence, sidecar dashboards, and additional data
   sources.
@@ -69,22 +73,27 @@ belongs in Kubernetes manifests/Helm values.
 1. ArgoCD AppProject already allows generated platform apps to target catalog
    namespaces. Adding `monitoring`, `loki`, and `alloy` with
    `namespace: observability` makes the generated project include
-   `observability`.
+   `observability`; adding `node-exporter` with
+   `namespace: node-observability` makes the generated project include the
+   privileged node metrics namespace.
 2. The `monitoring` app installs Prometheus Operator CRDs, Prometheus,
-   Alertmanager, Grafana, kube-state-metrics, and node-exporter.
+   Alertmanager, Grafana, and kube-state-metrics.
 3. The `monitoring` catalog entry declares the Grafana Authentik app. The
    `terraform/sso` module must be applied after that catalog entry exists and
    before Grafana is expected to start, because the chart reads the
    Terraform-created `grafana-sso` Secret for client credentials and OIDC
    endpoint URLs.
-4. The `loki` app provides the in-cluster write endpoint used by Alloy and the
+4. The `node-exporter` app depends on the Prometheus Operator CRDs for its
+   ServiceMonitor. It should sync after `monitoring`, and its own requirements
+   create the `node-observability` namespace with privileged PodSecurity labels.
+5. The `loki` app provides the in-cluster write endpoint used by Alloy and the
    Grafana Loki data source.
-5. The `alloy` app can start after Loki exists. Its values point at
+6. The `alloy` app can start after Loki exists. Its values point at
    `http://loki-gateway.observability.svc.cluster.local/loki/api/v1/push`.
-6. Existing platform chart metrics toggles should be enabled only after
+7. Existing platform chart metrics toggles should be enabled only after
    `monitoring` has installed the Prometheus Operator CRDs. Those edits belong
    in the existing service values, not in repeated requirement folders.
-7. Notifications depend on Alertmanager and should be added after the
+8. Notifications depend on Alertmanager and should be added after the
    Apprise/ntfy branch is decided.
 
 ## Drafted Configuration
@@ -93,6 +102,9 @@ The following files are intentionally created as normal repo files:
 
 - `argocd/catalog/platform/monitoring.yaml`
 - `services/platform/monitoring/values.yaml`
+- `argocd/catalog/platform/node-exporter.yaml`
+- `services/platform/node-exporter/requirements/namespace.yaml`
+- `services/platform/node-exporter/values.yaml`
 - `argocd/catalog/platform/loki.yaml`
 - `services/platform/loki/values.yaml`
 - `argocd/catalog/platform/alloy.yaml`
@@ -103,7 +115,7 @@ These are enough to review the standard metrics/logging shape before pushing.
 ## Standard Decisions Already Encoded
 
 - Use `observability` as the shared namespace.
-- Keep monitoring, Loki, and Alloy as separate platform apps.
+- Keep monitoring, node-exporter, Loki, and Alloy as separate platform apps.
 - Use native Grafana OAuth against Authentik, not forward-auth.
 - Expose only Grafana and the push web/API surface through Traefik initially.
 - Keep Prometheus, Alertmanager, Loki, and Alloy internal-only.
@@ -120,6 +132,16 @@ These are enough to review the standard metrics/logging shape before pushing.
 - Start Loki as single-binary filesystem storage, not object storage or a
   distributed deployment.
 - Start Alloy as a DaemonSet with Kubernetes pod log discovery.
+- Run node-exporter as a standalone app in `node-observability`, not as the
+  embedded `kube-prometheus-stack` subchart.
+- Give only `node-observability` privileged PodSecurity labels. Node-exporter
+  needs host network, host PID, and host filesystem access for real host disk,
+  filesystem, CPU, memory, and network metrics.
+- Keep node-exporter hostPort disabled. Prometheus scrapes the chart's
+  ClusterIP Service through a ServiceMonitor.
+- Keep node-exporter from binding all host interfaces. With `hostNetwork: true`
+  it still listens in the node network namespace, but the chart binds to the
+  node IP rather than `0.0.0.0`.
 - Keep Loki labels low-cardinality: namespace, pod, container, app, and node.
 - Do not create ServiceMonitor objects from non-monitoring apps before the
   Prometheus Operator CRDs exist.
@@ -202,15 +224,33 @@ added.
    - namespace-wide `ServiceMonitor`, `PodMonitor`, `Probe`, and
      `PrometheusRule` discovery.
 5. Enable Alertmanager with a `1Gi` PVC on `zfs`.
-6. Disable first-pass scrape configurations that are likely to be wrong in the
+6. Disable the embedded node-exporter subchart; host metrics are provided by the
+   standalone `node-exporter` app.
+7. Disable first-pass scrape configurations that are likely to be wrong in the
    current Talos shape:
    - controller-manager;
    - scheduler;
    - etcd;
    - kube-proxy;
    - CoreDNS until a metrics Service exists.
-7. Leave Alertmanager notification routing as the chart default until Apprise
+8. Leave Alertmanager notification routing as the chart default until Apprise
    API and ntfy are defined.
+
+## Node-Exporter App Plan
+
+1. Add the standalone `prometheus-node-exporter` chart as `node-exporter` in
+   `node-observability`.
+2. Use a `requirementsPath` only because this namespace needs exceptional
+   PodSecurity labels.
+3. Label `node-observability` as privileged for enforce, audit, and warn.
+4. Keep host network, host PID, and host filesystem mounts enabled so
+   node-exporter reports host-level CPU, memory, filesystem, disk, and network
+   metrics.
+5. Keep hostPort disabled. A ClusterIP Service plus ServiceMonitor is enough for
+   Prometheus to scrape it.
+6. Bind node-exporter to the node IP rather than all host interfaces.
+7. Enable the chart's ServiceMonitor after `monitoring` has installed the
+   Prometheus Operator CRDs.
 
 ## Loki App Plan
 
@@ -272,20 +312,22 @@ Imported chart rules that use `warning` should route as `medium`.
 
 1. Run YAML parsing over new files.
 2. Run `argocd/appsets/generate.sh` and review generated project destinations.
-3. Render `monitoring`, `loki`, and `alloy` charts locally once chart repos are
-   reachable.
+3. Render `monitoring`, `node-exporter`, `loki`, and `alloy` charts locally once
+   chart repos are reachable.
 4. Apply `terraform/sso` so `grafana-sso` exists in `observability`.
 5. Sync `monitoring` first and confirm Prometheus Operator CRDs exist.
-6. Sync `loki`.
-7. Sync `alloy` and confirm logs arrive in Loki.
-8. Confirm Grafana login through Authentik.
-9. Confirm Prometheus targets for kube-state-metrics, node-exporter, kubelet,
+6. Sync `node-exporter` and confirm its DaemonSet is admitted in
+   `node-observability`.
+7. Sync `loki`.
+8. Sync `alloy` and confirm logs arrive in Loki.
+9. Confirm Grafana login through Authentik.
+10. Confirm Prometheus targets for kube-state-metrics, node-exporter, kubelet,
    Prometheus, Alertmanager, and Grafana.
-10. Enable existing-service metrics toggles one app at a time.
-11. Add Apprise API and exposed authenticated ntfy after the remaining ntfy
+11. Enable existing-service metrics toggles one app at a time.
+12. Add Apprise API and exposed authenticated ntfy after the remaining ntfy
     blockers are resolved.
-12. Add Alertmanager routing.
-13. Fire one synthetic Alertmanager alert and one deliberately failed ArgoCD
+13. Add Alertmanager routing.
+14. Fire one synthetic Alertmanager alert and one deliberately failed ArgoCD
     sync to prove the shared notification path.
 
 ## Data-Loss Expectations
@@ -295,6 +337,10 @@ Adding the drafted files has no live effect until pushed and synced.
 When eventually synced:
 
 - Creating the observability apps should not delete workload data.
+- Creating the `node-observability` namespace and node-exporter DaemonSet should
+  not delete workload data. It does grant node-exporter privileged host access in
+  that namespace, and node-exporter listens in the node network namespace on
+  port `9100`.
 - Losing the Prometheus PVC loses metrics history.
 - Losing the Loki PVC loses log history.
 - Losing the Grafana PVC loses local Grafana state not represented in chart

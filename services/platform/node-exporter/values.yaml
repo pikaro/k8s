@@ -1,0 +1,38 @@
+fullnameOverride: node-exporter
+
+hostNetwork: true
+hostPID: true
+hostIPC: false
+
+hostRootFsMount:
+  enabled: true
+  mountPropagation: HostToContainer
+
+kubeRBACProxy:
+  enabled: false
+  enableHostPort: false
+  enableProxyEndpointsHostPort: false
+
+service:
+  enabled: true
+  type: ClusterIP
+  port: 9100
+  targetPort: 9100
+  portName: metrics
+  listenOnAllInterfaces: false
+  annotations:
+    prometheus.io/scrape: "false"
+
+prometheus:
+  monitor:
+    enabled: true
+    attachMetadata:
+      node: true
+    scrapeTimeout: 10s
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    memory: 128Mi

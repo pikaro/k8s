@@ -27,6 +27,9 @@ coreDns:
 kube-state-metrics:
   fullnameOverride: kube-state-metrics
 
+nodeExporter:
+  enabled: false
+
 prometheus-node-exporter:
   fullnameOverride: node-exporter
 

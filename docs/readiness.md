@@ -28,7 +28,7 @@ secrets/backups, without remembered imperative app setup.
 | Vaultwarden | Managed by `argocd/catalog/app/vaultwarden.yaml`. Uses ZFS PVCs, TLS/DNS annotations, SMTP Secret, Bitwarden installation Secret, and currently `database.type: default` with a FIXME to move off SQLite. | App modernization remains open, but Vaultwarden is not a current readiness blocker. |
 | Vikunja | Managed by `argocd/catalog/app/vikunja.yaml`. Uses ZFS PVCs and TLS/DNS annotations. Current values define file and database PVCs, so it is still effectively local-state backed. | App modernization remains open, but Vikunja is not a current readiness blocker. |
 | Odoo | `services/app/odoo/values.yaml` exists, but there is no `argocd/catalog/app/odoo.yaml`. | Intentionally parked until the chart/database/security issues are handled. Do not treat this as a readiness blocker for the current app set. |
-| Observability | Draft catalog/value files exist for `monitoring`, `loki`, and `alloy`, and the implementation plan is in `docs/observability.md`. The readiness stack is selected: Prometheus, Grafana, Loki, Alloy, Alertmanager, Apprise API, and a `push` notification surface, likely backed by ntfy. Observability PVCs are disposable readiness state, not backup targets. | Decide push backend and credential/ACL ownership, then implement notifications and per-service metrics toggles. |
+| Observability | Draft catalog/value files exist for `monitoring`, `node-exporter`, `loki`, and `alloy`, and the implementation plan is in `docs/observability.md`. The readiness stack is selected: Prometheus, Grafana, standalone node-exporter, Loki, Alloy, Alertmanager, Apprise API, and a `push` notification surface, likely backed by ntfy. Observability PVCs are disposable readiness state, not backup targets. | Decide push backend and credential/ACL ownership, then implement notifications and per-service metrics toggles. |
 | Backups | No backup controller is present. CNPG backups are disabled. Volume backups are absent. | Needs off-cluster backup target, CNPG object-store backups, and PVC backup coverage for workload state. Observability history/cache is intentionally excluded unless that policy changes later. |
 
 ## Prioritized Readiness Work
@@ -138,8 +138,11 @@ are tracked in `docs/observability.md`.
 
 Target stack:
 
-- Prometheus, Alertmanager, Grafana, kube-state-metrics, node-exporter, and the
-  Prometheus Operator via `kube-prometheus-stack`.
+- Prometheus, Alertmanager, Grafana, kube-state-metrics, and the Prometheus
+  Operator via `kube-prometheus-stack`.
+- Standalone node-exporter in `node-observability`, with that namespace
+  explicitly labeled for privileged PodSecurity because host metrics require
+  host network, host PID, and host filesystem access.
 - Loki for log storage, with modest retention and no restore-critical data
   assumption.
 - Alloy for Kubernetes log collection into Loki.
@@ -153,6 +156,9 @@ Implementation scope:
 - Add `argocd/catalog/platform/monitoring.yaml` for `kube-prometheus-stack`.
 - Add `services/platform/monitoring/values.yaml` with Grafana ingress, TLS,
   Authentik OIDC, and persistent storage on `zfs`.
+- Add `argocd/catalog/platform/node-exporter.yaml` and
+  `services/platform/node-exporter/` with a privileged namespace requirement and
+  a ServiceMonitor-enabled `prometheus-node-exporter` chart.
 - Add Loki and Alloy as platform apps, either as separate catalog entries or as
   one observability entry if the chart boundaries stay clean.
 - Add Apprise API and ntfy as part of the observability notification path.
