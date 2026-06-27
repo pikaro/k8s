@@ -316,12 +316,12 @@ order:
 - Re-run `tofu -chdir=terraform/sso apply` to check that the SSO configuration
     is valid and applied.
 
-### ArgoCD
+### Remaining services
 
-Go back to the `platform` ApplicationSet and sync the `argocd` Application.
-
-This will bring up ArgoCD with its ingress, so you can terminate your local
-port-forward and use the web interface.
+- Sync the `sso-test` Application in the `app` ApplicationSet.
+- Go back to the `platform` ApplicationSet and sync the `argocd` Application.
+- Validate SSO login works for both ArgoCD and sso-test, and that users, groups
+    and permissions are represented correctly in both.
 
 ## Pruning and self-healing
 

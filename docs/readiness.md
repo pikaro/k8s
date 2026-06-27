@@ -15,16 +15,16 @@ secrets/backups, without remembered imperative app setup.
 | CoreDNS | Managed by `argocd/applications/coredns.yaml` with values in `bootstrap/coredns/values.yaml`. | It still uses the `default` ArgoCD project. |
 | ArgoCD | Self-managed via `argocd/catalog/platform/argocd.yaml` and `services/platform/argocd/values.yaml`. The chart renders `Ingress` for `argo.d-reis.com` and `argo.k8s.d-reis.com`, plus a cert-manager `Certificate` named `argocd-server`. Authentik OIDC and group RBAC are codified. | Notifications, local-admin policy, non-default AppProjects, and automated-sync policy are not codified yet. Root/appset Applications still use `project: default`. |
 | AppSets | `argocd/appsets/template.yaml.tpl` generates separate `platform`, `base`, and `app` ApplicationSets from `argocd/catalog/*/*.yaml`. It supports Helm, Kustomize, optional `requirementsPath`, optional `resourcesPath`, and optional server-side apply. | Namespace ownership and project assignment are not codified per category. Most generated apps do not enable automated sync. |
-| OpenTofu/AWS/Auth | OpenTofu modules under `terraform/` manage the Kubernetes OIDC provider, Route53 access, external-dns DynamoDB registry, IAM roles for external-dns/cert-manager/external-secrets, and Authentik SSO catalog resources. `enable_iam_users = false` and `enable_oidc_roles = true` are checked in. | No backup bucket/role/user exists yet. The restore contract must explicitly include the SSO OpenTofu state/apply because Authentik apps/providers and generated OIDC client Secrets are not purely Kubernetes-declarative. |
+| OpenTofu/AWS/Auth | OpenTofu modules under `terraform/` manage the Kubernetes OIDC provider, Route53 access, external-dns DynamoDB registry, IAM roles for external-dns/cert-manager/external-secrets, and Authentik SSO catalog resources. `enable_iam_users = false` and `enable_oidc_roles = true` are checked in. | Restore inputs and the SSO OpenTofu apply path are documented in `docs/restore-contract.md`. No backup bucket/role/user exists yet. |
 | external-dns | `services/platform/external-dns/values.yaml` uses AWS web identity env vars and a projected service account token. It uses the DynamoDB registry and writes root-domain CNAMEs plus `k8s.d-reis.com` records. | Nothing structural. Keep root-domain names explicit in ingress annotations; do not infer or rewrite them. |
 | cert-manager | `services/platform/cert-manager/values.yaml` uses AWS web identity env vars and a projected service account token. `services/platform/cert-manager/resources/issuers.yaml` defines staging and production Route53 DNS01 `ClusterIssuer`s. | Nothing structural. Bootstrap IAM-user comments can stay until README cleanup, but runtime should not depend on those Secrets. |
-| external-secrets | Chart and `ClusterSecretStore` are present under `services/platform/external-secrets/`. Store reads AWS SSM Parameter Store via service account JWT and smoke tests have validated normal String and SecureString reads. Authentik uses ESO generators and the Kubernetes provider to copy its CNPG password from `cnpg-database` into the `authentik` namespace. | Non-generated secrets are not inventoried consistently yet. |
+| external-secrets | Chart and `ClusterSecretStore` are present under `services/platform/external-secrets/`. Store reads AWS SSM Parameter Store via service account JWT and smoke tests have validated normal String and SecureString reads. Authentik uses ESO generators and the Kubernetes provider to copy its CNPG password from `cnpg-database` into the `authentik` namespace. | Readiness-scope secret ownership is documented in `docs/restore-contract.md`. Future non-generated platform secrets should be SSM parameters exposed through External Secrets. |
 | OIDC issuer | `services/platform/oidc/` publishes the Kubernetes service-account issuer metadata and JWKS via Kustomize. Terraform trusts `https://oidc.k8s.d-reis.com`. | JWKS refresh is still a manual repo update when service-account signing keys change. |
 | Traefik | `services/platform/traefik/values.yaml` runs Traefik on host networking with ports 80/443, publishes `thule.d-reis.com` as the ingress endpoint, sets host-network DNS policy for service-name forward-auth calls, and ships shared Authentik forward-auth plus the SSO-protected dashboard resources under `services/platform/traefik/resources/`. | Nothing structural for current readiness. |
 | OpenEBS/ZFS | `services/platform/openebs/` enables ZFS LocalPV and defines `zfs`, `zfs-bulk`, `zfs-spof`, and temporary variants. | Volume backup tooling is absent. `VolumeSnapshotClass` is defined, but snapshot-controller/CRD ownership needs to be made explicit before relying on snapshots. |
 | CNPG operator | Managed by `argocd/catalog/platform/cnpg-operator.yaml` with server-side apply. | Monitoring and operator resources are not enabled/tuned. |
 | CNPG cluster | Managed by `argocd/catalog/base/cnpg-cluster.yaml`. It creates a 3-instance PostgreSQL 16 cluster on `zfs`. Because the current CNPG chart does not provide standalone `DatabaseRole`, `services/base/cnpg-cluster/values.yaml` still declares the Authentik managed role inline. | Object-store backups and monitoring are disabled. Moving app roles to `DatabaseRole` after a chart/operator upgrade is cleanup, not a current readiness blocker. |
-| Authentik | Managed by `argocd/catalog/base/authentik.yaml` in the `authentik` namespace. `services/base/authentik/requirements/` creates the namespace, Authentik database, canonical CNPG password Secret in `cnpg-database`, and ESO copies of the app config and CNPG CA into `authentik`. The chart disables bundled PostgreSQL, consumes the copied config Secret, mounts the copied CNPG server CA, uses PostgreSQL `verify-full`, keeps chart service account creation enabled, and exposes `sso.d-reis.com` plus `sso.k8s.d-reis.com` through Traefik/cert-manager/external-dns. OpenTofu codifies users/groups, OIDC apps, proxy apps, and provider attachments from the ArgoCD catalog. | SMTP and the SSO OpenTofu restore contract still need to be documented/codified. |
+| Authentik | Managed by `argocd/catalog/base/authentik.yaml` in the `authentik` namespace. `services/base/authentik/requirements/` creates the namespace, Authentik database, canonical CNPG password Secret in `cnpg-database`, and ESO copies of the app config and CNPG CA into `authentik`. The chart disables bundled PostgreSQL, consumes the copied config Secret, mounts the copied CNPG server CA, uses PostgreSQL `verify-full`, keeps chart service account creation enabled, and exposes `sso.d-reis.com` plus `sso.k8s.d-reis.com` through Traefik/cert-manager/external-dns. OpenTofu codifies users/groups, OIDC apps, proxy apps, and provider attachments from the ArgoCD catalog. | The SSO restore contract is documented in `docs/restore-contract.md`. SMTP is not part of the current readiness gate unless email flows become a gate. |
 | Vaultwarden | Managed by `argocd/catalog/app/vaultwarden.yaml`. Uses ZFS PVCs, TLS/DNS annotations, SMTP Secret, Bitwarden installation Secret, and currently `database.type: default` with a FIXME to move off SQLite. | App modernization remains open, but Vaultwarden is not a current readiness blocker. |
 | Vikunja | Managed by `argocd/catalog/app/vikunja.yaml`. Uses ZFS PVCs and TLS/DNS annotations. Current values define file and database PVCs, so it is still effectively local-state backed. | App modernization remains open, but Vikunja is not a current readiness blocker. |
 | Odoo | `services/app/odoo/values.yaml` exists, but there is no `argocd/catalog/app/odoo.yaml`. | Intentionally parked until the chart/database/security issues are handled. Do not treat this as a readiness blocker for the current app set. |
@@ -73,17 +73,18 @@ Acceptance checks:
 
 ### 2. Define Restore Inputs and Secret Ownership
 
-Make the restore contract explicit for the parts that are not purely Kubernetes
-manifests.
+Status: documented in `docs/restore-contract.md`.
+
+Make the restore contract explicit for the platform/base parts that are not
+purely Kubernetes manifests. This excludes post-readiness app-specific secrets
+and data.
 
 - Document that Authentik catalog applications, providers, users/groups, OIDC client Secrets, and proxy outpost attachments are owned by the OpenTofu SSO module under `terraform/sso`.
 - Document the order of operations for restoring Authentik: CNPG/ESO prerequisites, Authentik chart, then OpenTofu SSO apply.
-- Inventory non-generated secrets and pick one owner for each:
-  - Authentik SMTP credentials
-  - ArgoCD notification SMTP credentials
-  - backup credentials, if role-based auth is not enough
-  - any future platform observability credentials
-- Put non-generated Kubernetes app secrets behind ExternalSecrets from SSM where possible.
+- Inventory readiness-scope non-generated secrets and pick one owner for each.
+  Current readiness-scope manifests do not require any non-generated SSM-backed
+  Kubernetes Secret.
+- Put non-generated readiness-scope Kubernetes Secrets behind ExternalSecrets from SSM where possible.
 - Document the service-account OIDC issuer/JWKS rotation path, including how `services/platform/oidc/oidc.json` and `jwks.json` are refreshed when signing keys change.
 
 Acceptance checks:

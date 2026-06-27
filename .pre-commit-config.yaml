@@ -1,0 +1,58 @@
+repos:
+  - repo: builtin
+    hooks:
+      - id: trailing-whitespace
+        priority: 0
+      - id: end-of-file-fixer
+        priority: 0
+      - id: mixed-line-ending
+        args: [--fix=lf]
+        priority: 0
+      - id: check-added-large-files
+        priority: 0
+      - id: check-case-conflict
+        priority: 0
+      - id: check-executables-have-shebangs
+        priority: 0
+      - id: check-illegal-windows-names
+        priority: 0
+      - id: check-json
+        priority: 0
+      - id: check-merge-conflict
+        priority: 0
+      - id: check-shebang-scripts-are-executable
+        priority: 0
+      - id: check-symlinks
+        priority: 0
+      - id: check-toml
+        priority: 0
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+        priority: 0
+      - id: destroyed-symlinks
+        priority: 0
+      - id: detect-private-key
+        priority: 0
+      - id: forbid-new-submodules
+        priority: 0
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        args: [-e, SC1091]
+        priority: 0
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args: [-d, relaxed]
+        priority: 10
+
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.108.0
+    hooks:
+      - id: terraform_fmt
+        args: [--hook-config=--tf-path=tofu]
+        priority: 10
