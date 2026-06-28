@@ -29,7 +29,10 @@ prometheus:
     attachMetadata:
       node: true
     relabelings:
-      - targetLabel: cluster
+      - action: replace
+        regex: (.*)
+        separator: ;
+        targetLabel: cluster
         replacement: thule
     scrapeTimeout: 10s
 
