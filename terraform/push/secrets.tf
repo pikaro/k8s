@@ -9,9 +9,10 @@ resource "kubernetes_secret_v1" "ntfy_config" {
   }
 
   data = {
-    NTFY_AUTH_USERS  = join(",", local.ntfy_auth_users)
-    NTFY_AUTH_ACCESS = join(",", local.ntfy_auth_access)
-    NTFY_AUTH_TOKENS = join(",", local.ntfy_auth_tokens)
+    NTFY_AUTH_USERS         = join(",", local.ntfy_auth_users)
+    NTFY_AUTH_ACCESS        = join(",", local.ntfy_auth_access)
+    NTFY_AUTH_TOKENS        = join(",", local.ntfy_auth_tokens)
+    NTFY_ALERTMANAGER_TOKEN = local.ntfy_alertmanager_token
   }
 
   type = "Opaque"

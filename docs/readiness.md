@@ -21,16 +21,16 @@ secrets/backups, without remembered imperative app setup.
 | external-secrets | Chart and `ClusterSecretStore` are present under `services/platform/external-secrets/`. Store reads AWS SSM Parameter Store via service account JWT and smoke tests have validated normal String and SecureString reads. Authentik uses ESO generators and the Kubernetes provider to copy its CNPG password from `cnpg-database` into the `authentik` namespace. | Readiness-scope secret ownership is documented in `docs/restore-contract.md`. Future non-generated platform secrets should be SSM parameters exposed through External Secrets. |
 | OIDC issuer | `services/platform/oidc/` publishes the Kubernetes service-account issuer metadata and JWKS via Kustomize. Terraform trusts `https://oidc.k8s.d-reis.com`. | JWKS refresh is still a manual repo update when service-account signing keys change. |
 | Traefik | `services/platform/traefik/values.yaml` runs Traefik on host networking with ports 80/443, publishes `thule.d-reis.com` as the ingress endpoint, sets host-network DNS policy for service-name forward-auth calls, keeps the chart metrics Service enabled, and ships shared Authentik forward-auth, the SSO-protected dashboard resources, and an API-proxy Prometheus ServiceMonitor under `services/platform/traefik/resources/`. | Nothing structural for current readiness. |
-| OpenEBS/ZFS | `services/platform/openebs/` enables ZFS LocalPV and defines `zfs`, `zfs-bulk`, `zfs-spof`, and temporary variants. Hostpath LocalPV is disabled; ZFS is the intended local storage engine. | Volume backup tooling is absent. `VolumeSnapshotClass` is defined, but snapshot-controller/CRD ownership needs to be made explicit before relying on snapshots. |
+| OpenEBS/ZFS | `services/platform/openebs/` enables ZFS LocalPV and defines `zfs`, `zfs-bulk`, `zfs-spof`, and temporary variants. Hostpath LocalPV is disabled; ZFS is the intended local storage engine. | `VolumeSnapshotClass` is defined, but snapshot-controller/CRD ownership needs to be made explicit before relying on snapshot-based backups. Current VolSync backups use `copyMethod: Direct`. |
 | CNPG operator | Managed by `argocd/catalog/platform/cnpg-operator.yaml` with server-side apply. Operator PodMonitor and Grafana dashboard ConfigMap are enabled. | Operator resources are not tuned. |
 | CNPG cluster | Managed by `argocd/catalog/base/cnpg-cluster.yaml`. It creates a 3-instance PostgreSQL 16 cluster on `zfs` with PodMonitor and PrometheusRule monitoring enabled. Because the current CNPG chart does not provide standalone `DatabaseRole`, `services/base/cnpg-cluster/values.yaml` still declares the Authentik managed role inline. | Object-store backups are configured for the rsync.net-backed gateway, but a first manual backup and throwaway restore still need to be proven. Moving app roles to `DatabaseRole` after a chart/operator upgrade is cleanup, not a current readiness blocker. |
-| Authentik | Managed by `argocd/catalog/base/authentik.yaml` in the `authentik` namespace. `services/base/authentik/requirements/` creates the namespace, Authentik database, canonical CNPG password Secret in `cnpg-database`, and ESO copies of the app config and CNPG CA into `authentik`. The chart disables bundled PostgreSQL, consumes the copied config Secret, mounts the copied CNPG server CA, uses PostgreSQL `verify-full`, keeps chart service account creation enabled, enables server/worker metrics ServiceMonitors, and exposes `sso.d-reis.com` plus `sso.k8s.d-reis.com` through Traefik/cert-manager/external-dns. OpenTofu codifies users/groups, OIDC apps, proxy apps, and provider attachments from the ArgoCD catalog. | The SSO restore contract is documented in `docs/restore-contract.md`. SMTP is not part of the current readiness gate unless email flows become a gate. |
+| Authentik | Managed by `argocd/catalog/base/authentik.yaml` in the `authentik` namespace. `services/base/authentik/requirements/` creates the namespace, Authentik database, canonical CNPG password Secret in `cnpg-database`, and ESO copies of the app config and CNPG CA into `authentik`. The chart disables bundled PostgreSQL, consumes the copied config Secret, mounts the copied CNPG server CA, uses PostgreSQL `verify-full`, keeps chart service account creation enabled, enables server/worker metrics ServiceMonitors, and exposes `sso.d-reis.com` plus `sso.k8s.d-reis.com` through Traefik/cert-manager/external-dns. OpenTofu codifies users/groups, OIDC apps, proxy apps, and provider attachments from the ArgoCD catalog. | The SSO restore contract is documented in `docs/restore-contract.md`. SMTP relay is tracked as a readiness item so app mail and alert mail fanout do not depend on per-app SMTP wiring. |
 | Vaultwarden | Managed by `argocd/catalog/app/vaultwarden.yaml`. Uses ZFS PVCs, TLS/DNS annotations, SMTP Secret, Bitwarden installation Secret, and currently `database.type: default` with a FIXME to move off SQLite. | App modernization remains open, but Vaultwarden is not a current readiness blocker. |
 | Vikunja | Managed by `argocd/catalog/app/vikunja.yaml`. Uses ZFS PVCs and TLS/DNS annotations. Current values define file and database PVCs, so it is still effectively local-state backed. | App modernization remains open, but Vikunja is not a current readiness blocker. |
 | Odoo | `services/app/odoo/values.yaml` exists, but there is no `argocd/catalog/app/odoo.yaml`. | Intentionally parked until the chart/database/security issues are handled. Do not treat this as a readiness blocker for the current app set. |
-| Observability | Catalog/value files codify `monitoring-crds`, `monitoring`, `node-exporter`, `loki`, `alloy`, `push`/ntfy, and `apprise`, plus chart-native metrics integrations for current platform/base services, including Authentik. `terraform/push` owns generated ntfy users/tokens/ACL config, Apprise destination config, and the mobile client Secret. Alertmanager routes low/medium/high/critical alerts through Apprise to ntfy. Observability PVCs are disposable readiness state, not backup targets. | Sync and prove notification delivery with one synthetic Alertmanager alert and one ArgoCD failure/degraded condition. |
-| Object-store gateway | `argocd/catalog/platform/object-store-gateway.yaml` deploys a cluster-internal rclone S3 gateway backed by rsync.net over SFTP/SCP-compatible SSH. It exposes `object-store-gateway.object-store.svc.cluster.local:9000`. Host and user are checked-in config for `zh3928.rsync.net`/`zh3928`; the SSH key and S3 gateway password are generated by External Secrets; known hosts are populated by an init-time `ssh-keyscan`. | Needs a live sync/test and the generated SSH public key registered on rsync.net. This is a general external object-store endpoint; AWS S3 can still be preferred for workloads that need a real object store. |
-| Backups | No backup controller is present. CNPG object-store backups are configured against the rsync.net-backed gateway. Volume backups are absent. The object-store gateway is available as a low-cost target, but backups can also use AWS S3 where that is the better fit. | Needs a proven CNPG backup/restore and PVC backup coverage for workload state. Observability history/cache is intentionally excluded unless that policy changes later. |
+| Observability | Catalog/value files codify `monitoring-crds`, `monitoring`, `node-exporter`, `loki`, `alloy`, `push`/ntfy, and `apprise`, plus chart-native metrics integrations for current platform/base services, including Authentik. `terraform/push` owns generated ntfy users/tokens/ACL config, the Alertmanager ntfy publisher token, Apprise destination config, and the mobile client Secret. Alertmanager routes low/medium/high/critical alerts directly to ntfy and also to Apprise as a generic fanout path. Observability PVCs are disposable readiness state, not backup targets. | Sync and prove notification delivery with one synthetic Alertmanager alert and one ArgoCD failure/degraded condition. |
+| Object-store gateway | `argocd/catalog/platform/object-store-gateway.yaml` deploys a cluster-internal rclone S3 gateway backed by rsync.net over SFTP/SCP-compatible SSH. It exposes `object-store-gateway.object-store.svc.cluster.local:9000`. Host and user are checked-in config for `zh3928.rsync.net`/`zh3928`; the SSH key and S3 gateway password are generated by External Secrets; rsync.net host keys are pinned in a checked-in ConfigMap. | Needs a live sync/test and the generated SSH public key registered on rsync.net. This is a general external object-store endpoint; AWS S3 can still be preferred for workloads that need a real object store. |
+| Backups | CNPG object-store backups are configured against the rsync.net-backed gateway. `volsync` is installed as a platform app, and current app-owned PVCs declare VolSync/Restic backups to rsync.net through Restic's `rclone:` backend with checked-in host key pins and namespace-local generated SSH keys. Restic retention keeps 7 daily, 4 weekly, and 12 monthly snapshots per PVC. VolSync metrics, backup alerts, and a Grafana dashboard are declared with the VolSync platform app. Observability history/cache is intentionally excluded unless that policy changes later. | Needs a proven VolSync backup/restore. |
 
 ## Prioritized Readiness Work
 
@@ -44,9 +44,10 @@ repeatable convergence, day-to-day iteration, or debugging.
 | 2 | Done | Define restore inputs and secret ownership | High | Low | Turns the current implicit restore knowledge into a repeatable checklist without changing live workloads. |
 | 3 | Done | Disable ArgoCD local admin | Low | Low | ArgoCD is last in the bootstrap flow, so disabling the built-in local admin now fits the current SSO path. |
 | 4 | Done | Codify ArgoCD Projects and namespace ownership | High | Medium | Makes app categories and empty-cluster namespace creation real, while leaving root and CoreDNS in `default`. |
-| 5 | Open | Prove observability notifications | Medium | Low | Metrics, logs, and the shared Apprise/ntfy notification path are codified; live delivery still needs a synthetic alert test after sync. |
-| 6 | Open | Add backups | Low | Medium/High | Useful for full rebuilds, but current irreplaceable data is small and easily exported; implementation spans AWS, CNPG, and PVC tooling. |
-| 7 | Open | Enable automated sync | Low | Low | Make pruning/self-healing explicit only after projects, namespaces, observability, and backups are in place. |
+| 5 | Open | Prove observability notifications | Medium | Low | Metrics, logs, direct ntfy push, and Apprise fanout are codified; live delivery still needs a synthetic alert test after sync. |
+| 6 | Open | Prove backups | Low | Medium | CNPG and VolSync backup declarations are codified; live backup completion and throwaway restore still need to be proven before considering the path trusted. |
+| 7 | Open | Add SMTP relay | Medium | Medium | Provides one cluster mail path for apps and Apprise email fanout; Postfix is the simplest first target and can be scraped with `postfix_exporter`. |
+| 8 | Open | Enable automated sync | Low | Low | Make pruning/self-healing explicit only after projects, namespaces, observability, backups, and SMTP relay are in place. |
 
 Vaultwarden and Vikunja modernization is useful, but it is not part of the
 current readiness gate.
@@ -170,10 +171,11 @@ Implementation scope:
 - Add Loki and Alloy as platform apps, either as separate catalog entries or as
   one observability entry if the chart boundaries stay clean.
 - Add Apprise API and ntfy as part of the observability notification path.
-- Route Alertmanager notifications through Apprise API to ntfy.
+- Route Alertmanager notifications directly to ntfy and also to Apprise API as
+  the generic fanout path.
 - Configure ArgoCD notifications for sync failures and degraded applications to
-  use the same Apprise/ntfy path instead of creating a separate notification
-  channel.
+  use the same alert delivery endpoints instead of creating a separate
+  notification channel.
 - Use initial storage and retention defaults:
   - Prometheus: `10Gi` on `zfs`, `14d` retention, and about `8Gi`
     retention-size.
@@ -213,7 +215,8 @@ Acceptance checks:
 
 - Grafana is reachable through Traefik with a cert-manager certificate.
 - Prometheus has targets for ArgoCD, Traefik, cert-manager, external-dns, external-secrets, CNPG, and app pods where applicable.
-- One synthetic Alertmanager alert reaches ntfy through Apprise API.
+- One synthetic Alertmanager alert reaches ntfy directly, and the Apprise
+  fanout webhook accepts the same alert payload.
 - A deliberately failed ArgoCD sync sends one notification through that same
   path.
 
@@ -237,7 +240,8 @@ Object-store target:
   Retrieve it after first sync with:
   `kubectl -n object-store get secret object-store-gateway-rsyncnet-ssh -o jsonpath='{.data.publicKey}' | base64 -d`.
 - Generate the gateway's S3 access key Secret with ESO's `Password` generator.
-- Populate `known_hosts` at pod start with an init-time `ssh-keyscan`, not SSM.
+- Pin rsync.net host keys in checked-in config, not with a runtime
+  `ssh-keyscan`.
 - Create the `backups` bucket directory from the gateway init containers before
   serving S3, so CNPG archiving does not depend on a remembered manual folder
   creation step.
@@ -249,6 +253,9 @@ PostgreSQL:
 
 - Enable `backups.enabled` in `services/base/cnpg-cluster/values.yaml`.
 - Set the S3 endpoint, bucket/path, credentials, and retention.
+- Keep the CNPG S3 path as the parent prefix, for example `/postgres/`.
+  Barman appends the server name, which defaults to the cluster name, before
+  writing `base/` and `wals/`.
 - Do not enable S3 server-side encryption unless the rclone S3 endpoint is
   proven to accept the headers CNPG sends.
 - If the S3-compatible endpoint rejects newer boto3 checksum headers, set the
@@ -258,12 +265,18 @@ PostgreSQL:
 
 Volumes:
 
-- Add a platform backup controller, preferably VolSync with Restic for first implementation.
-- Add per-PVC backup manifests for:
+- VolSync is installed as the platform backup controller.
+- VolSync chart metrics are scraped through the chart ServiceMonitor, and local
+  dashboard/alert resources live under `services/platform/volsync/resources/`.
+- Current per-PVC backup manifests cover:
+  - Filestash state
+  - Vaultwarden data
   - Vaultwarden attachments/files
   - Vikunja files
-  - Authentik media, if applicable
-- Make snapshot-controller/VolumeSnapshot CRD ownership explicit if using CSI snapshots.
+  - Vikunja database
+- Authentik has no current PVC in this repo.
+- Make snapshot-controller/VolumeSnapshot CRD ownership explicit before moving
+  these backups from `copyMethod: Direct` to snapshot-based point-in-time copies.
 - Do not back up Prometheus, Loki, Grafana, Alertmanager, ntfy, or other
   observability PVCs by default; they are readiness debugging state, not
   restore-critical workload data.
@@ -276,13 +289,37 @@ Acceptance checks:
 - A CNPG-sized object upload does not OOM the rclone gateway or fail on S3
   compatibility headers.
 - A manual CNPG backup completes and appears in the bucket.
-- A VolSync backup completes for one non-critical PVC.
+- VolSync backups complete for the current app PVCs.
 - One throwaway restore is performed into a temporary namespace before trusting the setup.
 
-### 7. Enable Automated Sync
+### 7. Add SMTP Relay
+
+Add one internal outbound SMTP relay before final automated sync if app mail or
+email alert fanout is part of the ready cluster definition.
+
+- Start with Postfix unless a simpler maintained relay fits the deployment
+  constraints better.
+- Keep submission cluster-internal by default and make allowed sender domains,
+  upstream smarthost/TLS/auth, and queue/bounce handling explicit.
+- Manage relay credentials and policy through the existing GitOps/External
+  Secrets ownership pattern.
+- Expose relay metrics with `postfix_exporter`, then add a ServiceMonitor and a
+  small Grafana dashboard for queue size, queue age, and mail error rates.
+- Wire Apprise email fanout through the relay after the relay exists; keep ntfy
+  as the direct Alertmanager mobile path.
+
+Acceptance checks:
+
+- Authentik, Vaultwarden, or another non-critical app can send a test email
+  through the relay.
+- Apprise can add an email destination without bypassing the direct ntfy alert
+  path.
+- Prometheus scrapes the Postfix exporter and Grafana shows queue/error panels.
+
+### 8. Enable Automated Sync
 
 Do this last in readiness, after projects, namespace ownership, observability,
-and backups are in place.
+backups, and SMTP relay are in place.
 
 - Decide which root, ApplicationSet, and generated Applications should enable:
   - automated sync

@@ -18,9 +18,9 @@ To rebuild the readiness stack from an empty cluster, the inputs are:
 - Any SSM parameters referenced by readiness-scope `ExternalSecret` objects.
 
 The rsync.net-backed object-store gateway does not require SSM input values.
-Host and user are checked-in config, known hosts are scanned at pod start, and
-External Secrets generates both the rsync.net SSH key and the in-cluster S3
-gateway password. After the first sync, register the generated
+Host, user, and known hosts are checked-in config. External Secrets generates
+both the rsync.net SSH key and the in-cluster S3 gateway password. After the
+first sync, register the generated
 `object-store-gateway-rsyncnet-ssh` Secret's `publicKey` value with rsync.net:
 `kubectl -n object-store get secret object-store-gateway-rsyncnet-ssh -o jsonpath='{.data.publicKey}' | base64 -d`.
 
@@ -70,9 +70,12 @@ web-identity roles.
 | external-secrets AWS permissions | `terraform/aws` IAM role plus projected service-account token | No Kubernetes Secret in the steady state. |
 | External Secrets SSM input values | AWS SSM Parameter Store under the configured prefix | Only add readiness-scope non-generated values here; expose them with `ExternalSecret`. |
 | `aws-ssm` `ClusterSecretStore` | `services/platform/external-secrets/resources/store.yaml` | Recreated by ArgoCD after the external-secrets CRDs/controller exist. |
+| VolSync Restic repository password | `terraform/aws` `aws_ssm_parameter.volsync_restic_password` at `/external-secrets/volsync/restic-password` | Stored in SSM as a SecureString and copied into app namespaces by External Secrets. This must survive cluster loss or Restic repositories are unreadable. |
+| rsync.net known hosts | `services/platform/object-store-gateway/known-hosts.yaml` and app-owned VolSync backup manifests | Checked-in host key pins for `zh3928.rsync.net`; refresh deliberately if rsync.net rotates host keys. |
 | rsync.net object-store host and user | `services/platform/object-store-gateway/deployment.yaml` | Checked-in non-secret config for `zh3928.rsync.net` and `zh3928`. |
 | rsync.net object-store SSH key | ESO `SSHKey` generator in `services/platform/object-store-gateway/externalsecrets.yaml` | Created once in `object-store`; register the generated `publicKey` with rsync.net after first sync. A full empty-cluster rebuild creates a new key. |
 | rclone S3 gateway credentials | ESO `Password` generator in `services/platform/object-store-gateway/externalsecrets.yaml` | Created once in `object-store`; generated credentials protect only the in-cluster gateway and do not need off-cluster durability. |
+| VolSync rsync.net transport keys | ESO `SSHKey` generators in each backed-up app namespace | Created once per namespace; register each generated `publicKey` with rsync.net after first sync. These keys are intentionally separate from the S3 gateway key. |
 | CNPG backup S3 credentials `cnpg-backup-s3-auth` | ESO Kubernetes provider in `services/base/cnpg-cluster/requirements/s3-auth.yaml` | Copied into `cnpg-database` from the gateway credential Secret and remapped to the key names expected by CNPG/Barman. |
 | Authentik database password Secret `authentik-db-auth` | ESO `Password` generator in `services/base/authentik/requirements/db-secret.yaml` | Created once in `cnpg-database`; CNPG consumes it for the `authentik` role. |
 | Authentik config Secret `authentik-config` | ESO Kubernetes provider plus ESO `Password` generator in `services/base/authentik/requirements/secret-copy.yaml` | Created once in `authentik`; contains generated app secret and copied CNPG credentials. |

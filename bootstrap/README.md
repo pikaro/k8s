@@ -358,17 +358,39 @@ For an existing cluster that previously installed these CRDs through the
 
 ### Backups
 
+- Apply the AWS/OpenTofu module so the shared VolSync Restic password exists in
+    SSM:
+    ```
+    tofu -chdir=terraform/aws init
+    tofu -chdir=terraform/aws apply
+    ```
 - Sync the `object-store-gateway` Application.
 - Retrieve the generated Pubkey and upload to rsync:
     ```
     kubectl -n object-store get secret object-store-gateway-rsyncnet-ssh -o jsonpath='{.data.publicKey}' | base64 -d | ssh rsync "mkdir -p ~/.ssh && cat >> .ssh/authorized_keys"
     ```
-- Re-sync or restart `object-store-gateway` after registering the key. Its init
-    containers populate `known_hosts` and create the `backups` bucket directory
-    on the rsync.net remote before the S3 gateway starts.
+- Re-sync or restart `object-store-gateway` after registering the key. Its
+    checked-in `known_hosts` ConfigMap pins the rsync.net host keys, and its
+    init container creates the `backups` bucket directory on the rsync.net
+    remote before the S3 gateway starts.
+- Sync the `volsync` Application.
 - Sync the `filestash` Application.
+- Re-sync `vaultwarden` and `vikunja` after `volsync` exists.
+- Register the generated namespace-local VolSync SSH keys with rsync.net:
+    ```
+    for ns in files vaultwarden vikunja; do kubectl -n "$ns" get secret volsync-rsyncnet-backup-ssh -o jsonpath='{.data.publicKey}' | base64 -d; done | ssh rsync "mkdir -p ~/.ssh && cat >> .ssh/authorized_keys"
+    ```
+- VolSync PVC backups write through Restic's `rclone:` backend directly to
+    rsync.net, not through the S3 gateway. Restic initializes each per-PVC
+    repository path on the remote during the first successful backup.
 - Confirm that you can log into Filestash and create a folder there.
 - Sync the `cnpg-cluster` Application and confirm the first backup succeeds.
+- Confirm VolSync has recent successful backups for:
+    - `files/filestash-state`
+    - `vaultwarden/vaultwarden-data-vaultwarden-0`
+    - `vaultwarden/vaultwarden-files-vaultwarden-0`
+    - `vikunja/vikunja-data`
+    - `vikunja/vikunja-database`
 
 ### Remaining services
 

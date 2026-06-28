@@ -282,23 +282,93 @@ alertmanager:
       - name: "null"
       - name: push-low
         webhook_configs:
-          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-low/?:alerts%5B0%5D.labels.alertname=title&:alerts%5B0%5D.annotations.description=body&:format=text&:type=info"
+          - url: "http://push.observability.svc.cluster.local/"
             send_resolved: true
+            http_config:
+              authorization:
+                credentials_file: /etc/alertmanager/secrets/push-ntfy-config/NTFY_ALERTMANAGER_TOKEN
+            payload:
+              topic: alerts-low
+              title: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ .CommonLabels.alertname }}'
+              message: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
+              priority: "2"
+              click: https://o11y.d-reis.com/alerting/list
+              sequence_id: 'am-{{ .Receiver }}-{{ .GroupLabels.SortedPairs | toJson | reReplaceAll "[^A-Za-z0-9_.-]" "_" }}'
+          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-low/"
+            send_resolved: true
+            payload:
+              title: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ .CommonLabels.alertname }}'
+              body: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
+              format: text
+              type: '{{ if eq .Status "resolved" }}success{{ else }}info{{ end }}'
       - name: push-medium
         webhook_configs:
-          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-medium/?:alerts%5B0%5D.labels.alertname=title&:alerts%5B0%5D.annotations.description=body&:format=text&:type=warning"
+          - url: "http://push.observability.svc.cluster.local/"
             send_resolved: true
+            http_config:
+              authorization:
+                credentials_file: /etc/alertmanager/secrets/push-ntfy-config/NTFY_ALERTMANAGER_TOKEN
+            payload:
+              topic: alerts-medium
+              title: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ .CommonLabels.alertname }}'
+              message: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
+              priority: "3"
+              click: https://o11y.d-reis.com/alerting/list
+              sequence_id: 'am-{{ .Receiver }}-{{ .GroupLabels.SortedPairs | toJson | reReplaceAll "[^A-Za-z0-9_.-]" "_" }}'
+          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-medium/"
+            send_resolved: true
+            payload:
+              title: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ .CommonLabels.alertname }}'
+              body: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
+              format: text
+              type: '{{ if eq .Status "resolved" }}success{{ else }}warning{{ end }}'
       - name: push-high
         webhook_configs:
-          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-high/?:alerts%5B0%5D.labels.alertname=title&:alerts%5B0%5D.annotations.description=body&:format=text&:type=failure"
+          - url: "http://push.observability.svc.cluster.local/"
             send_resolved: true
+            http_config:
+              authorization:
+                credentials_file: /etc/alertmanager/secrets/push-ntfy-config/NTFY_ALERTMANAGER_TOKEN
+            payload:
+              topic: alerts-high
+              title: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ .CommonLabels.alertname }}'
+              message: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
+              priority: "4"
+              click: https://o11y.d-reis.com/alerting/list
+              sequence_id: 'am-{{ .Receiver }}-{{ .GroupLabels.SortedPairs | toJson | reReplaceAll "[^A-Za-z0-9_.-]" "_" }}'
+          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-high/"
+            send_resolved: true
+            payload:
+              title: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ .CommonLabels.alertname }}'
+              body: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
+              format: text
+              type: '{{ if eq .Status "resolved" }}success{{ else }}failure{{ end }}'
       - name: push-critical
         webhook_configs:
-          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-critical/?:alerts%5B0%5D.labels.alertname=title&:alerts%5B0%5D.annotations.description=body&:format=text&:type=failure"
+          - url: "http://push.observability.svc.cluster.local/"
             send_resolved: true
+            http_config:
+              authorization:
+                credentials_file: /etc/alertmanager/secrets/push-ntfy-config/NTFY_ALERTMANAGER_TOKEN
+            payload:
+              topic: alerts-critical
+              title: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ .CommonLabels.alertname }}'
+              message: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
+              priority: "5"
+              click: https://o11y.d-reis.com/alerting/list
+              sequence_id: 'am-{{ .Receiver }}-{{ .GroupLabels.SortedPairs | toJson | reReplaceAll "[^A-Za-z0-9_.-]" "_" }}'
+          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-critical/"
+            send_resolved: true
+            payload:
+              title: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ .CommonLabels.alertname }}'
+              body: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
+              format: text
+              type: '{{ if eq .Status "resolved" }}success{{ else }}failure{{ end }}'
     templates:
       - /etc/alertmanager/config/*.tmpl
   alertmanagerSpec:
+    secrets:
+      - push-ntfy-config
     replicas: 1
     storage:
       volumeClaimTemplate:

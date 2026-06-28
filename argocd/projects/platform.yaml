@@ -34,6 +34,8 @@ spec:
       namespace: openebs
     - server: https://kubernetes.default.svc
       namespace: traefik
+    - server: https://kubernetes.default.svc
+      namespace: volsync-system
   clusterResourceWhitelist:
     - group: "*"
       kind: "*"

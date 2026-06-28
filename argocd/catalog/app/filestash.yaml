@@ -1,6 +1,7 @@
 sourceType: kustomize
 name: filestash
 namespace: files
+skipDryRunOnMissingResource: "true"
 authentik:
   name: Filestash
   protocol: proxy

@@ -4,5 +4,6 @@ namespace: object-store
 
 resources:
   - externalsecrets.yaml
+  - known-hosts.yaml
   - deployment.yaml
   - service.yaml

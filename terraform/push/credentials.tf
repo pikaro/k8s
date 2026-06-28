@@ -30,20 +30,16 @@ locals {
 
   alert_topics = {
     low = {
-      topic    = "alerts-low"
-      priority = "low"
+      topic = "alerts-low"
     }
     medium = {
-      topic    = "alerts-medium"
-      priority = "default"
+      topic = "alerts-medium"
     }
     high = {
-      topic    = "alerts-high"
-      priority = "high"
+      topic = "alerts-high"
     }
     critical = {
-      topic    = "alerts-critical"
-      priority = "max"
+      topic = "alerts-critical"
     }
   }
 
@@ -66,8 +62,10 @@ locals {
     "${var.mobile_user}:${local.ntfy_mobile_token}:Mobile alerts",
   ]
 
+  # Alertmanager publishes mobile push directly to ntfy. Keep Apprise empty
+  # until non-ntfy fanout destinations, such as email, are configured.
   apprise_urls = {
-    for severity, config in local.alert_topics :
-    severity => "ntfy://${urlencode(local.ntfy_alertmanager_token)}@${var.internal_push_host}/${config.topic}?auth=token&mode=private&priority=${config.priority}&click=${urlencode(var.grafana_alerts_url)}"
+    for severity in local.alert_topic_order :
+    severity => ""
   }
 }

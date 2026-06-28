@@ -26,29 +26,6 @@ spec:
         seccompProfile:
           type: RuntimeDefault
       initContainers:
-        - name: scan-rsyncnet-host-key
-          image: alpine/git:latest
-          imagePullPolicy: IfNotPresent
-          command:
-            - /bin/sh
-            - -ec
-          args:
-            - ssh-keyscan -T 10 -t rsa,ecdsa,ed25519 zh3928.rsync.net > /known-hosts/known_hosts
-          resources:
-            requests:
-              cpu: 5m
-              memory: 16Mi
-            limits:
-              memory: 64Mi
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop:
-                - ALL
-          volumeMounts:
-            - name: known-hosts
-              mountPath: /known-hosts
         - name: ensure-backups-bucket
           image: rclone/rclone:latest
           imagePullPolicy: IfNotPresent
@@ -193,8 +170,11 @@ spec:
               - key: privateKey
                 path: id_ed25519
         - name: known-hosts
-          emptyDir:
-            medium: Memory
+          configMap:
+            name: rsyncnet-known-hosts
+            items:
+              - key: known_hosts
+                path: known_hosts
         - name: tmp
           emptyDir:
             medium: Memory

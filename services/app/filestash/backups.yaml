@@ -1,0 +1,116 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: files
+  annotations:
+    volsync.backube/privileged-movers: "true"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: volsync-rsyncnet-known-hosts
+  annotations:
+    argocd.argoproj.io/sync-wave: "-20"
+type: Opaque
+data:
+  known_hosts: emgzOTI4LnJzeW5jLm5ldCBzc2gtcnNhIEFBQUFCM056YUMxeWMyRUFBQUFEQVFBQkFBQUJBUURQZ0h4UXlhRGFWeFVlZm9VSlpPL2xJVGgwR3Awc3FiUDdIZWpRY0NmWmk3Z0FjdU02L0lBdVVYTEhGSW1lZkNIaDUyeDZUL2NIeGdMMXF6MjZHS2dkeHlrbDA2V1JYbFJJdUU0NVFGU3kvY2Q5SktyNmw1OGZLcTMwQXBtWFJzQ053RnJNbEZQb0VwQ1RxeHpkZFo5Y0xYczFZdDlkUnh2RmxRVkV1QXp3N2F5dnQ4REU2UlA5L0NIWVZwNTR3YmJ2VVRvRUNHd3U3MHN4WTF2Rmc1MUsrdk5wdkozSjB0NWozczRjMVdsczRCckl3cWkyVThrcUNxOU5qMkNVSVFxak0rOTNDU3FFYWNSM3FPR3ZHLzZRTXpkNzMzd3pwSi9pWmVlK2xjeVRZekEwWU5Nb3NuYUYwMWhydjdOTXd0WjZ4UkZMbEpadE1aN0pwZnlTck9Ccgp6aDM5MjgucnN5bmMubmV0IGVjZHNhLXNoYTItbmlzdHAyNTYgQUFBQUUyVmpaSE5oTFhOb1lUSXRibWx6ZEhBeU5UWUFBQUFJYm1semRIQXlOVFlBQUFCQkJMUjJ1eitZTG4yS2lRSzBMdXU4cmhmV1M2TEhnVWZHQVdCMWo4ck0yTUtuNEtaMi9MaElYMUNZa1BLTVRQeEhyNm16YXllTDFUMWh5Skl5bHhYdjBCWT0KemgzOTI4LnJzeW5jLm5ldCBzc2gtZWQyNTUxOSBBQUFBQzNOemFDMWxaREkxTlRFNUFBQUFJSnRjbGl6ZUJ5MVVvM0Q4NkhwZ0QzTE9OR1ZIMENKME5UK1lmWmxsZEFKZAo=
+---
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: SSHKey
+metadata:
+  name: volsync-rsyncnet-backup-ssh
+  annotations:
+    argocd.argoproj.io/sync-wave: "-20"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  keyType: "ed25519"
+  comment: "volsync-files@thule"
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: volsync-rsyncnet-backup-ssh
+  annotations:
+    argocd.argoproj.io/sync-wave: "-19"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  refreshPolicy: CreatedOnce
+  target:
+    name: volsync-rsyncnet-backup-ssh
+    creationPolicy: Orphan
+  dataFrom:
+    - sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: SSHKey
+          name: volsync-rsyncnet-backup-ssh
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: filestash-state-restic
+  annotations:
+    argocd.argoproj.io/sync-wave: "-17"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: aws-ssm
+  target:
+    name: filestash-state-restic
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+      type: Opaque
+      data:
+        RESTIC_REPOSITORY: rclone:rsyncnet:object-store/thule/backups/volsync/files/filestash-state
+        RESTIC_PASSWORD: "{{ .RESTIC_PASSWORD }}"
+        RCLONE_CONFIG_RSYNCNET_TYPE: sftp
+        RCLONE_CONFIG_RSYNCNET_HOST: zh3928.rsync.net
+        RCLONE_CONFIG_RSYNCNET_USER: zh3928
+        RCLONE_CONFIG_RSYNCNET_PORT: "22"
+        RCLONE_CONFIG_RSYNCNET_KEY_FILE: /mnt/rsyncnet-ssh/id_ed25519
+        RCLONE_CONFIG_RSYNCNET_KNOWN_HOSTS_FILE: /mnt/rsyncnet-known-hosts/known_hosts
+        RCLONE_CONFIG_RSYNCNET_SHELL_TYPE: unix
+  data:
+    - secretKey: RESTIC_PASSWORD
+      remoteRef:
+        key: /external-secrets/volsync/restic-password
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: filestash-state
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  sourcePVC: filestash-state
+  trigger:
+    schedule: "0 3 * * *"
+  restic:
+    repository: filestash-state-restic
+    copyMethod: Direct
+    pruneIntervalDays: 7
+    cacheStorageClassName: zfs-temp
+    retain:
+      daily: 7
+      weekly: 4
+      monthly: 12
+    moverVolumes:
+      - mountPath: rsyncnet-ssh
+        volumeSource:
+          secret:
+            secretName: volsync-rsyncnet-backup-ssh
+            defaultMode: 0400
+            items:
+              - key: privateKey
+                path: id_ed25519
+      - mountPath: rsyncnet-known-hosts
+        volumeSource:
+          secret:
+            secretName: volsync-rsyncnet-known-hosts
+            defaultMode: 0444
+            items:
+              - key: known_hosts
+                path: known_hosts

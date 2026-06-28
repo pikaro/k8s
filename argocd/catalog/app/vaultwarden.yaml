@@ -1,3 +1,5 @@
 name: vaultwarden
 chartRepo: https://guerzon.github.io/vaultwarden
 chartVersion: 0.34.4
+resourcesPath: services/app/vaultwarden/resources
+skipDryRunOnMissingResource: "true"

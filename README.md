@@ -25,6 +25,9 @@ This repo is the GitOps and OpenTofu source for the Thule Kubernetes cluster.
    tofu -chdir=terraform/push apply
    ```
 
+   `terraform/aws` also owns the shared VolSync Restic repository password in
+   SSM Parameter Store. Apply it before syncing app backup resources.
+
    `terraform/push` owns generated ntfy users, tokens, ACL config, Apprise
    destination config, and the mobile client Secret. The push and Apprise
    Deployments stay in Kubernetes/GitOps; OpenTofu only writes the generated
@@ -35,6 +38,14 @@ This repo is the GitOps and OpenTofu source for the Thule Kubernetes cluster.
    - `push`
    - `apprise`
    - `monitoring`
+
+   For PVC backups, sync `object-store-gateway`, then `volsync`, then resync
+   the backed-up app Applications. Current VolSync backup declarations live
+   with the owning apps and use Restic retention of 7 daily, 4 weekly, and 12
+   monthly snapshots. The mover uses Restic's `rclone:` backend to write to
+   rsync.net over SFTP directly; it does not write through the in-cluster S3
+   gateway. Each backed-up namespace owns its own generated rsync.net SSH key;
+   register those public keys after the app backup resources first sync.
 
 Observability PVCs are disposable readiness/debugging state. Do not treat
 Prometheus, Loki, Grafana, Alertmanager, Apprise, or ntfy local state as backup

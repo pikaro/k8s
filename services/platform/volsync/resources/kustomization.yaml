@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: volsync-system
+
+resources:
+  - alerts.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/name: volsync-backups-dashboard
+    app.kubernetes.io/part-of: volsync
+configMapGenerator:
+  - name: volsync-backups-dashboard
+    files:
+      - volsync-backups.json

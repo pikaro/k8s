@@ -1,0 +1,38 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: volsync-backups
+  labels:
+    app.kubernetes.io/name: volsync-backups
+    app.kubernetes.io/part-of: volsync
+spec:
+  groups:
+    - name: volsync.backups
+      rules:
+        - alert: VolSyncBackupOutOfSync
+          expr: volsync_volume_out_of_sync{role="source"} == 1
+          for: 30m
+          labels:
+            severity: high
+          annotations:
+            summary: "VolSync backup {{ $labels.obj_namespace }}/{{ $labels.obj_name }} is out of sync"
+            description: "VolSync reports the source backup as out of sync for more than 30 minutes."
+        - alert: VolSyncBackupMissedInterval
+          expr: increase(volsync_missed_intervals_total{role="source"}[2h]) > 0
+          for: 5m
+          labels:
+            severity: medium
+          annotations:
+            summary: "VolSync backup {{ $labels.obj_namespace }}/{{ $labels.obj_name }} missed a schedule"
+            description: "The previous backup did not complete before the next scheduled run."
+        - alert: VolSyncBackupStale
+          expr: |
+            (volsync_sync_duration_seconds_count{role="source"} > 0)
+              unless
+            (increase(volsync_sync_duration_seconds_count{role="source"}[30h]) > 0)
+          for: 2h
+          labels:
+            severity: high
+          annotations:
+            summary: "VolSync backup {{ $labels.obj_namespace }}/{{ $labels.obj_name }} has no recent successful run"
+            description: "A source that has previously completed a sync has not completed another sync within 30 hours."

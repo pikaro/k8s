@@ -14,8 +14,9 @@ post-readiness app modernization, or automated sync.
 - `loki`: single-binary Loki in `observability`.
 - `alloy`: Alloy DaemonSet in `observability`, shipping pod logs to Loki.
 - `authentik`: chart-native server and worker metrics ServiceMonitors.
-- Push notifications: Alertmanager to Apprise API to an exposed push service,
-  backed by ntfy at `push.d-reis.com`.
+- Push notifications: Alertmanager publishes mobile alerts directly to ntfy at
+  `push.d-reis.com`, and also calls Apprise API as the generic non-ntfy fanout
+  path.
 
 All implemented apps are `platform` apps. Namespace creation stays with the
 generated ApplicationSet `CreateNamespace=true` rule unless the namespace needs
@@ -68,10 +69,11 @@ OpenTofu owns generated notification credentials and the Kubernetes Secrets that
 carry those credentials into the GitOps-managed apps. The module name is
 `terraform/push`. It owns:
 
-- `push-ntfy-config`, containing ntfy provisioned users, ACLs, and access
-  tokens;
+- `push-ntfy-config`, containing ntfy provisioned users, ACLs, access tokens,
+  and the Alertmanager publisher token mounted by Alertmanager;
 - `apprise-config`, containing the Apprise destination files for low, medium,
-  high, and critical alert topics;
+  high, and critical alert topics. These stay empty until non-ntfy fanout
+  destinations are configured, so direct ntfy delivery is not duplicated;
 - `push-mobile`, containing the human/mobile subscription endpoint, user,
   password, token, and topic list.
 
@@ -107,13 +109,14 @@ belongs in Kubernetes manifests/Helm values.
    They rely on `monitoring-crds`, not on the runtime observability stack.
 9. `terraform/push` writes generated ntfy and Apprise Secrets into
    `observability`. It should be applied after the namespace exists and before
-   `push` is expected to start.
+   `push` or Alertmanager are expected to start.
 10. The `push` app exposes ntfy at `push.d-reis.com`, with private native ntfy
     auth and four alert topics.
 11. The `apprise` app runs internal-only and reads Terraform-created Apprise
     config files from `apprise-config`.
-12. Alertmanager routes low, medium, high, and critical alerts to Apprise, which
-    publishes to the matching ntfy topic.
+12. Alertmanager routes low, medium, high, and critical alerts directly to the
+    matching ntfy topic, and also posts the same state-aware payload to Apprise
+    for future non-ntfy fanout such as email.
 
 ## Drafted Configuration
 
@@ -215,13 +218,17 @@ pushing.
 - The four initial topics are literal: `alerts-low`, `alerts-medium`,
   `alerts-high`, and `alerts-critical`. ACLs/tokens are the security boundary.
 - The personal/mobile user is read-only on `alerts-*`; publishing to those
-  topics is reserved for Alertmanager via Apprise.
+  topics is reserved for Alertmanager directly.
 - Alertmanager sends alert name as the notification title and the alert
-  description as the body. The ntfy click target is the public Grafana alerting
-  list, so mobile notifications do not expose Prometheus' internal
-  `generatorURL`.
+  description as the body. Resolved notifications are explicitly prefixed as
+  resolved and reuse a deterministic ntfy sequence ID, so clients can update
+  the original notification instead of showing an indistinguishable duplicate.
+  The ntfy click target is the public Grafana alerting list, so mobile
+  notifications do not expose Prometheus' internal `generatorURL`.
 - Apprise API should be a direct Kustomize Deployment/Service using the
   official container, not a third-party Helm chart.
+- Apprise is the generic fanout path, not the ntfy adapter. Do not point
+  Apprise back at ntfy while Alertmanager publishes to ntfy directly.
 - Alertmanager repeat timing starts as low `24h`, medium `12h`, high `4h`, and
   critical `30m`.
 - CoreDNS metrics are enabled through the CoreDNS chart once `monitoring-crds`
@@ -237,7 +244,8 @@ is operational validation after sync:
 3. Confirm the ntfy mobile client can connect to `push.d-reis.com` with the
    `push-mobile` Secret values.
 4. Fire one synthetic Alertmanager alert and one deliberately failed ArgoCD sync
-   or degraded app condition to prove the shared notification path.
+   or degraded app condition to prove direct ntfy delivery and the Apprise
+   fanout webhook.
 5. Improve notification body formatting if the sparse first-pass payload is too
    thin in daily use.
 
@@ -281,7 +289,7 @@ is operational validation after sync:
 
    CoreDNS is handled by the CoreDNS chart's own metrics ServiceMonitor.
 8. Configure Alertmanager to route low, medium, high, and critical alerts to
-   Apprise, which publishes to ntfy.
+   direct ntfy webhooks plus Apprise fanout webhooks.
 
 ## Push App Plan
 
@@ -303,7 +311,9 @@ is operational validation after sync:
 5. Disable Apprise's separate persistent execution store with an empty
    `APPRISE_STORAGE_DIR`; notification history is not restore-critical and a
    read-only Secret-backed `/config` would otherwise fail `/status`.
-6. Allow only the ntfy Apprise service plugin.
+6. Keep Apprise destination files empty until a non-ntfy fanout destination is
+   added. Adding SMTP/email fanout should also update `APPRISE_ALLOW_SERVICES`
+   to permit the required mail plugin.
 
 ## Node-Exporter App Plan
 
@@ -362,6 +372,8 @@ These are enabled in the owning chart values and rely on `monitoring-crds`:
   error-rate trends by namespace and by pod using Loki `detected_level`
   metadata.
 - Alloy: ServiceMonitor for controller health and scrape status.
+- VolSync: chart ServiceMonitor, local backup alerts, and a Grafana dashboard
+  for backup freshness, missed intervals, out-of-sync state, and duration.
 
 ## Alerting Baseline
 
@@ -405,7 +417,7 @@ Imported chart rules that use `warning` should route as `medium`.
    Prometheus, Alertmanager, Grafana, and enabled component ServiceMonitors.
 14. Confirm ntfy login/subscription using the `push-mobile` Secret.
 15. Fire one synthetic Alertmanager alert and one deliberately failed ArgoCD
-    sync to prove the shared notification path.
+    sync to prove direct ntfy delivery and the Apprise fanout webhook.
 
 ## Data-Loss Expectations
 
