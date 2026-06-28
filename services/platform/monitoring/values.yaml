@@ -8,6 +8,23 @@ kubeApiServer:
 
 kubelet:
   enabled: true
+  serviceMonitor:
+    # Avoid direct node-IP scrapes; this cluster reaches kubelet reliably through the API server proxy.
+    relabelings: &kubeletApiProxyRelabelings
+      - targetLabel: cluster
+        replacement: thule
+      - targetLabel: __address__
+        replacement: kubernetes.default.svc:443
+      - sourceLabels:
+          - __meta_kubernetes_endpoint_address_target_name
+          - __metrics_path__
+        separator: ;
+        regex: (.+);/(.+)
+        targetLabel: __metrics_path__
+        replacement: /api/v1/nodes/${1}/proxy/${2}
+    cAdvisorRelabelings: *kubeletApiProxyRelabelings
+    probesRelabelings: *kubeletApiProxyRelabelings
+    resourceRelabelings: *kubeletApiProxyRelabelings
 
 kubeControllerManager:
   enabled: false
@@ -26,6 +43,11 @@ coreDns:
 
 kube-state-metrics:
   fullnameOverride: kube-state-metrics
+  prometheus:
+    monitor:
+      relabelings:
+        - targetLabel: cluster
+          replacement: thule
 
 nodeExporter:
   enabled: false
@@ -167,6 +189,13 @@ alertmanager:
 
 prometheus:
   enabled: true
+  additionalRulesForClusterRole:
+    - apiGroups:
+        - ""
+      resources:
+        - nodes/proxy
+      verbs:
+        - get
   prometheusSpec:
     replicas: 1
     shards: 1

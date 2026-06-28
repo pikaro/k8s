@@ -1,6 +1,6 @@
 fullnameOverride: node-exporter
 
-hostNetwork: true
+hostNetwork: false
 hostPID: true
 hostIPC: false
 
@@ -19,7 +19,7 @@ service:
   port: 9100
   targetPort: 9100
   portName: metrics
-  listenOnAllInterfaces: false
+  listenOnAllInterfaces: true
   annotations:
     prometheus.io/scrape: "false"
 
@@ -28,6 +28,9 @@ prometheus:
     enabled: true
     attachMetadata:
       node: true
+    relabelings:
+      - targetLabel: cluster
+        replacement: thule
     scrapeTimeout: 10s
 
 resources:
