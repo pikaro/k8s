@@ -282,19 +282,19 @@ alertmanager:
       - name: "null"
       - name: push-low
         webhook_configs:
-          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-low/?:alerts%5B0%5D.labels.alertname=title&:alerts%5B0%5D.generatorURL=body&:format=text&:type=info"
+          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-low/?:alerts%5B0%5D.labels.alertname=title&:alerts%5B0%5D.annotations.description=body&:format=text&:type=info"
             send_resolved: true
       - name: push-medium
         webhook_configs:
-          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-medium/?:alerts%5B0%5D.labels.alertname=title&:alerts%5B0%5D.generatorURL=body&:format=text&:type=warning"
+          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-medium/?:alerts%5B0%5D.labels.alertname=title&:alerts%5B0%5D.annotations.description=body&:format=text&:type=warning"
             send_resolved: true
       - name: push-high
         webhook_configs:
-          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-high/?:alerts%5B0%5D.labels.alertname=title&:alerts%5B0%5D.generatorURL=body&:format=text&:type=failure"
+          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-high/?:alerts%5B0%5D.labels.alertname=title&:alerts%5B0%5D.annotations.description=body&:format=text&:type=failure"
             send_resolved: true
       - name: push-critical
         webhook_configs:
-          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-critical/?:alerts%5B0%5D.labels.alertname=title&:alerts%5B0%5D.generatorURL=body&:format=text&:type=failure"
+          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-critical/?:alerts%5B0%5D.labels.alertname=title&:alerts%5B0%5D.annotations.description=body&:format=text&:type=failure"
             send_resolved: true
     templates:
       - /etc/alertmanager/config/*.tmpl
@@ -317,6 +317,7 @@ prometheus:
         - ""
       resources:
         - nodes/proxy
+        - services/proxy
       verbs:
         - get
   prometheusSpec:

@@ -5,3 +5,4 @@ commonAnnotations:
 resources:
   - dashboard.yaml
   - middleware.forward.yaml
+  - servicemonitor.yaml

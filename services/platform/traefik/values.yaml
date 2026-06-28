@@ -42,10 +42,7 @@ metrics:
     service:
       enabled: true
     serviceMonitor:
-      enabled: true
-      relabelings:
-        - targetLabel: __address__
-          replacement: traefik-metrics.traefik.svc.cluster.local:9101
+      enabled: false
 
 updateStrategy:
   type: Recreate

@@ -216,9 +216,10 @@ pushing.
   `alerts-high`, and `alerts-critical`. ACLs/tokens are the security boundary.
 - The personal/mobile user is read-only on `alerts-*`; publishing to those
   topics is reserved for Alertmanager via Apprise.
-- Alertmanager sends alert name as the notification title and the Prometheus
-  generator URL as the body. This is deliberately sparse but robust; richer
-  templates can be added after the transport is proven.
+- Alertmanager sends alert name as the notification title and the alert
+  description as the body. The ntfy click target is the public Grafana alerting
+  list, so mobile notifications do not expose Prometheus' internal
+  `generatorURL`.
 - Apprise API should be a direct Kustomize Deployment/Service using the
   official container, not a third-party Helm chart.
 - Alertmanager repeat timing starts as low `24h`, medium `12h`, high `4h`, and
@@ -344,8 +345,11 @@ is operational validation after sync:
 These are enabled in the owning chart values and rely on `monitoring-crds`:
 
 - ArgoCD: metrics and ServiceMonitors for Redis, controller, repo-server,
-  server, Dex, ApplicationSet controller, and notifications.
-- Traefik: Prometheus metrics Service and ServiceMonitor.
+  server, ApplicationSet controller, and notifications. Dex is disabled because
+  ArgoCD uses Authentik OIDC directly.
+- Traefik: Prometheus metrics Service plus an explicit ServiceMonitor that
+  scrapes through the Kubernetes API service proxy, keeping Talos' host firewall
+  closed on the metrics port.
 - cert-manager: ServiceMonitor for controller, cainjector, and webhook.
 - external-dns: metrics ServiceMonitor.
 - external-secrets: ServiceMonitors and Grafana dashboard ConfigMap.
