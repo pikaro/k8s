@@ -448,12 +448,49 @@
             "uid": "$logs"
           },
           "editorMode": "code",
-          "expr": "{namespace=~\"$namespace\", pod=~\"$pod\"} | detected_level=~\"warn|warning|error|err|critical|crit|fatal|panic|emergency|alert\"",
+          "expr": "{namespace=~\"$namespace\", pod=~\"$pod\"} | detected_level=~\"error|err|critical|crit|fatal|panic|emergency|alert\"",
           "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "Recent warnings and errors",
+      "title": "Recent errors",
+      "type": "logs"
+    },
+    {
+      "datasource": {
+        "type": "loki",
+        "uid": "$logs"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "id": 9,
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "$logs"
+          },
+          "editorMode": "code",
+          "expr": "{namespace=~\"$namespace\", pod=~\"$pod\"} | detected_level=~\"warn|warning\"",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "title": "Recent warnings",
       "type": "logs"
     }
   ],
