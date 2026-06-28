@@ -164,6 +164,10 @@ These are enough to review the standard metrics/logging shape before pushing.
   it still listens in the node network namespace, but the chart binds to the
   node IP rather than `0.0.0.0`.
 - Keep Loki labels low-cardinality: namespace, pod, container, app, and node.
+- Disable Loki's built-in log-level discovery and set `detected_level` in
+  Alloy from explicit severity fields, Kubernetes klog prefixes, or
+  delimiter-bounded severity tokens. Do not rely on Loki's raw message
+  substring fallback for warning/error dashboards.
 - Treat Prometheus Operator CRDs as baseline API state. Component monitor
   objects should render unconditionally once those CRDs are in the bootstrap
   flow.

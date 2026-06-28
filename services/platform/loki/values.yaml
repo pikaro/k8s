@@ -16,6 +16,7 @@ loki:
           prefix: loki_index_
           period: 24h
   limits_config:
+    discover_log_levels: false
     retention_period: 168h
   compactor:
     retention_enabled: true

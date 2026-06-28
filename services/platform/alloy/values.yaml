@@ -45,7 +45,36 @@ alloy:
 
       loki.source.kubernetes "pod_logs" {
         targets    = discovery.relabel.pod_logs.output
+        forward_to = [loki.process.classify.receiver]
+      }
+
+      loki.process "classify" {
         forward_to = [loki.write.default.receiver]
+
+        stage.regex {
+          expression = `(?i)(?:^|["\s,{])(?:level|severity|severity_text|severityText|lvl|log_level)["\s]*[:=]["\s]*(?P<field_level>trace|trc|debug|dbg|info|inf|information|warn|wrn|warning|error|err|critical|crit|fatal|panic)(?:$|["\s,}])`
+        }
+
+        stage.regex {
+          expression = `^(?P<klog_level>[IWEF])\d{4}\s`
+        }
+
+        stage.regex {
+          expression = `(?i)(?:^|[\s\[({])(?P<token_level>trace|debug|info|warn|warning|error|err|critical|fatal|panic)(?:$|[\s\])}:,;])`
+        }
+
+        stage.template {
+          source   = "detected_level"
+          # The Alloy chart runs this block through Helm tpl; printf emits the
+          # literal Go template that Alloy should evaluate at runtime.
+          template = {{ printf "%q" `{{- $level := ToLower (coalesce .field_level .klog_level .token_level "unknown") -}}{{- if or (eq $level "trace") (eq $level "trc") -}}trace{{- else if or (eq $level "debug") (eq $level "dbg") -}}debug{{- else if or (eq $level "info") (eq $level "inf") (eq $level "information") (eq $level "i") -}}info{{- else if or (eq $level "warn") (eq $level "wrn") (eq $level "warning") (eq $level "w") -}}warn{{- else if or (eq $level "error") (eq $level "err") (eq $level "e") -}}error{{- else if or (eq $level "critical") (eq $level "crit") -}}critical{{- else if or (eq $level "fatal") (eq $level "f") -}}fatal{{- else if eq $level "panic" -}}panic{{- else -}}unknown{{- end -}}` }}
+        }
+
+        stage.structured_metadata {
+          values = {
+            detected_level = "",
+          }
+        }
       }
 
       loki.write "default" {
