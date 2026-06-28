@@ -297,8 +297,12 @@ is operational validation after sync:
 1. Add `apprise` as a Kustomize platform app in `observability`.
 2. Keep Apprise internal-only.
 3. Run in simple stateful mode with API-only access and locked config.
-4. Mount Terraform-created destination config from `apprise-config`.
-5. Allow only the ntfy Apprise service plugin.
+4. Mount Terraform-created destination config from `apprise-config` at
+   `/config`.
+5. Disable Apprise's separate persistent execution store with an empty
+   `APPRISE_STORAGE_DIR`; notification history is not restore-critical and a
+   read-only Secret-backed `/config` would otherwise fail `/status`.
+6. Allow only the ntfy Apprise service plugin.
 
 ## Node-Exporter App Plan
 

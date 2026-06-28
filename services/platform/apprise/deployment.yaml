@@ -33,6 +33,10 @@ spec:
           env:
             - name: APPRISE_STATEFUL_MODE
               value: simple
+            - name: APPRISE_CONFIG_DIR
+              value: /config
+            - name: APPRISE_STORAGE_DIR
+              value: ""
             - name: APPRISE_CONFIG_LOCK
               value: "yes"
             - name: APPRISE_API_ONLY
