@@ -87,7 +87,7 @@
             "uid": "$logs"
           },
           "editorMode": "code",
-          "expr": "sum by (namespace) (rate({namespace=~\".+\"}[$__rate_interval]))",
+          "expr": "sum by (namespace) (rate({namespace=~\".+\"}[5m]))",
           "legendFormat": "{{namespace}}",
           "queryType": "range",
           "refId": "A"
@@ -149,7 +149,7 @@
             "uid": "$logs"
           },
           "editorMode": "code",
-          "expr": "sum by (namespace) (rate({namespace=~\".+\"} | detected_level=~\"warn|warning\" [$__rate_interval]))",
+          "expr": "sum by (namespace) (rate({namespace=~\".+\"} | detected_level=~\"warn|warning\" [5m]))",
           "legendFormat": "{{namespace}}",
           "queryType": "range",
           "refId": "A"
@@ -211,7 +211,7 @@
             "uid": "$logs"
           },
           "editorMode": "code",
-          "expr": "sum by (namespace) (rate({namespace=~\".+\"} | detected_level=~\"error|err|critical|crit|fatal|panic|emergency|alert\" [$__rate_interval]))",
+          "expr": "sum by (namespace) (rate({namespace=~\".+\"} | detected_level=~\"error|err|critical|crit|fatal|panic|emergency|alert\" [5m]))",
           "legendFormat": "{{namespace}}",
           "queryType": "range",
           "refId": "A"
@@ -286,7 +286,7 @@
             "uid": "$logs"
           },
           "editorMode": "code",
-          "expr": "topk(20, sum by (namespace, pod) (rate({namespace=~\"$namespace\", pod=~\"$pod\"}[$__rate_interval])))",
+          "expr": "topk(20, sum by (namespace, pod) (rate({namespace=~\"$namespace\", pod=~\"$pod\"}[5m])))",
           "legendFormat": "{{namespace}}/{{pod}}",
           "queryType": "range",
           "refId": "A"
@@ -348,7 +348,7 @@
             "uid": "$logs"
           },
           "editorMode": "code",
-          "expr": "topk(20, sum by (namespace, pod) (rate({namespace=~\"$namespace\", pod=~\"$pod\"} | detected_level=~\"warn|warning\" [$__rate_interval])))",
+          "expr": "topk(20, sum by (namespace, pod) (rate({namespace=~\"$namespace\", pod=~\"$pod\"} | detected_level=~\"warn|warning\" [5m])))",
           "legendFormat": "{{namespace}}/{{pod}}",
           "queryType": "range",
           "refId": "A"
@@ -410,7 +410,7 @@
             "uid": "$logs"
           },
           "editorMode": "code",
-          "expr": "topk(20, sum by (namespace, pod) (rate({namespace=~\"$namespace\", pod=~\"$pod\"} | detected_level=~\"error|err|critical|crit|fatal|panic|emergency|alert\" [$__rate_interval])))",
+          "expr": "topk(20, sum by (namespace, pod) (rate({namespace=~\"$namespace\", pod=~\"$pod\"} | detected_level=~\"error|err|critical|crit|fatal|panic|emergency|alert\" [5m])))",
           "legendFormat": "{{namespace}}/{{pod}}",
           "queryType": "range",
           "refId": "A"
