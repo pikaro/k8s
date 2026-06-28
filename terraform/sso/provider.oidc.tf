@@ -58,9 +58,9 @@ resource "kubernetes_secret_v1" "oidc" {
 
   data = {
     issuer        = "${local.authentik.url}/application/o/${authentik_application.main[each.key].slug}/"
-    auth_url      = "${local.authentik.url}/application/o/${authentik_application.main[each.key].slug}/authorize/"
-    token_url     = "${local.authentik.url}/application/o/${authentik_application.main[each.key].slug}/token/"
-    api_url       = "${local.authentik.url}/application/o/${authentik_application.main[each.key].slug}/userinfo/"
+    auth_url      = "${local.authentik.url}/application/o/authorize/"
+    token_url     = "${local.authentik.url}/application/o/token/"
+    api_url       = "${local.authentik.url}/application/o/userinfo/"
     client_id     = authentik_provider_oauth2.main[each.key].client_id
     client_secret = authentik_provider_oauth2.main[each.key].client_secret
   }
