@@ -45,6 +45,12 @@ chmod 600 "$KUBECONFIG_FILE"
 If a temporary CA file was created with `mktemp`, remove it after the kubeconfig
 has embedded the certificate.
 
+The same kubeconfig generation is wrapped by:
+
+```sh
+tools/mcp-kubeconfig.sh
+```
+
 ## Run the MCP server
 
 Point the local MCP server at the restricted kubeconfig and keep the server in
@@ -126,3 +132,29 @@ Keep `kubectl apply --dry-run=server` outside this kubeconfig. Kubernetes RBAC
 does not provide a dry-run-only permission: a credential that can create/update
 for dry-run can usually create/update for real. Use an explicit administrative
 approval for those checks instead.
+
+## Combined Kubernetes and Grafana MCP
+
+`tools/mcp.sh` refreshes both local MCP credential sets:
+
+- a Kubernetes kubeconfig with an 8h read-only ServiceAccount token;
+- a Grafana service-account token with an 8h lifetime, written to
+  `$HOME/.config/grafana-mcp/service-account-token`.
+
+The Grafana helper uses an Authentik device-code login only as a bootstrap
+credential. It then creates or reuses the `codex-mcp-readonly` Grafana service
+account and mints a short-lived token for that Viewer service account. The MCP
+server consumes the token through `GRAFANA_SERVICE_ACCOUNT_TOKEN_FILE`; the
+token value is not written into the shell environment file.
+
+Before `tools/mcp-grafana.sh` can work:
+
+1. Apply `terraform/sso` so the hidden `grafana-mcp` Authentik client and
+   `grafana-mcp-sso` Secret exist.
+2. Sync or restart the monitoring application so Grafana loads its `[auth.jwt]`
+   configuration and the `grafana-mcp-sso` Secret-derived environment values.
+
+If the helper succeeds with Authentik login and then receives `401` from
+Grafana, Grafana has not accepted the bootstrap JWT. The usual cause is that the
+Grafana pod has not restarted after `grafana-mcp-sso` was created, leaving
+`GF_AUTH_JWT_JWK_SET_URL` empty in the running container.

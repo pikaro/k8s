@@ -1,3 +1,10 @@
+variable "token" {
+  type = string
+  # Workaround so Codex doesn't need escalation for `validate`
+  default     = "dummy"
+  description = "The Authentik API token to use for the provider. This is set automatically by login.sh."
+}
+
 variable "branding" {
   type = object({
     title = string

@@ -86,6 +86,16 @@ grafana:
       secretKeyRef:
         name: grafana-sso
         key: api_url
+    GF_AUTH_JWT_JWK_SET_URL:
+      secretKeyRef:
+        name: grafana-mcp-sso
+        key: jwk_set_url
+        optional: true
+    GF_AUTH_JWT_EXPECT_CLAIMS:
+      secretKeyRef:
+        name: grafana-mcp-sso
+        key: expect_claims
+        optional: true
 
   grafana.ini:
     server:
@@ -108,6 +118,17 @@ grafana:
       role_attribute_path: "contains(groups[*], 'global-admins') && 'Admin' || contains(groups[*], 'grafana-admins') && 'Admin' || contains(groups[*], 'global-users') && 'Viewer' || contains(groups[*], 'grafana-users') && 'Viewer' || 'None'"
       role_attribute_strict: true
       use_pkce: true
+    auth.jwt:
+      enabled: true
+      header_name: X-JWT-Assertion
+      username_claim: preferred_username
+      name_claim: name
+      email_claim: email
+      auto_sign_up: true
+      jwk_set_url: $__env{GF_AUTH_JWT_JWK_SET_URL}
+      expect_claims: $__env{GF_AUTH_JWT_EXPECT_CLAIMS}
+      role_attribute_path: "contains(groups[*], 'global-admins') && 'Admin' || contains(groups[*], 'grafana-admins') && 'Admin' || contains(groups[*], 'global-users') && 'Viewer' || contains(groups[*], 'grafana-users') && 'Viewer' || 'None'"
+      role_attribute_strict: true
     users:
       auto_assign_org_role: Viewer
 

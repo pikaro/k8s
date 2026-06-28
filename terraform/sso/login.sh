@@ -16,3 +16,5 @@ cd "${ORIG_PWD}" || {
     echo "Failed to change directory back to ${ORIG_PWD}"
     exit 1
 }
+
+export TF_VAR_token="${AUTHENTIK_TOKEN}"
