@@ -1,4 +1,5 @@
 name: loki
 namespace: observability
+resourcesPath: services/platform/loki/resources
 chartRepo: https://grafana.github.io/helm-charts
 chartVersion: 7.0.0

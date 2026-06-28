@@ -144,12 +144,17 @@ These are enough to review the standard metrics/logging shape before pushing.
   Talos cluster.
 - Start Loki as single-binary filesystem storage, not object storage or a
   distributed deployment.
+- In this chart, single-binary means `StatefulSet/loki` runs Loki with
+  `-target=all`; split `read`, `write`, and `backend` workloads are not the
+  active scrape targets.
 - Start Alloy as a DaemonSet with Kubernetes pod log discovery.
 - Run node-exporter as a standalone app in `node-observability`, not as the
   embedded `kube-prometheus-stack` subchart.
 - Run Grafana dashboard and data source sidecars as live watchers, not one-shot
   init containers, so component dashboard ConfigMaps imported after Grafana
   starts are picked up automatically.
+- Own local Grafana dashboards as labelled ConfigMaps under the component
+  `resourcesPath`. Do not add Grafana Operator CRDs just to import dashboards.
 - Give only `node-observability` privileged PodSecurity labels. Node-exporter
   needs host network, host PID, and host filesystem access for real host disk,
   filesystem, CPU, memory, and network metrics.
@@ -311,6 +316,9 @@ These are enabled in the owning chart values and rely on `monitoring-crds`:
 - Authentik: server and worker metrics Services and ServiceMonitors.
 - CoreDNS: expose the `9153` metrics port and enable the chart ServiceMonitor.
 - Loki: ServiceMonitor, dashboards, and non-alerting rules.
+- Loki log overview: local dashboard ConfigMap showing log, warning, and
+  error-rate trends by namespace and by pod using Loki `detected_level`
+  metadata.
 - Alloy: ServiceMonitor for controller health and scrape status.
 
 ## Alerting Baseline
