@@ -57,11 +57,6 @@ spec:
           targetRevision: main
           path: {{ $basePath }}
         {{- else if eq $sourceType "helm" }}
-        {{- if $requirementsPath }}
-        - repoURL: https://github.com/pikaro/k8s.git
-          targetRevision: main
-          path: {{ $requirementsPath }}
-        {{- end }}
         - repoURL: {{ .chartRepo }}
           chart: {{ $chart }}
           targetRevision: {{ .chartVersion }}
@@ -72,6 +67,11 @@ spec:
         - repoURL: https://github.com/pikaro/k8s.git
           targetRevision: main
           ref: values
+        {{- if $requirementsPath }}
+        - repoURL: https://github.com/pikaro/k8s.git
+          targetRevision: main
+          path: {{ $requirementsPath }}
+        {{- end }}
         {{- if $resourcesPath }}
         - repoURL: https://github.com/pikaro/k8s.git
           targetRevision: main
