@@ -104,6 +104,9 @@ grafana:
       - ReadWriteOnce
     size: 2Gi
 
+  env:
+    GF_SECURITY_DISABLE_INITIAL_ADMIN_CREATION: "true"
+
   envValueFrom:
     GF_AUTH_GENERIC_OAUTH_CLIENT_ID:
       secretKeyRef:
@@ -177,11 +180,15 @@ grafana:
       searchNamespace: ALL
       label: grafana_dashboard
       labelValue: "1"
+      skipReload: true
+      initDashboards: true
     datasources:
       enabled: true
       searchNamespace: ALL
       label: grafana_datasource
       labelValue: "1"
+      skipReload: true
+      initDatasources: true
 
   additionalDataSources:
     - name: Loki

@@ -316,6 +316,15 @@ order:
 - Re-run `tofu -chdir=terraform/sso apply` to check that the SSO configuration
     is valid and applied.
 
+### Monitoring
+
+- Sync the monitoring Applications in the following order:
+
+    - monitoring
+    - node-exporter
+    - loki
+    - alloy
+
 ### Remaining services
 
 - Sync the `sso-test` Application in the `app` ApplicationSet.
