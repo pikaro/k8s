@@ -238,6 +238,9 @@ Object-store target:
   `kubectl -n object-store get secret object-store-gateway-rsyncnet-ssh -o jsonpath='{.data.publicKey}' | base64 -d`.
 - Generate the gateway's S3 access key Secret with ESO's `Password` generator.
 - Populate `known_hosts` at pod start with an init-time `ssh-keyscan`, not SSM.
+- Create the `backups` bucket directory from the gateway init containers before
+  serving S3, so CNPG archiving does not depend on a remembered manual folder
+  creation step.
 - Treat rclone `serve s3` as a pragmatic compatibility layer, not a proven S3
   service. It is experimental and its multipart upload path can hold upload
   parts in memory, so prove CNPG base backups before enabling a schedule.

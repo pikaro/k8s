@@ -49,6 +49,58 @@ spec:
           volumeMounts:
             - name: known-hosts
               mountPath: /known-hosts
+        - name: ensure-backups-bucket
+          image: rclone/rclone:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - rclone
+          args:
+            - mkdir
+            - $(RCLONE_REMOTE)/backups
+          env:
+            - name: HOME
+              value: /tmp
+            - name: RCLONE_CACHE_DIR
+              value: /tmp/rclone-cache
+            - name: RCLONE_REMOTE
+              value: rsyncnet:object-store/thule
+            - name: RCLONE_CONFIG
+              value: /dev/null
+            - name: RCLONE_CONFIG_RSYNCNET_TYPE
+              value: sftp
+            - name: RCLONE_CONFIG_RSYNCNET_PORT
+              value: "22"
+            - name: RCLONE_CONFIG_RSYNCNET_KEY_FILE
+              value: /ssh/id_ed25519
+            - name: RCLONE_CONFIG_RSYNCNET_KNOWN_HOSTS_FILE
+              value: /known-hosts/known_hosts
+            - name: RCLONE_CONFIG_RSYNCNET_SHELL_TYPE
+              value: unix
+            - name: RCLONE_CONFIG_RSYNCNET_HOST
+              value: zh3928.rsync.net
+            - name: RCLONE_CONFIG_RSYNCNET_USER
+              value: zh3928
+          resources:
+            requests:
+              cpu: 5m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: ssh
+              mountPath: /ssh
+              readOnly: true
+            - name: known-hosts
+              mountPath: /known-hosts
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
       containers:
         - name: rclone
           image: rclone/rclone:latest

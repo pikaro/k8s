@@ -363,8 +363,12 @@ For an existing cluster that previously installed these CRDs through the
     ```
     kubectl -n object-store get secret object-store-gateway-rsyncnet-ssh -o jsonpath='{.data.publicKey}' | base64 -d | ssh rsync "mkdir -p ~/.ssh && cat >> .ssh/authorized_keys"
     ```
+- Re-sync or restart `object-store-gateway` after registering the key. Its init
+    containers populate `known_hosts` and create the `backups` bucket directory
+    on the rsync.net remote before the S3 gateway starts.
 - Sync the `filestash` Application.
 - Confirm that you can log into Filestash and create a folder there.
+- Sync the `cnpg-cluster` Application and confirm the first backup succeeds.
 
 ### Remaining services
 
