@@ -1,6 +1,6 @@
 name: volsync
 namespace: volsync-system
 chartRepo: https://backube.github.io/helm-charts
-chartVersion: 0.17.0
+chartVersion: 0.16.0
 resourcesPath: services/platform/volsync/resources
 serverSideApply: "true"

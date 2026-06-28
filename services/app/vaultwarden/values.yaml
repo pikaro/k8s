@@ -71,8 +71,8 @@ timeZone: "Europe/Berlin"
 
 smtp:
   existingSecret: "vaultwarden-smtp"
-  host: "smtp.protonmail.ch"
-  security: "starttls"
+  host: "mail-relay.mail.svc.cluster.local"
+  security: "off"
   port: 587
   from: "vaultwarden@d-reis.com"
   fromName: "Vaultwarden"

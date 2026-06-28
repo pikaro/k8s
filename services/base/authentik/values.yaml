@@ -10,6 +10,9 @@ serviceAccount:
   annotations: {}
 
 global:
+  envFrom:
+    - secretRef:
+        name: authentik-smtp
   volumeMounts:
     - name: cnpg-server-ca
       mountPath: /postgres-ca

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mail-relay
+  labels:
+    app.kubernetes.io/name: mail-relay
+    app.kubernetes.io/part-of: platform
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: mail-relay
+  ports:
+    - name: smtp
+      port: 587
+      targetPort: smtp

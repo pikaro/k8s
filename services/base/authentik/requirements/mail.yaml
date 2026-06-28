@@ -1,0 +1,30 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: authentik-smtp
+  namespace: authentik
+  annotations:
+    argocd.argoproj.io/sync-wave: "-17"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: aws-ssm
+  target:
+    name: authentik-smtp
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+      type: Opaque
+      data:
+        AUTHENTIK_EMAIL__HOST: mail-relay.mail.svc.cluster.local
+        AUTHENTIK_EMAIL__PORT: "587"
+        AUTHENTIK_EMAIL__USERNAME: relay@d-reis.com
+        AUTHENTIK_EMAIL__PASSWORD: "{{ .SMTP_RELAY_PASSWORD }}"
+        AUTHENTIK_EMAIL__USE_TLS: "false"
+        AUTHENTIK_EMAIL__USE_SSL: "false"
+        AUTHENTIK_EMAIL__FROM: authentik@d-reis.com
+  data:
+    - secretKey: SMTP_RELAY_PASSWORD
+      remoteRef:
+        key: /external-secrets/mail-relay/sender-password

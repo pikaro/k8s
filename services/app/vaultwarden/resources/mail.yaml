@@ -1,0 +1,26 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: vaultwarden-smtp
+  namespace: vaultwarden
+  annotations:
+    argocd.argoproj.io/sync-wave: "-17"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: aws-ssm
+  target:
+    name: vaultwarden-smtp
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+      type: Opaque
+      data:
+        username: relay@d-reis.com
+        token: "{{ .SMTP_RELAY_PASSWORD }}"
+        password: "{{ .SMTP_RELAY_PASSWORD }}"
+  data:
+    - secretKey: SMTP_RELAY_PASSWORD
+      remoteRef:
+        key: /external-secrets/mail-relay/sender-password

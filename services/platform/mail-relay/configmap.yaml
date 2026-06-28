@@ -1,0 +1,48 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mail-relay-config
+  labels:
+    app.kubernetes.io/name: mail-relay
+    app.kubernetes.io/part-of: platform
+data:
+  maddy.conf: |
+    hostname mail-relay.d-reis.com
+
+    # The upstream smarthost must permit the d-reis.com sender localparts used
+    # by workloads. Maddy enforces the domain before forwarding.
+    auth.pass_table relay_auth {
+      table file /etc/maddy/auth/smtp_passwd
+    }
+
+    submission tcp://0.0.0.0:587 {
+      tls off
+      insecure_auth yes
+      sasl_login yes
+
+      limits {
+        all rate 20 1s
+        all concurrency 10
+      }
+
+      auth &relay_auth
+
+      source d-reis.com {
+        check {
+          authorize_sender {
+            user_to_email file /etc/maddy/auth/sender_map
+          }
+        }
+
+        default_destination {
+          deliver_to smtp tcp://{env:UPSTREAM_SMTP_HOST}:{env:UPSTREAM_SMTP_PORT} {
+            starttls yes
+            auth plain "{env:UPSTREAM_SMTP_USERNAME}" "{env:UPSTREAM_SMTP_PASSWORD}"
+          }
+        }
+      }
+
+      default_source {
+        reject 501 5.1.8 "Sender domain must be d-reis.com"
+      }
+    }

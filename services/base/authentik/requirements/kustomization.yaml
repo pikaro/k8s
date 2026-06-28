@@ -5,4 +5,5 @@ resources:
   - namespace.yaml
   - database.yaml
   - db-secret.yaml
+  - mail.yaml
   - secret-copy.yaml

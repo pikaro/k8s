@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mail-relay
+  labels:
+    app.kubernetes.io/name: mail-relay
+    app.kubernetes.io/part-of: platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mail-relay
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mail-relay
+        app.kubernetes.io/part-of: platform
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: maddy
+          image: foxcpp/maddy:0.9.5
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/maddy
+          args:
+            - -config
+            - /etc/maddy/maddy.conf
+            - run
+          ports:
+            - name: smtp
+              containerPort: 587
+          env:
+            - name: UPSTREAM_SMTP_HOST
+              value: smtp.protonmail.ch
+            - name: UPSTREAM_SMTP_PORT
+              value: "587"
+            - name: UPSTREAM_SMTP_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mail-relay
+                  key: UPSTREAM_SMTP_USERNAME
+            - name: UPSTREAM_SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mail-relay
+                  key: UPSTREAM_SMTP_PASSWORD
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          readinessProbe:
+            tcpSocket:
+              port: smtp
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: smtp
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: config
+              mountPath: /etc/maddy/maddy.conf
+              subPath: maddy.conf
+              readOnly: true
+            - name: auth
+              mountPath: /etc/maddy/auth
+              readOnly: true
+            - name: data
+              mountPath: /data
+            - name: run
+              mountPath: /run/maddy
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: config
+          configMap:
+            name: mail-relay-config
+        - name: auth
+          secret:
+            secretName: mail-relay
+            items:
+              - key: smtp_passwd
+                path: smtp_passwd
+              - key: sender_map
+                path: sender_map
+        - name: data
+          emptyDir: {}
+        - name: run
+          emptyDir:
+            medium: Memory
+        - name: tmp
+          emptyDir:
+            medium: Memory
