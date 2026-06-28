@@ -125,7 +125,7 @@ backups:
   s3:
     region: "us-east-1"
     bucket: "backups"
-    path: "/postgres/cnpg-cluster/"
+    path: "/postgres/"
     accessKey: ""
     secretKey: ""
     # -- Use the role based authentication without providing explicitly the keys
