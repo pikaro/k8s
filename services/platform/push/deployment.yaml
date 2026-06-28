@@ -59,6 +59,8 @@ spec:
               value: 3h
             - name: NTFY_ENABLE_LOGIN
               value: "true"
+            - name: NTFY_REQUIRE_LOGIN
+              value: "true"
             - name: NTFY_UPSTREAM_BASE_URL
               value: https://ntfy.sh
             - name: NTFY_LOG_FORMAT

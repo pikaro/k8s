@@ -72,8 +72,8 @@ carry those credentials into the GitOps-managed apps. The module name is
   tokens;
 - `apprise-config`, containing the Apprise destination files for low, medium,
   high, and critical alert topics;
-- `push-mobile`, containing the human/mobile subscription endpoint, user, token,
-  and topic list.
+- `push-mobile`, containing the human/mobile subscription endpoint, user,
+  password, token, and topic list.
 
 Terraform should not replace the GitOps deployment or own service config that
 belongs in Kubernetes manifests/Helm values.
@@ -201,7 +201,9 @@ pushing.
   the public URL.
 - ntfy should be exposed, but not anonymously.
 - ntfy should use native auth for API/mobile/web-push clients:
-  `auth-default-access: deny-all`, provisioned users/tokens, and ACLs.
+  `auth-default-access: deny-all`, provisioned users/tokens, ACLs, and
+  `require-login` so the web UI does not present anonymous actions that later
+  fail with Forbidden.
 - ntfy users, ACLs, and tokens are provisioned from the Terraform-created
   `push-ntfy-config` Secret using ntfy's startup config, not by a post-start API
   provider.
@@ -212,6 +214,8 @@ pushing.
 - ntfy should use four alert topics: low, medium, high, and critical.
 - The four initial topics are literal: `alerts-low`, `alerts-medium`,
   `alerts-high`, and `alerts-critical`. ACLs/tokens are the security boundary.
+- The personal/mobile user is read-only on `alerts-*`; publishing to those
+  topics is reserved for Alertmanager via Apprise.
 - Alertmanager sends alert name as the notification title and the Prometheus
   generator URL as the body. This is deliberately sparse but robust; richer
   templates can be added after the transport is proven.
