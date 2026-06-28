@@ -4,3 +4,4 @@ namespace: cnpg-database
 chartRepo: https://cloudnative-pg.github.io/charts
 chart: cluster
 chartVersion: 0.7.0
+requirementsPath: services/base/cnpg-cluster/requirements

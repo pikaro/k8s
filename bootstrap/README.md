@@ -363,6 +363,8 @@ For an existing cluster that previously installed these CRDs through the
     ```
     kubectl -n object-store get secret object-store-gateway-rsyncnet-ssh -o jsonpath='{.data.publicKey}' | base64 -d | ssh rsync "mkdir -p ~/.ssh && cat >> .ssh/authorized_keys"
     ```
+- Sync the `filestash` Application.
+- Confirm that you can log into Filestash and create a folder there.
 
 ### Remaining services
 

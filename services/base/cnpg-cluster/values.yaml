@@ -32,7 +32,11 @@ cluster:
   affinity:
     topologyKey: topology.kubernetes.io/zone
 
-  env: []
+  env:
+    - name: AWS_REQUEST_CHECKSUM_CALCULATION
+      value: when_required
+    - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+      value: when_required
   envFrom: []
   certificates: {}
 
@@ -93,11 +97,10 @@ cluster:
     enabled: false
 
 backups:
-  # -- You need to configure backups manually, so backups are disabled by default.
-  enabled: false
+  enabled: true
 
   # -- Overrides the provider specific default endpoint.
-  endpointURL: ""
+  endpointURL: "http://object-store-gateway.object-store.svc.cluster.local:9000"
   # Defaults to:
   # S3: https://s3.<region>.amazonaws.com"
   # Leave empty if using the default S3 endpoint
@@ -120,9 +123,9 @@ backups:
   # -- One of `s3`, `azure` or `google`
   provider: s3
   s3:
-    region: ""
-    bucket: ""
-    path: "/"
+    region: "us-east-1"
+    bucket: "backups"
+    path: "/postgres/cnpg-cluster/"
     accessKey: ""
     secretKey: ""
     # -- Use the role based authentication without providing explicitly the keys
@@ -143,22 +146,22 @@ backups:
     applicationCredentials: ""
   secret:
     # -- Whether to create a secret for the backup credentials
-    create: true
+    create: false
     # -- Name of the backup credentials secret
-    name: ""
+    name: cnpg-backup-s3-auth
 
   wal:
     # -- WAL compression method. One of `` (for no compression), `gzip`, `bzip2` or `snappy`.
     compression: gzip
     # -- Whether to instruct the storage provider to encrypt WAL files. One of `` (use the storage container default), `AES256` or `aws:kms`.
-    encryption: AES256
+    encryption: ""
     # -- Number of WAL files to be archived or restored in parallel.
     maxParallel: 1
   data:
     # -- Data compression method. One of `` (for no compression), `gzip`, `bzip2` or `snappy`.
     compression: gzip
     # -- Whether to instruct the storage provider to encrypt data files. One of `` (use the storage container default), `AES256` or `aws:kms`.
-    encryption: AES256
+    encryption: ""
     # -- Number of data files to be archived or restored in parallel.
     jobs: 2
 
