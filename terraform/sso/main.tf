@@ -22,7 +22,8 @@ terraform {
 }
 
 provider "authentik" {
-  url = local.authentik.url
+  url   = local.authentik.url
+  token = var.token
 }
 
 provider "kubernetes" {

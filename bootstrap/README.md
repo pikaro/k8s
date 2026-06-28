@@ -358,6 +358,12 @@ For an existing cluster that previously installed these CRDs through the
 
 ### Backups
 
+- Sync the `object-store-gateway` Application.
+- Retrieve the generated Pubkey and upload to rsync:
+    ```
+    kubectl -n object-store get secret object-store-gateway-rsyncnet-ssh -o jsonpath='{.data.publicKey}' | base64 -d | ssh rsync "mkdir -p ~/.ssh && cat >> .ssh/authorized_keys"
+    ```
+
 ### Remaining services
 
 - Sync the `sso-test` Application in the `app` ApplicationSet.

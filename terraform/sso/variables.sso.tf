@@ -87,7 +87,7 @@ resource "terraform_data" "validation_users" {
         for u in values(var.users) :
         alltrue([
           for g in u.groups :
-          contains(keys(var.groups), g) || contains([for v in local.directory_groups_flat : v.name], g)
+          contains(keys(var.groups), g) || contains(keys(local.directory_groups_flat), g)
         ])
       ])
       error_message = "All groups referenced by users must exist in the groups variable."

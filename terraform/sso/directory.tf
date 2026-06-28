@@ -1,5 +1,5 @@
 resource "authentik_group" "main" {
-  for_each = merge(var.groups, local.directory_groups_flat)
+  for_each = merge(local.directory_groups_flat, var.groups)
   name     = each.key
 
   is_superuser = each.value.superuser

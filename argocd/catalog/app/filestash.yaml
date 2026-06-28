@@ -1,0 +1,16 @@
+sourceType: kustomize
+name: filestash
+namespace: files
+authentik:
+  name: Filestash
+  protocol: proxy
+  group: Files
+  url: https://files.d-reis.com
+  directoryGroups:
+    - global-admins
+    - global-users
+    - filestash-admins
+    - filestash-users
+  proxy:
+    mode: forward_single
+    externalHost: https://files.d-reis.com

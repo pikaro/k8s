@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: filestash
+  labels:
+    app.kubernetes.io/name: filestash
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: filestash
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
