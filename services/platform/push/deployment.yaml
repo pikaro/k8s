@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: push
+  labels:
+    app.kubernetes.io/name: push
+    app.kubernetes.io/part-of: observability
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: push
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: push
+        app.kubernetes.io/part-of: observability
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: ntfy
+          image: binwiederhier/ntfy:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - serve
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: NTFY_LISTEN_HTTP
+              value: :8080
+            - name: NTFY_BASE_URL
+              value: https://push.d-reis.com
+            - name: NTFY_BEHIND_PROXY
+              value: "true"
+            - name: NTFY_AUTH_FILE
+              value: /var/lib/ntfy/auth.db
+            - name: NTFY_AUTH_DEFAULT_ACCESS
+              value: deny-all
+            - name: NTFY_CACHE_FILE
+              value: /var/lib/ntfy/cache.db
+            - name: NTFY_CACHE_DURATION
+              value: 72h
+            - name: NTFY_ATTACHMENT_CACHE_DIR
+              value: /var/lib/ntfy/attachments
+            - name: NTFY_ATTACHMENT_TOTAL_SIZE_LIMIT
+              value: 100M
+            - name: NTFY_ATTACHMENT_FILE_SIZE_LIMIT
+              value: 2M
+            - name: NTFY_ATTACHMENT_EXPIRY_DURATION
+              value: 3h
+            - name: NTFY_ENABLE_LOGIN
+              value: "true"
+            - name: NTFY_UPSTREAM_BASE_URL
+              value: https://ntfy.sh
+            - name: NTFY_LOG_FORMAT
+              value: json
+            - name: NTFY_AUTH_USERS
+              valueFrom:
+                secretKeyRef:
+                  name: push-ntfy-config
+                  key: NTFY_AUTH_USERS
+            - name: NTFY_AUTH_ACCESS
+              valueFrom:
+                secretKeyRef:
+                  name: push-ntfy-config
+                  key: NTFY_AUTH_ACCESS
+            - name: NTFY_AUTH_TOKENS
+              valueFrom:
+                secretKeyRef:
+                  name: push-ntfy-config
+                  key: NTFY_AUTH_TOKENS
+          readinessProbe:
+            httpGet:
+              path: /v1/health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /v1/health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/ntfy
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: push-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: push-data
+  labels:
+    app.kubernetes.io/name: push
+    app.kubernetes.io/part-of: observability
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: zfs
+  resources:
+    requests:
+      storage: 1Gi

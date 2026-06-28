@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: push
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+    external-dns.alpha.kubernetes.io/hostname: push.d-reis.com
+    external-dns.alpha.kubernetes.io/target: thule.d-reis.com
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+spec:
+  ingressClassName: traefik
+  tls:
+    - secretName: push-tls
+      hosts:
+        - push.d-reis.com
+  rules:
+    - host: push.d-reis.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: push
+                port:
+                  number: 80

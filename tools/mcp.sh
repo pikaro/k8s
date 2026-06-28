@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 "$SCRIPT_DIR/mcp-kubeconfig.sh"
 "$SCRIPT_DIR/mcp-grafana.sh"
+github-mcp
 
 cat <<'EOF'
 

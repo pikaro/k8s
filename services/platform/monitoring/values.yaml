@@ -3,6 +3,28 @@ fullnameOverride: monitoring
 crds:
   enabled: false
 
+additionalPrometheusRulesMap:
+  readiness-notifications:
+    groups:
+      - name: readiness.notifications
+        rules:
+          - alert: ArgoCDApplicationDegraded
+            expr: max by (name, namespace, project, health_status) (argocd_app_info{health_status!~"Healthy|Progressing"} == 1)
+            for: 5m
+            labels:
+              severity: high
+            annotations:
+              summary: "ArgoCD application {{ $labels.name }} is {{ $labels.health_status }}"
+              description: "ArgoCD application {{ $labels.name }} in project {{ $labels.project }} has been {{ $labels.health_status }} for at least 5 minutes."
+          - alert: ArgoCDApplicationOutOfSync
+            expr: max by (name, namespace, project, sync_status) (argocd_app_info{sync_status!="Synced"} == 1)
+            for: 15m
+            labels:
+              severity: medium
+            annotations:
+              summary: "ArgoCD application {{ $labels.name }} is {{ $labels.sync_status }}"
+              description: "ArgoCD application {{ $labels.name }} in project {{ $labels.project }} has been {{ $labels.sync_status }} for at least 15 minutes."
+
 kubeApiServer:
   enabled: true
 
@@ -201,6 +223,81 @@ grafana:
 
 alertmanager:
   enabled: true
+  config:
+    global:
+      resolve_timeout: 5m
+    inhibit_rules:
+      - source_matchers:
+          - severity = critical
+        target_matchers:
+          - severity =~ warning|info
+        equal:
+          - namespace
+          - alertname
+      - source_matchers:
+          - severity = warning
+        target_matchers:
+          - severity = info
+        equal:
+          - namespace
+          - alertname
+      - source_matchers:
+          - alertname = InfoInhibitor
+        target_matchers:
+          - severity = info
+        equal:
+          - namespace
+      - target_matchers:
+          - alertname = InfoInhibitor
+    route:
+      group_by:
+        - alertname
+        - namespace
+        - severity
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 12h
+      receiver: push-medium
+      routes:
+        - receiver: "null"
+          matchers:
+            - alertname = Watchdog
+        - receiver: push-critical
+          matchers:
+            - severity = critical
+          repeat_interval: 30m
+        - receiver: push-high
+          matchers:
+            - severity =~ high|error
+          repeat_interval: 4h
+        - receiver: push-medium
+          matchers:
+            - severity =~ warning|medium
+          repeat_interval: 12h
+        - receiver: push-low
+          matchers:
+            - severity =~ info|low
+          repeat_interval: 24h
+    receivers:
+      - name: "null"
+      - name: push-low
+        webhook_configs:
+          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-low/?:alerts%5B0%5D.labels.alertname=title&:alerts%5B0%5D.generatorURL=body&:format=text&:type=info"
+            send_resolved: true
+      - name: push-medium
+        webhook_configs:
+          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-medium/?:alerts%5B0%5D.labels.alertname=title&:alerts%5B0%5D.generatorURL=body&:format=text&:type=warning"
+            send_resolved: true
+      - name: push-high
+        webhook_configs:
+          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-high/?:alerts%5B0%5D.labels.alertname=title&:alerts%5B0%5D.generatorURL=body&:format=text&:type=failure"
+            send_resolved: true
+      - name: push-critical
+        webhook_configs:
+          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-critical/?:alerts%5B0%5D.labels.alertname=title&:alerts%5B0%5D.generatorURL=body&:format=text&:type=failure"
+            send_resolved: true
+    templates:
+      - /etc/alertmanager/config/*.tmpl
   alertmanagerSpec:
     replicas: 1
     storage:

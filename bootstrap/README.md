@@ -340,6 +340,10 @@ For an existing cluster that previously installed these CRDs through the
 
 - Sync the monitoring Applications in the following order:
 
+    - Apply the generated push notification configuration:
+      `tofu -chdir=terraform/push apply`
+    - push
+    - apprise
     - monitoring
     - node-exporter
     - loki

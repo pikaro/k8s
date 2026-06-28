@@ -15,8 +15,7 @@ post-readiness app modernization, or automated sync.
 - `alloy`: Alloy DaemonSet in `observability`, shipping pod logs to Loki.
 - `authentik`: chart-native server and worker metrics ServiceMonitors.
 - Push notifications: Alertmanager to Apprise API to an exposed push service,
-  currently expected to be ntfy. Backend choice and credential ownership still
-  need to be resolved before manifests are added.
+  backed by ntfy at `push.d-reis.com`.
 
 All implemented apps are `platform` apps. Namespace creation stays with the
 generated ApplicationSet `CreateNamespace=true` rule unless the namespace needs
@@ -50,28 +49,31 @@ node-exporter needs privileged PodSecurity labels for host metrics.
   servers. With `auth-default-access: deny-all`, provisioned users, ACLs, and
   access tokens, topic names are not the primary security boundary.
 - Apprise API has an official container image, but no upstream Helm chart was
-  identified. A direct Kustomize app is likely cleaner than adopting an
-  unrelated third-party chart, but that is a decision before files are added.
+  identified. This repo uses a direct Kustomize app instead of an unrelated
+  third-party chart.
 
 ## Ownership Boundary
 
 Kubernetes/GitOps owns everything that can be expressed as Kubernetes state:
 
 - the push service Deployment/Service/Ingress/PVC;
-- ntfy server configuration, including `base-url`, `behind-proxy`,
-  `auth-default-access`, login settings, cache/auth/web-push database paths, and
-  VAPID key Secret wiring;
-- Apprise API Deployment/Service/config;
+- ntfy Deployment/Service/Ingress/PVC and non-secret server configuration,
+  including `base-url`, `behind-proxy`, `auth-default-access`, login settings,
+  and cache/auth database paths;
+- Apprise API Deployment/Service and non-secret runtime configuration;
 - Alertmanager routing configuration;
 - any Traefik/Auth proxy routes needed for a browser-only surface.
 
-Terraform must only patch API-managed gaps that Kubernetes cannot declaratively
-own well. If a provider is used, the module name should be `terraform/push`.
-The intended provider use is narrow:
+OpenTofu owns generated notification credentials and the Kubernetes Secrets that
+carry those credentials into the GitOps-managed apps. The module name is
+`terraform/push`. It owns:
 
-- create or reconcile push-server users/tokens/ACLs after the service exists;
-- write app-local `kubernetes_secret_v1` objects for catalog entries that are
-  allowed to send notifications.
+- `push-ntfy-config`, containing ntfy provisioned users, ACLs, and access
+  tokens;
+- `apprise-config`, containing the Apprise destination files for low, medium,
+  high, and critical alert topics;
+- `push-mobile`, containing the human/mobile subscription endpoint, user, token,
+  and topic list.
 
 Terraform should not replace the GitOps deployment or own service config that
 belongs in Kubernetes manifests/Helm values.
@@ -103,8 +105,15 @@ belongs in Kubernetes manifests/Helm values.
    `http://loki-gateway.observability.svc.cluster.local/loki/api/v1/push`.
 8. Component chart metrics integrations are enabled in the owning chart values.
    They rely on `monitoring-crds`, not on the runtime observability stack.
-9. Notifications depend on Alertmanager and should be added after the
-   Apprise/ntfy branch is decided.
+9. `terraform/push` writes generated ntfy and Apprise Secrets into
+   `observability`. It should be applied after the namespace exists and before
+   `push` is expected to start.
+10. The `push` app exposes ntfy at `push.d-reis.com`, with private native ntfy
+    auth and four alert topics.
+11. The `apprise` app runs internal-only and reads Terraform-created Apprise
+    config files from `apprise-config`.
+12. Alertmanager routes low, medium, high, and critical alerts to Apprise, which
+    publishes to the matching ntfy topic.
 
 ## Drafted Configuration
 
@@ -121,8 +130,14 @@ The following files are intentionally created as normal repo files:
 - `services/platform/loki/values.yaml`
 - `argocd/catalog/platform/alloy.yaml`
 - `services/platform/alloy/values.yaml`
+- `argocd/catalog/platform/push.yaml`
+- `services/platform/push/`
+- `argocd/catalog/platform/apprise.yaml`
+- `services/platform/apprise/`
+- `terraform/push/`
 
-These are enough to review the standard metrics/logging shape before pushing.
+These are enough to review the metrics, logging, and notification shape before
+pushing.
 
 ## Standard Decisions Already Encoded
 
@@ -187,16 +202,19 @@ These are enough to review the standard metrics/logging shape before pushing.
 - ntfy should be exposed, but not anonymously.
 - ntfy should use native auth for API/mobile/web-push clients:
   `auth-default-access: deny-all`, provisioned users/tokens, and ACLs.
+- ntfy users, ACLs, and tokens are provisioned from the Terraform-created
+  `push-ntfy-config` Secret using ntfy's startup config, not by a post-start API
+  provider.
 - If ntfy's web interface still exposes an unauthenticated browser surface after
   native login is enabled, protect the browser route with Authentik proxy auth.
   Do not put proxy auth in front of API/mobile/web-push paths if it breaks token
   authentication.
 - ntfy should use four alert topics: low, medium, high, and critical.
-- Topic names do not need to be the main secret when ACLs/tokens are
-  provisioned. Use non-obvious topic names if it is cheap, but treat that as
-  defense-in-depth.
-- Alert source metadata should be carried as notification metadata/tags rather
-  than by multiplying topics.
+- The four initial topics are literal: `alerts-low`, `alerts-medium`,
+  `alerts-high`, and `alerts-critical`. ACLs/tokens are the security boundary.
+- Alertmanager sends alert name as the notification title and the Prometheus
+  generator URL as the body. This is deliberately sparse but robust; richer
+  templates can be added after the transport is proven.
 - Apprise API should be a direct Kustomize Deployment/Service using the
   official container, not a third-party Helm chart.
 - Alertmanager repeat timing starts as low `24h`, medium `12h`, high `4h`, and
@@ -204,29 +222,19 @@ These are enough to review the standard metrics/logging shape before pushing.
 - CoreDNS metrics are enabled through the CoreDNS chart once `monitoring-crds`
   exists.
 
-## Remaining Blockers
+## Remaining Work
 
-These should be answered before the notification app and final alert routing are
-added.
+The notification manifests and Terraform module are present. The remaining work
+is operational validation after sync:
 
-1. Confirm backend choice after evaluating the Terraform providers. Current
-   leaning remains ntfy because its topic/priority/web-push model fits the
-   alerting use case better than Gotify's application/channel model.
-2. Confirm the public hostname. Proposed default: `push.d-reis.com`.
-3. Choose ntfy credential ownership:
-   - Kubernetes config for bootstrap/server config, plus `terraform/push` for
-     API-managed users/tokens/ACLs and app-local Secrets; or
-   - only Kubernetes-provisioned users/tokens/ACLs in ntfy config, accepting
-     that client tokens are either static Secret inputs or regenerated by a
-     manual process.
-4. Choose the initial ntfy users and ACLs. Proposed default:
-   - `alertmanager`: write-only to `alerts-*`;
-   - one personal/user credential: read-only to `alerts-*`;
-   - anonymous access denied with `auth-default-access: deny-all`.
-5. Decide whether the four alert topics should be literal names
-   (`alerts-low`, `alerts-medium`, `alerts-high`, `alerts-critical`) or
-   generated/non-obvious names stored in Secrets. ACLs/tokens are still the real
-   security control either way.
+1. Apply `terraform/push` once the `observability` namespace exists.
+2. Sync `push`, `apprise`, and `monitoring`.
+3. Confirm the ntfy mobile client can connect to `push.d-reis.com` with the
+   `push-mobile` Secret values.
+4. Fire one synthetic Alertmanager alert and one deliberately failed ArgoCD sync
+   or degraded app condition to prove the shared notification path.
+5. Improve notification body formatting if the sparse first-pass payload is too
+   thin in daily use.
 
 ## Monitoring App Plan
 
@@ -267,8 +275,26 @@ added.
    - kube-proxy;
 
    CoreDNS is handled by the CoreDNS chart's own metrics ServiceMonitor.
-8. Leave Alertmanager notification routing as the chart default until Apprise
-   API and ntfy are defined.
+8. Configure Alertmanager to route low, medium, high, and critical alerts to
+   Apprise, which publishes to ntfy.
+
+## Push App Plan
+
+1. Add `push` as a Kustomize platform app in `observability`.
+2. Run ntfy with native auth enabled and anonymous access denied.
+3. Expose ntfy at `push.d-reis.com` through Traefik, cert-manager, and
+   external-dns.
+4. Persist ntfy cache/auth data on a `1Gi` `zfs` PVC.
+5. Read provisioned users, ACLs, and tokens from the Terraform-created
+   `push-ntfy-config` Secret.
+
+## Apprise App Plan
+
+1. Add `apprise` as a Kustomize platform app in `observability`.
+2. Keep Apprise internal-only.
+3. Run in simple stateful mode with API-only access and locked config.
+4. Mount Terraform-created destination config from `apprise-config`.
+5. Allow only the ntfy Apprise service plugin.
 
 ## Node-Exporter App Plan
 
@@ -350,20 +376,23 @@ Imported chart rules that use `warning` should route as `medium`.
 2. Run `argocd/appsets/generate.sh` and review generated project destinations.
 3. Render `monitoring-crds`, `monitoring`, `node-exporter`, `loki`, and `alloy`
    charts locally once chart repos are reachable.
-4. Apply `terraform/sso` so `grafana-sso` exists in `observability`.
-5. Sync `monitoring-crds` first and confirm Prometheus Operator CRDs exist.
-6. Sync `monitoring`.
-7. Sync `node-exporter` and confirm its DaemonSet is admitted in
+4. Sync `monitoring-crds` first and confirm Prometheus Operator CRDs exist.
+   This also creates the `observability` namespace for Terraform-created
+   Secrets.
+5. Apply `terraform/sso` so `grafana-sso` exists in `observability`.
+6. Apply `terraform/push` so `push-ntfy-config`, `apprise-config`, and
+   `push-mobile` exist in `observability`.
+7. Sync `push` and `apprise`.
+8. Sync `monitoring`.
+9. Sync `node-exporter` and confirm its DaemonSet is admitted in
    `node-observability`.
-8. Sync `loki`.
-9. Sync `alloy` and confirm logs arrive in Loki.
-10. Confirm Grafana login through Authentik.
-11. Confirm Prometheus targets for kube-state-metrics, node-exporter, kubelet,
+10. Sync `loki`.
+11. Sync `alloy` and confirm logs arrive in Loki.
+12. Confirm Grafana login through Authentik.
+13. Confirm Prometheus targets for kube-state-metrics, node-exporter, kubelet,
    Prometheus, Alertmanager, Grafana, and enabled component ServiceMonitors.
-12. Add Apprise API and exposed authenticated ntfy after the remaining ntfy
-    blockers are resolved.
-13. Add Alertmanager routing.
-14. Fire one synthetic Alertmanager alert and one deliberately failed ArgoCD
+14. Confirm ntfy login/subscription using the `push-mobile` Secret.
+15. Fire one synthetic Alertmanager alert and one deliberately failed ArgoCD
     sync to prove the shared notification path.
 
 ## Data-Loss Expectations
@@ -382,4 +411,7 @@ When eventually synced:
 - Losing the Grafana PVC loses local Grafana state not represented in chart
   values, ConfigMaps, or dashboards.
 - Losing the Alertmanager PVC loses silences and notification history.
+- Losing the ntfy PVC loses notification cache and auth/cache database state.
+  The provisioned users, ACLs, and tokens are restored by `terraform/push`, but
+  runtime subscription/cache history is disposable.
 - These PVCs are intentionally excluded from backup scope by default.

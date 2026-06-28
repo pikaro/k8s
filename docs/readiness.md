@@ -28,7 +28,7 @@ secrets/backups, without remembered imperative app setup.
 | Vaultwarden | Managed by `argocd/catalog/app/vaultwarden.yaml`. Uses ZFS PVCs, TLS/DNS annotations, SMTP Secret, Bitwarden installation Secret, and currently `database.type: default` with a FIXME to move off SQLite. | App modernization remains open, but Vaultwarden is not a current readiness blocker. |
 | Vikunja | Managed by `argocd/catalog/app/vikunja.yaml`. Uses ZFS PVCs and TLS/DNS annotations. Current values define file and database PVCs, so it is still effectively local-state backed. | App modernization remains open, but Vikunja is not a current readiness blocker. |
 | Odoo | `services/app/odoo/values.yaml` exists, but there is no `argocd/catalog/app/odoo.yaml`. | Intentionally parked until the chart/database/security issues are handled. Do not treat this as a readiness blocker for the current app set. |
-| Observability | Catalog/value files codify `monitoring-crds`, `monitoring`, `node-exporter`, `loki`, and `alloy`, plus chart-native metrics integrations for current platform/base services, including Authentik. The readiness stack is selected: Prometheus, Grafana, standalone node-exporter, Loki, Alloy, Alertmanager, Apprise API, and a `push` notification surface, likely backed by ntfy. Observability PVCs are disposable readiness state, not backup targets. | Decide push backend and credential/ACL ownership, then implement notifications. |
+| Observability | Catalog/value files codify `monitoring-crds`, `monitoring`, `node-exporter`, `loki`, `alloy`, `push`/ntfy, and `apprise`, plus chart-native metrics integrations for current platform/base services, including Authentik. `terraform/push` owns generated ntfy users/tokens/ACL config, Apprise destination config, and the mobile client Secret. Alertmanager routes low/medium/high/critical alerts through Apprise to ntfy. Observability PVCs are disposable readiness state, not backup targets. | Sync and prove notification delivery with one synthetic Alertmanager alert and one ArgoCD failure/degraded condition. |
 | Backups | No backup controller is present. CNPG backups are disabled. Volume backups are absent. | Needs off-cluster backup target, CNPG object-store backups, and PVC backup coverage for workload state. Observability history/cache is intentionally excluded unless that policy changes later. |
 
 ## Prioritized Readiness Work
@@ -43,7 +43,7 @@ repeatable convergence, day-to-day iteration, or debugging.
 | 2 | Done | Define restore inputs and secret ownership | High | Low | Turns the current implicit restore knowledge into a repeatable checklist without changing live workloads. |
 | 3 | Done | Disable ArgoCD local admin | Low | Low | ArgoCD is last in the bootstrap flow, so disabling the built-in local admin now fits the current SSO path. |
 | 4 | Done | Codify ArgoCD Projects and namespace ownership | High | Medium | Makes app categories and empty-cluster namespace creation real, while leaving root and CoreDNS in `default`. |
-| 5 | Open | Finish observability notifications | Medium | Medium | Metrics and logs are codified; the shared Apprise/ntfy notification path remains. |
+| 5 | Open | Prove observability notifications | Medium | Low | Metrics, logs, and the shared Apprise/ntfy notification path are codified; live delivery still needs a synthetic alert test after sync. |
 | 6 | Open | Add backups | Low | Medium/High | Useful for full rebuilds, but current irreplaceable data is small and easily exported; implementation spans AWS, CNPG, and PVC tooling. |
 | 7 | Open | Enable automated sync | Low | Low | Make pruning/self-healing explicit only after projects, namespaces, observability, and backups are in place. |
 
@@ -132,10 +132,10 @@ Acceptance checks:
 
 ### 5. Add Observability And Notifications
 
-Status: open. Metrics and log collection are codified through
-`monitoring-crds`, `monitoring`, `node-exporter`, Loki, Alloy, and
-chart-native component monitoring integrations. Notification routing is still
-tracked in `docs/observability.md`.
+Status: open pending live delivery proof. Metrics, log collection, and
+notification routing are codified through `monitoring-crds`, `monitoring`,
+`node-exporter`, Loki, Alloy, `push`, Apprise, chart-native component monitoring
+integrations, and `terraform/push`.
 
 Target stack:
 
