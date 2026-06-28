@@ -35,7 +35,7 @@ prometheus-node-exporter:
 
 grafana:
   enabled: true
-  defaultDashboardsTimezone: browser
+  defaultDashboardsTimezone: Europe/Berlin
   deploymentStrategy:
     type: Recreate
     rollingUpdate: null
@@ -90,6 +90,8 @@ grafana:
   grafana.ini:
     server:
       root_url: https://o11y.d-reis.com/
+    date_formats:
+      default_timezone: Europe/Berlin
     auth.generic_oauth:
       enabled: true
       name: Authentik
