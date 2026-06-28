@@ -15,7 +15,7 @@ secrets/backups, without remembered imperative app setup.
 | CoreDNS | Managed by `argocd/applications/coredns.yaml` with values in `bootstrap/coredns/values.yaml`. The chart exposes the `9153` metrics port and a ServiceMonitor once Prometheus Operator CRDs are present. | It still uses the `default` ArgoCD project. |
 | ArgoCD | Self-managed via `argocd/catalog/platform/argocd.yaml` and `services/platform/argocd/values.yaml`. The chart renders `Ingress` for `argo.d-reis.com` and `argo.k8s.d-reis.com`, plus a cert-manager `Certificate` named `argocd-server`. Authentik OIDC and group RBAC are codified, the local admin account is disabled, and generated catalog Applications use non-default AppProjects. Root and CoreDNS intentionally stay in `project: default`. | Notifications belong with observability. Automated sync is deferred to the final readiness step. |
 | AppSets | `argocd/appsets/generate.sh` renders separate `platform`, `base`, and `app` AppProjects and ApplicationSets from templates. Project destinations are generated from catalog namespaces. Generated Applications use their category project by default, create their destination namespace by default, and support catalog project overrides. The ApplicationSet template supports Helm, Kustomize, optional `requirementsPath`, optional `resourcesPath`, and optional server-side apply. | Automated sync is intentionally deferred to the final readiness step. |
-| OpenTofu/AWS/Auth | OpenTofu modules under `terraform/` manage the Kubernetes OIDC provider, Route53 access, external-dns DynamoDB registry, IAM roles for external-dns/cert-manager/external-secrets, and Authentik SSO catalog resources. `enable_iam_users = false` and `enable_oidc_roles = true` are checked in. | Restore inputs and the SSO OpenTofu apply path are documented in `docs/restore-contract.md`. No backup bucket/role/user exists yet. |
+| OpenTofu/AWS/Auth | OpenTofu modules under `terraform/` manage the Kubernetes OIDC provider, Route53 access, external-dns DynamoDB registry, IAM roles for external-dns/cert-manager/external-secrets, and Authentik SSO catalog resources. `enable_iam_users = false` and `enable_oidc_roles = true` are checked in. | Restore inputs and the SSO OpenTofu apply path are documented in `docs/restore-contract.md`. The rsync.net-backed object-store gateway uses ESO-generated credentials, not SSM. |
 | external-dns | `services/platform/external-dns/values.yaml` uses AWS web identity env vars and a projected service account token. It uses the DynamoDB registry and writes root-domain CNAMEs plus `k8s.d-reis.com` records. | Nothing structural. Keep root-domain names explicit in ingress annotations; do not infer or rewrite them. |
 | cert-manager | `services/platform/cert-manager/values.yaml` uses AWS web identity env vars and a projected service account token. `services/platform/cert-manager/resources/issuers.yaml` defines staging and production Route53 DNS01 `ClusterIssuer`s. | Nothing structural. Bootstrap IAM-user comments can stay until README cleanup, but runtime should not depend on those Secrets. |
 | external-secrets | Chart and `ClusterSecretStore` are present under `services/platform/external-secrets/`. Store reads AWS SSM Parameter Store via service account JWT and smoke tests have validated normal String and SecureString reads. Authentik uses ESO generators and the Kubernetes provider to copy its CNPG password from `cnpg-database` into the `authentik` namespace. | Readiness-scope secret ownership is documented in `docs/restore-contract.md`. Future non-generated platform secrets should be SSM parameters exposed through External Secrets. |
@@ -29,7 +29,8 @@ secrets/backups, without remembered imperative app setup.
 | Vikunja | Managed by `argocd/catalog/app/vikunja.yaml`. Uses ZFS PVCs and TLS/DNS annotations. Current values define file and database PVCs, so it is still effectively local-state backed. | App modernization remains open, but Vikunja is not a current readiness blocker. |
 | Odoo | `services/app/odoo/values.yaml` exists, but there is no `argocd/catalog/app/odoo.yaml`. | Intentionally parked until the chart/database/security issues are handled. Do not treat this as a readiness blocker for the current app set. |
 | Observability | Catalog/value files codify `monitoring-crds`, `monitoring`, `node-exporter`, `loki`, `alloy`, `push`/ntfy, and `apprise`, plus chart-native metrics integrations for current platform/base services, including Authentik. `terraform/push` owns generated ntfy users/tokens/ACL config, Apprise destination config, and the mobile client Secret. Alertmanager routes low/medium/high/critical alerts through Apprise to ntfy. Observability PVCs are disposable readiness state, not backup targets. | Sync and prove notification delivery with one synthetic Alertmanager alert and one ArgoCD failure/degraded condition. |
-| Backups | No backup controller is present. CNPG backups are disabled. Volume backups are absent. | Needs off-cluster backup target, CNPG object-store backups, and PVC backup coverage for workload state. Observability history/cache is intentionally excluded unless that policy changes later. |
+| Object-store gateway | `argocd/catalog/platform/object-store-gateway.yaml` deploys a cluster-internal rclone S3 gateway backed by rsync.net over SFTP/SCP-compatible SSH. It exposes `object-store-gateway.object-store.svc.cluster.local:9000`. Host and user are checked-in config for `zh3928.rsync.net`/`zh3928`; the SSH key and S3 gateway password are generated by External Secrets; known hosts are populated by an init-time `ssh-keyscan`. | Needs a live sync/test and the generated SSH public key registered on rsync.net. This is a general external object-store endpoint; AWS S3 can still be preferred for workloads that need a real object store. |
+| Backups | No backup controller is present. CNPG backups are disabled. Volume backups are absent. The object-store gateway is available as a low-cost target, but backups can also use AWS S3 where that is the better fit. | Needs CNPG object-store backups and PVC backup coverage for workload state. Observability history/cache is intentionally excluded unless that policy changes later. |
 
 ## Prioritized Readiness Work
 
@@ -221,17 +222,35 @@ Acceptance checks:
 Do this when the cluster state is worth preserving automatically rather than by
 manual export.
 
-OpenTofu/AWS:
+Object-store target:
 
-- Add an off-cluster S3 backup bucket.
-- Add IAM access for CNPG backups.
-- Add IAM access for the volume backup controller.
-- Store any non-role backup credentials in SSM and expose them through ExternalSecrets.
+- Use the existing rsync.net account as a general off-cluster object-store
+  target when a cheap internal S3-compatible endpoint is useful.
+- Expose it inside the cluster with `services/platform/object-store-gateway/`.
+- Treat `object-store-gateway.object-store.svc.cluster.local:9000` as an
+  internal protocol bridge only. The rsync.net path is the durable storage
+  boundary.
+- Keep `zh3928.rsync.net` and `zh3928` in checked-in config; they are not
+  secret material.
+- Generate the rsync.net SSH key with ESO's `SSHKey` generator and register the
+  generated public key on rsync.net.
+  Retrieve it after first sync with:
+  `kubectl -n object-store get secret object-store-gateway-rsyncnet-ssh -o jsonpath='{.data.publicKey}' | base64 -d`.
+- Generate the gateway's S3 access key Secret with ESO's `Password` generator.
+- Populate `known_hosts` at pod start with an init-time `ssh-keyscan`, not SSM.
+- Treat rclone `serve s3` as a pragmatic compatibility layer, not a proven S3
+  service. It is experimental and its multipart upload path can hold upload
+  parts in memory, so prove CNPG base backups before enabling a schedule.
 
 PostgreSQL:
 
 - Enable `backups.enabled` in `services/base/cnpg-cluster/values.yaml`.
-- Set the S3 bucket/region/path and retention.
+- Set the S3 endpoint, bucket/path, credentials, and retention.
+- Do not enable S3 server-side encryption unless the rclone S3 endpoint is
+  proven to accept the headers CNPG sends.
+- If the S3-compatible endpoint rejects newer boto3 checksum headers, set the
+  documented CNPG environment workaround for `AWS_REQUEST_CHECKSUM_CALCULATION`
+  and `AWS_RESPONSE_CHECKSUM_VALIDATION`.
 - Keep the daily scheduled backup unless there is a concrete reason to change it.
 
 Volumes:
@@ -248,6 +267,11 @@ Volumes:
 
 Acceptance checks:
 
+- The `object-store-gateway` application syncs, the generated public key is
+  accepted by rsync.net, and rclone can list/create a test object through the
+  cluster-internal S3 endpoint.
+- A CNPG-sized object upload does not OOM the rclone gateway or fail on S3
+  compatibility headers.
 - A manual CNPG backup completes and appears in the bucket.
 - A VolSync backup completes for one non-critical PVC.
 - One throwaway restore is performed into a temporary namespace before trusting the setup.

@@ -340,14 +340,23 @@ For an existing cluster that previously installed these CRDs through the
 
 - Sync the monitoring Applications in the following order:
 
-    - Apply the generated push notification configuration:
-      `tofu -chdir=terraform/push apply`
-    - push
-    - apprise
     - monitoring
     - node-exporter
     - loki
     - alloy
+    - apprise
+    - push
+
+- Apply the generated push notification configuration:
+    `tofu -chdir=terraform/push apply`
+
+- Retrieve the login secrets from Terraform and log into the ntfy Client on a
+    mobile phone or desktop.
+
+- Test that notifications are received - likely, some will still be present from
+    before, such as "AlertmanagerFailedToSendAlerts".
+
+### Backups
 
 ### Remaining services
 
