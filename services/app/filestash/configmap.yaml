@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filestash-config-template
+  labels:
+    app.kubernetes.io/name: filestash
+data:
+  config.json.tpl: |
+    {
+      "general": {
+        "name": "Files",
+        "host": "files.d-reis.com",
+        "secret_key": "__FILESTASH_SECRET_KEY__",
+        "force_ssl": true,
+        "display_hidden": true,
+        "upload_button": true,
+        "refresh_after_upload": true
+      },
+      "features": {
+        "share": {
+          "enable": false
+        },
+        "protection": {
+          "enable_chromecast": false
+        }
+      },
+      "log": {
+        "level": "INFO",
+        "telemetry": false
+      },
+      "auth": {
+        "admin": "disabled"
+      },
+      "middleware": {
+        "identity_provider": {
+          "type": "passthrough",
+          "params": "{\"strategy\":\"direct\"}"
+        },
+        "attribute_mapping": {
+          "related_backend": "S3",
+          "params": "{\"S3\":{\"type\":\"s3\",\"endpoint\":\"http://object-store-gateway.object-store.svc.cluster.local:9000\",\"region\":\"us-east-1\",\"path\":\"/\"}}"
+        }
+      },
+      "connections": [
+        {
+          "type": "s3",
+          "label": "S3",
+          "path": "/"
+        }
+      ]
+    }

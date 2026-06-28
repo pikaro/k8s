@@ -33,9 +33,14 @@ spec:
             - -ec
           args:
             - |
-              if [ ! -e /state/config/config.json ]; then
+              if [ ! -e /state/.filestash-state-initialized ]; then
                 cp -a /app/data/state/. /state/
+                touch /state/.filestash-state-initialized
               fi
+              mkdir -p /state/config
+              sed "s|__FILESTASH_SECRET_KEY__|${FILESTASH_SECRET_KEY}|g" \
+                /config-template/config.json.tpl > /state/config/config.json
+              chmod 0660 /state/config/config.json
           resources:
             requests:
               cpu: 5m
@@ -47,9 +52,18 @@ spec:
             capabilities:
               drop:
                 - ALL
+          env:
+            - name: FILESTASH_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: filestash-config
+                  key: FILESTASH_SECRET_KEY
           volumeMounts:
             - name: state
               mountPath: /state
+            - name: config-template
+              mountPath: /config-template
+              readOnly: true
       containers:
         - name: filestash
           image: machines/filestash:latest
@@ -58,10 +72,20 @@ spec:
             - name: http
               containerPort: 8334
           env:
-            - name: APPLICATION_URL
-              value: https://files.d-reis.com
             - name: CANARY
               value: "true"
+            - name: CONFIG_ENCRYPT
+              value: "false"
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: filestash-s3-auth
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: filestash-s3-auth
+                  key: AWS_SECRET_ACCESS_KEY
           readinessProbe:
             httpGet:
               path: /
@@ -92,6 +116,9 @@ spec:
         - name: state
           persistentVolumeClaim:
             claimName: filestash-state
+        - name: config-template
+          configMap:
+            name: filestash-config-template
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
