@@ -147,6 +147,9 @@ These are enough to review the standard metrics/logging shape before pushing.
 - Start Alloy as a DaemonSet with Kubernetes pod log discovery.
 - Run node-exporter as a standalone app in `node-observability`, not as the
   embedded `kube-prometheus-stack` subchart.
+- Run Grafana dashboard and data source sidecars as live watchers, not one-shot
+  init containers, so component dashboard ConfigMaps imported after Grafana
+  starts are picked up automatically.
 - Give only `node-observability` privileged PodSecurity labels. Node-exporter
   needs host network, host PID, and host filesystem access for real host disk,
   filesystem, CPU, memory, and network metrics.

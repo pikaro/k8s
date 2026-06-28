@@ -180,17 +180,17 @@ grafana:
       searchNamespace: ALL
       label: grafana_dashboard
       labelValue: "1"
-      watchMethod: LIST
+      watchMethod: WATCH
       skipReload: true
-      initDashboards: true
+      initDashboards: false
     datasources:
       enabled: true
       searchNamespace: ALL
       label: grafana_datasource
       labelValue: "1"
-      watchMethod: LIST
+      watchMethod: WATCH
       skipReload: true
-      initDatasources: true
+      initDatasources: false
 
   additionalDataSources:
     - name: Loki
