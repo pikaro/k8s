@@ -26,6 +26,10 @@ ingressShim:
   defaultIssuerKind: ClusterIssuer
   defaultIssuerGroup: cert-manager.io
 
+prometheus:
+  servicemonitor:
+    enabled: true
+
 # NOTE: Prod values using IRSA
 
 extraEnv:

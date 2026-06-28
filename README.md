@@ -176,6 +176,27 @@ Best guide but very outdated:
 
 ## Initial services
 
+### Monitoring CRDs
+
+Prometheus Operator CRDs are a baseline API dependency. Install them before
+CoreDNS or any ArgoCD-managed service values that render `ServiceMonitor`,
+`PodMonitor`, `PrometheusRule`, or `Probe` objects. This does not install
+Prometheus, Grafana, Alertmanager, Loki, or any metrics/log persistence.
+Monitor objects can exist before the runtime stack; they are just inert until
+Prometheus is deployed.
+
+- `helm repo add prometheus-community https://prometheus-community.github.io/helm-charts`
+- `helm repo update`
+- From the repository root:
+    ```
+    helm upgrade --install monitoring-crds \
+      --namespace observability \
+      --create-namespace \
+      prometheus-community/prometheus-operator-crds \
+      --version 30.0.0 \
+      --values services/platform/monitoring-crds/values.yaml
+    ```
+
 ### CoreDNS
 
 - `cd bootstrap/coredns`
@@ -283,6 +304,7 @@ Best guide but very outdated:
 Sync the Applications in the `platform` ApplicationSet one by one, in the
 following order:
 
+- monitoring-crds
 - OpenEBS
 - external-dns
 - cert-manager
@@ -317,6 +339,14 @@ order:
     is valid and applied.
 
 ### Monitoring
+
+The `monitoring-crds` Application should already be synced from the initial
+platform deployment. It owns only the Prometheus Operator API types; the main
+monitoring stack below owns the runtime components.
+
+For an existing cluster that previously installed these CRDs through the
+`monitoring` Application, sync `monitoring-crds` before syncing or pruning
+`monitoring` so ArgoCD resource tracking moves to the CRD-only Application.
 
 - Sync the monitoring Applications in the following order:
 

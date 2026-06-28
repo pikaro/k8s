@@ -61,4 +61,4 @@ serviceAccount:
   create: true
 
 serviceMonitor:
-  enabled: false
+  enabled: true

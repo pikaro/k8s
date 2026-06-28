@@ -6,11 +6,14 @@ post-readiness app modernization, or automated sync.
 
 ## Target Shape
 
+- `monitoring-crds`: Prometheus Operator CRDs in `observability`, installed
+  before any chart renders Prometheus Operator custom resources.
 - `monitoring`: `kube-prometheus-stack` in `observability`.
 - `node-exporter`: standalone `prometheus-node-exporter` in
   `node-observability`.
 - `loki`: single-binary Loki in `observability`.
 - `alloy`: Alloy DaemonSet in `observability`, shipping pod logs to Loki.
+- `authentik`: chart-native server and worker metrics ServiceMonitors.
 - Push notifications: Alertmanager to Apprise API to an exposed push service,
   currently expected to be ntfy. Backend choice and credential ownership still
   need to be resolved before manifests are added.
@@ -22,10 +25,15 @@ node-exporter needs privileged PodSecurity labels for host metrics.
 
 ## Source Notes
 
+- `prometheus-operator-crds` owns the Prometheus Operator API types as an early
+  bootstrap dependency. This lets component charts always render
+  `ServiceMonitor`, `PodMonitor`, `PrometheusRule`, and `Probe` objects without
+  depending on whether the runtime observability stack exists yet.
 - `kube-prometheus-stack` is the standard chart for Prometheus Operator,
   Prometheus, Alertmanager, Grafana, kube-state-metrics, and node-exporter.
-  This repo disables its embedded node-exporter and runs the standalone
-  `prometheus-node-exporter` chart in a narrower privileged namespace.
+  This repo disables its CRD ownership and embedded node-exporter, and runs the
+  standalone `prometheus-node-exporter` chart in a narrower privileged
+  namespace.
 - The Grafana subchart supports `grafana.ini`, environment variables from
   Secrets, ingress, persistence, sidecar dashboards, and additional data
   sources.
@@ -76,24 +84,26 @@ belongs in Kubernetes manifests/Helm values.
    `observability`; adding `node-exporter` with
    `namespace: node-observability` makes the generated project include the
    privileged node metrics namespace.
-2. The `monitoring` app installs Prometheus Operator CRDs, Prometheus,
-   Alertmanager, Grafana, and kube-state-metrics.
-3. The `monitoring` catalog entry declares the Grafana Authentik app. The
+2. The `monitoring-crds` app installs Prometheus Operator CRDs before any
+   component app renders Prometheus Operator custom resources.
+3. The `monitoring` app installs Prometheus, Alertmanager, Grafana,
+   kube-state-metrics, and the Prometheus Operator with chart CRD ownership
+   disabled.
+4. The `monitoring` catalog entry declares the Grafana Authentik app. The
    `terraform/sso` module must be applied after that catalog entry exists and
    before Grafana is expected to start, because the chart reads the
    Terraform-created `grafana-sso` Secret for client credentials and OIDC
    endpoint URLs.
-4. The `node-exporter` app depends on the Prometheus Operator CRDs for its
-   ServiceMonitor. It should sync after `monitoring`, and its own requirements
-   create the `node-observability` namespace with privileged PodSecurity labels.
-5. The `loki` app provides the in-cluster write endpoint used by Alloy and the
+5. The `node-exporter` app depends on the Prometheus Operator CRDs for its
+   ServiceMonitor. Its own requirements create the `node-observability`
+   namespace with privileged PodSecurity labels.
+6. The `loki` app provides the in-cluster write endpoint used by Alloy and the
    Grafana Loki data source.
-6. The `alloy` app can start after Loki exists. Its values point at
+7. The `alloy` app can start after Loki exists. Its values point at
    `http://loki-gateway.observability.svc.cluster.local/loki/api/v1/push`.
-7. Existing platform chart metrics toggles should be enabled only after
-   `monitoring` has installed the Prometheus Operator CRDs. Those edits belong
-   in the existing service values, not in repeated requirement folders.
-8. Notifications depend on Alertmanager and should be added after the
+8. Component chart metrics integrations are enabled in the owning chart values.
+   They rely on `monitoring-crds`, not on the runtime observability stack.
+9. Notifications depend on Alertmanager and should be added after the
    Apprise/ntfy branch is decided.
 
 ## Drafted Configuration
@@ -101,7 +111,9 @@ belongs in Kubernetes manifests/Helm values.
 The following files are intentionally created as normal repo files:
 
 - `argocd/catalog/platform/monitoring.yaml`
+- `argocd/catalog/platform/monitoring-crds.yaml`
 - `services/platform/monitoring/values.yaml`
+- `services/platform/monitoring-crds/values.yaml`
 - `argocd/catalog/platform/node-exporter.yaml`
 - `services/platform/node-exporter/requirements/namespace.yaml`
 - `services/platform/node-exporter/values.yaml`
@@ -115,7 +127,8 @@ These are enough to review the standard metrics/logging shape before pushing.
 ## Standard Decisions Already Encoded
 
 - Use `observability` as the shared namespace.
-- Keep monitoring, node-exporter, Loki, and Alloy as separate platform apps.
+- Keep monitoring-crds, monitoring, node-exporter, Loki, and Alloy as separate
+  platform apps.
 - Use native Grafana OAuth against Authentik, not forward-auth.
 - Expose only Grafana and the push web/API surface through Traefik initially.
 - Keep Prometheus, Alertmanager, Loki, and Alloy internal-only.
@@ -143,8 +156,9 @@ These are enough to review the standard metrics/logging shape before pushing.
   it still listens in the node network namespace, but the chart binds to the
   node IP rather than `0.0.0.0`.
 - Keep Loki labels low-cardinality: namespace, pod, container, app, and node.
-- Do not create ServiceMonitor objects from non-monitoring apps before the
-  Prometheus Operator CRDs exist.
+- Treat Prometheus Operator CRDs as baseline API state. Component monitor
+  objects should render unconditionally once those CRDs are in the bootstrap
+  flow.
 
 ## Clarified Decisions
 
@@ -175,7 +189,8 @@ These are enough to review the standard metrics/logging shape before pushing.
   official container, not a third-party Helm chart.
 - Alertmanager repeat timing starts as low `24h`, medium `12h`, high `4h`, and
   critical `30m`.
-- CoreDNS metrics are deferred until after the first deployment and validation.
+- CoreDNS metrics are enabled through the CoreDNS chart once `monitoring-crds`
+  exists.
 
 ## Remaining Blockers
 
@@ -203,12 +218,14 @@ added.
 
 ## Monitoring App Plan
 
-1. Add `kube-prometheus-stack` as `monitoring` in `observability`.
-2. Install CRDs through the chart. The generated Application uses
-   `SkipDryRunOnMissingResource=true` because the chart renders Prometheus
-   Operator CRDs and custom resources in the same sync. It also uses
-   `ServerSideApply=true` because several Prometheus Operator CRDs are too large
-   for client-side apply's `last-applied-configuration` annotation.
+1. Add `prometheus-operator-crds` as `monitoring-crds` in `observability`.
+   This app should sync before CoreDNS adoption and before platform/base/app
+   charts that render Prometheus Operator custom resources. On clusters that
+   previously installed the CRDs through `monitoring`, sync `monitoring-crds`
+   before syncing or pruning `monitoring` so ArgoCD resource tracking moves to
+   the CRD-only Application.
+2. Add `kube-prometheus-stack` as `monitoring` in `observability`, with
+   `crds.enabled: false` because CRD ownership belongs to `monitoring-crds`.
 3. Enable Grafana with:
    - ingress through Traefik;
    - cert-manager certificate;
@@ -236,7 +253,8 @@ added.
    - scheduler;
    - etcd;
    - kube-proxy;
-   - CoreDNS until a metrics Service exists.
+
+   CoreDNS is handled by the CoreDNS chart's own metrics ServiceMonitor.
 8. Leave Alertmanager notification routing as the chart default until Apprise
    API and ntfy are defined.
 
@@ -253,8 +271,8 @@ added.
 5. Keep hostPort disabled. A ClusterIP Service plus ServiceMonitor is enough for
    Prometheus to scrape it.
 6. Bind node-exporter to the node IP rather than all host interfaces.
-7. Enable the chart's ServiceMonitor after `monitoring` has installed the
-   Prometheus Operator CRDs.
+7. Enable the chart's ServiceMonitor because `monitoring-crds` owns the required
+   Prometheus Operator API types.
 
 ## Loki App Plan
 
@@ -273,25 +291,24 @@ added.
 3. Discover Kubernetes pods and ship logs to Loki.
 4. Keep labels low-cardinality.
 5. Do not persist Alloy state.
-6. Do not enable Alloy's own ServiceMonitor until the monitoring CRDs are
-   present and that metrics path has been validated.
+6. Enable Alloy's own ServiceMonitor for controller health and scrape status.
 
 ## Existing Service Integration Plan
 
-These are follow-up edits after the stack exists:
+These are enabled in the owning chart values and rely on `monitoring-crds`:
 
-- ArgoCD: enable metrics and ServiceMonitors for controller, repo-server,
-  server, and ApplicationSet controller if the chart supports each cleanly.
-- Traefik: enable metrics and a ServiceMonitor or PodMonitor.
-- cert-manager: enable ServiceMonitor for controller, cainjector, and webhook
-  only if the chart values render matching metrics ports.
-- external-dns: enable metrics ServiceMonitor on port `7979`.
-- external-secrets: enable ServiceMonitor for controller/webhook/cert
-  controller only if exposed by the chart values.
-- CNPG operator: enable monitoring and dashboard ConfigMap sidecar labels.
-- CNPG cluster: enable PodMonitor/PrometheusRule values after confirming the
-  chart's CNPG version-specific keys.
-- CoreDNS: expose the `9153` metrics port before enabling scrape.
+- ArgoCD: metrics and ServiceMonitors for Redis, controller, repo-server,
+  server, Dex, ApplicationSet controller, and notifications.
+- Traefik: Prometheus metrics Service and ServiceMonitor.
+- cert-manager: ServiceMonitor for controller, cainjector, and webhook.
+- external-dns: metrics ServiceMonitor.
+- external-secrets: ServiceMonitors and Grafana dashboard ConfigMap.
+- CNPG operator: PodMonitor and dashboard ConfigMap sidecar labels.
+- CNPG cluster: PodMonitor and PrometheusRule values.
+- Authentik: server and worker metrics Services and ServiceMonitors.
+- CoreDNS: expose the `9153` metrics port and enable the chart ServiceMonitor.
+- Loki: ServiceMonitor, dashboards, and non-alerting rules.
+- Alloy: ServiceMonitor for controller health and scrape status.
 
 ## Alerting Baseline
 
@@ -316,18 +333,18 @@ Imported chart rules that use `warning` should route as `medium`.
 
 1. Run YAML parsing over new files.
 2. Run `argocd/appsets/generate.sh` and review generated project destinations.
-3. Render `monitoring`, `node-exporter`, `loki`, and `alloy` charts locally once
-   chart repos are reachable.
+3. Render `monitoring-crds`, `monitoring`, `node-exporter`, `loki`, and `alloy`
+   charts locally once chart repos are reachable.
 4. Apply `terraform/sso` so `grafana-sso` exists in `observability`.
-5. Sync `monitoring` first and confirm Prometheus Operator CRDs exist.
-6. Sync `node-exporter` and confirm its DaemonSet is admitted in
+5. Sync `monitoring-crds` first and confirm Prometheus Operator CRDs exist.
+6. Sync `monitoring`.
+7. Sync `node-exporter` and confirm its DaemonSet is admitted in
    `node-observability`.
-7. Sync `loki`.
-8. Sync `alloy` and confirm logs arrive in Loki.
-9. Confirm Grafana login through Authentik.
-10. Confirm Prometheus targets for kube-state-metrics, node-exporter, kubelet,
-   Prometheus, Alertmanager, and Grafana.
-11. Enable existing-service metrics toggles one app at a time.
+8. Sync `loki`.
+9. Sync `alloy` and confirm logs arrive in Loki.
+10. Confirm Grafana login through Authentik.
+11. Confirm Prometheus targets for kube-state-metrics, node-exporter, kubelet,
+   Prometheus, Alertmanager, Grafana, and enabled component ServiceMonitors.
 12. Add Apprise API and exposed authenticated ntfy after the remaining ntfy
     blockers are resolved.
 13. Add Alertmanager routing.

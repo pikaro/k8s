@@ -1,7 +1,7 @@
 fullnameOverride: monitoring
 
 crds:
-  enabled: true
+  enabled: false
 
 kubeApiServer:
   enabled: true
@@ -180,6 +180,7 @@ grafana:
       searchNamespace: ALL
       label: grafana_dashboard
       labelValue: "1"
+      watchMethod: LIST
       skipReload: true
       initDashboards: true
     datasources:
@@ -187,6 +188,7 @@ grafana:
       searchNamespace: ALL
       label: grafana_datasource
       labelValue: "1"
+      watchMethod: LIST
       skipReload: true
       initDatasources: true
 

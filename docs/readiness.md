@@ -12,7 +12,7 @@ secrets/backups, without remembered imperative app setup.
 
 | Area | Current repo state | Remaining gap |
 | --- | --- | --- |
-| CoreDNS | Managed by `argocd/applications/coredns.yaml` with values in `bootstrap/coredns/values.yaml`. | It still uses the `default` ArgoCD project. |
+| CoreDNS | Managed by `argocd/applications/coredns.yaml` with values in `bootstrap/coredns/values.yaml`. The chart exposes the `9153` metrics port and a ServiceMonitor once Prometheus Operator CRDs are present. | It still uses the `default` ArgoCD project. |
 | ArgoCD | Self-managed via `argocd/catalog/platform/argocd.yaml` and `services/platform/argocd/values.yaml`. The chart renders `Ingress` for `argo.d-reis.com` and `argo.k8s.d-reis.com`, plus a cert-manager `Certificate` named `argocd-server`. Authentik OIDC and group RBAC are codified, the local admin account is disabled, and generated catalog Applications use non-default AppProjects. Root and CoreDNS intentionally stay in `project: default`. | Notifications belong with observability. Automated sync is deferred to the final readiness step. |
 | AppSets | `argocd/appsets/generate.sh` renders separate `platform`, `base`, and `app` AppProjects and ApplicationSets from templates. Project destinations are generated from catalog namespaces. Generated Applications use their category project by default, create their destination namespace by default, and support catalog project overrides. The ApplicationSet template supports Helm, Kustomize, optional `requirementsPath`, optional `resourcesPath`, and optional server-side apply. | Automated sync is intentionally deferred to the final readiness step. |
 | OpenTofu/AWS/Auth | OpenTofu modules under `terraform/` manage the Kubernetes OIDC provider, Route53 access, external-dns DynamoDB registry, IAM roles for external-dns/cert-manager/external-secrets, and Authentik SSO catalog resources. `enable_iam_users = false` and `enable_oidc_roles = true` are checked in. | Restore inputs and the SSO OpenTofu apply path are documented in `docs/restore-contract.md`. No backup bucket/role/user exists yet. |
@@ -20,15 +20,15 @@ secrets/backups, without remembered imperative app setup.
 | cert-manager | `services/platform/cert-manager/values.yaml` uses AWS web identity env vars and a projected service account token. `services/platform/cert-manager/resources/issuers.yaml` defines staging and production Route53 DNS01 `ClusterIssuer`s. | Nothing structural. Bootstrap IAM-user comments can stay until README cleanup, but runtime should not depend on those Secrets. |
 | external-secrets | Chart and `ClusterSecretStore` are present under `services/platform/external-secrets/`. Store reads AWS SSM Parameter Store via service account JWT and smoke tests have validated normal String and SecureString reads. Authentik uses ESO generators and the Kubernetes provider to copy its CNPG password from `cnpg-database` into the `authentik` namespace. | Readiness-scope secret ownership is documented in `docs/restore-contract.md`. Future non-generated platform secrets should be SSM parameters exposed through External Secrets. |
 | OIDC issuer | `services/platform/oidc/` publishes the Kubernetes service-account issuer metadata and JWKS via Kustomize. Terraform trusts `https://oidc.k8s.d-reis.com`. | JWKS refresh is still a manual repo update when service-account signing keys change. |
-| Traefik | `services/platform/traefik/values.yaml` runs Traefik on host networking with ports 80/443, publishes `thule.d-reis.com` as the ingress endpoint, sets host-network DNS policy for service-name forward-auth calls, and ships shared Authentik forward-auth plus the SSO-protected dashboard resources under `services/platform/traefik/resources/`. | Nothing structural for current readiness. |
+| Traefik | `services/platform/traefik/values.yaml` runs Traefik on host networking with ports 80/443, publishes `thule.d-reis.com` as the ingress endpoint, sets host-network DNS policy for service-name forward-auth calls, exposes an internal Prometheus metrics ServiceMonitor, and ships shared Authentik forward-auth plus the SSO-protected dashboard resources under `services/platform/traefik/resources/`. | Nothing structural for current readiness. |
 | OpenEBS/ZFS | `services/platform/openebs/` enables ZFS LocalPV and defines `zfs`, `zfs-bulk`, `zfs-spof`, and temporary variants. | Volume backup tooling is absent. `VolumeSnapshotClass` is defined, but snapshot-controller/CRD ownership needs to be made explicit before relying on snapshots. |
-| CNPG operator | Managed by `argocd/catalog/platform/cnpg-operator.yaml` with server-side apply. | Monitoring and operator resources are not enabled/tuned. |
-| CNPG cluster | Managed by `argocd/catalog/base/cnpg-cluster.yaml`. It creates a 3-instance PostgreSQL 16 cluster on `zfs`. Because the current CNPG chart does not provide standalone `DatabaseRole`, `services/base/cnpg-cluster/values.yaml` still declares the Authentik managed role inline. | Object-store backups and monitoring are disabled. Moving app roles to `DatabaseRole` after a chart/operator upgrade is cleanup, not a current readiness blocker. |
-| Authentik | Managed by `argocd/catalog/base/authentik.yaml` in the `authentik` namespace. `services/base/authentik/requirements/` creates the namespace, Authentik database, canonical CNPG password Secret in `cnpg-database`, and ESO copies of the app config and CNPG CA into `authentik`. The chart disables bundled PostgreSQL, consumes the copied config Secret, mounts the copied CNPG server CA, uses PostgreSQL `verify-full`, keeps chart service account creation enabled, and exposes `sso.d-reis.com` plus `sso.k8s.d-reis.com` through Traefik/cert-manager/external-dns. OpenTofu codifies users/groups, OIDC apps, proxy apps, and provider attachments from the ArgoCD catalog. | The SSO restore contract is documented in `docs/restore-contract.md`. SMTP is not part of the current readiness gate unless email flows become a gate. |
+| CNPG operator | Managed by `argocd/catalog/platform/cnpg-operator.yaml` with server-side apply. Operator PodMonitor and Grafana dashboard ConfigMap are enabled. | Operator resources are not tuned. |
+| CNPG cluster | Managed by `argocd/catalog/base/cnpg-cluster.yaml`. It creates a 3-instance PostgreSQL 16 cluster on `zfs` with PodMonitor and PrometheusRule monitoring enabled. Because the current CNPG chart does not provide standalone `DatabaseRole`, `services/base/cnpg-cluster/values.yaml` still declares the Authentik managed role inline. | Object-store backups are disabled. Moving app roles to `DatabaseRole` after a chart/operator upgrade is cleanup, not a current readiness blocker. |
+| Authentik | Managed by `argocd/catalog/base/authentik.yaml` in the `authentik` namespace. `services/base/authentik/requirements/` creates the namespace, Authentik database, canonical CNPG password Secret in `cnpg-database`, and ESO copies of the app config and CNPG CA into `authentik`. The chart disables bundled PostgreSQL, consumes the copied config Secret, mounts the copied CNPG server CA, uses PostgreSQL `verify-full`, keeps chart service account creation enabled, enables server/worker metrics ServiceMonitors, and exposes `sso.d-reis.com` plus `sso.k8s.d-reis.com` through Traefik/cert-manager/external-dns. OpenTofu codifies users/groups, OIDC apps, proxy apps, and provider attachments from the ArgoCD catalog. | The SSO restore contract is documented in `docs/restore-contract.md`. SMTP is not part of the current readiness gate unless email flows become a gate. |
 | Vaultwarden | Managed by `argocd/catalog/app/vaultwarden.yaml`. Uses ZFS PVCs, TLS/DNS annotations, SMTP Secret, Bitwarden installation Secret, and currently `database.type: default` with a FIXME to move off SQLite. | App modernization remains open, but Vaultwarden is not a current readiness blocker. |
 | Vikunja | Managed by `argocd/catalog/app/vikunja.yaml`. Uses ZFS PVCs and TLS/DNS annotations. Current values define file and database PVCs, so it is still effectively local-state backed. | App modernization remains open, but Vikunja is not a current readiness blocker. |
 | Odoo | `services/app/odoo/values.yaml` exists, but there is no `argocd/catalog/app/odoo.yaml`. | Intentionally parked until the chart/database/security issues are handled. Do not treat this as a readiness blocker for the current app set. |
-| Observability | Draft catalog/value files exist for `monitoring`, `node-exporter`, `loki`, and `alloy`, and the implementation plan is in `docs/observability.md`. The readiness stack is selected: Prometheus, Grafana, standalone node-exporter, Loki, Alloy, Alertmanager, Apprise API, and a `push` notification surface, likely backed by ntfy. Observability PVCs are disposable readiness state, not backup targets. | Decide push backend and credential/ACL ownership, then implement notifications and per-service metrics toggles. |
+| Observability | Catalog/value files codify `monitoring-crds`, `monitoring`, `node-exporter`, `loki`, and `alloy`, plus chart-native metrics integrations for current platform/base services, including Authentik. The readiness stack is selected: Prometheus, Grafana, standalone node-exporter, Loki, Alloy, Alertmanager, Apprise API, and a `push` notification surface, likely backed by ntfy. Observability PVCs are disposable readiness state, not backup targets. | Decide push backend and credential/ACL ownership, then implement notifications. |
 | Backups | No backup controller is present. CNPG backups are disabled. Volume backups are absent. | Needs off-cluster backup target, CNPG object-store backups, and PVC backup coverage for workload state. Observability history/cache is intentionally excluded unless that policy changes later. |
 
 ## Prioritized Readiness Work
@@ -43,7 +43,7 @@ repeatable convergence, day-to-day iteration, or debugging.
 | 2 | Done | Define restore inputs and secret ownership | High | Low | Turns the current implicit restore knowledge into a repeatable checklist without changing live workloads. |
 | 3 | Done | Disable ArgoCD local admin | Low | Low | ArgoCD is last in the bootstrap flow, so disabling the built-in local admin now fits the current SSO path. |
 | 4 | Done | Codify ArgoCD Projects and namespace ownership | High | Medium | Makes app categories and empty-cluster namespace creation real, while leaving root and CoreDNS in `default`. |
-| 5 | Open | Add observability and notifications | Medium | Medium | The stack is selected; implementation should add cluster metrics, logs, alerts, and the shared Apprise/ntfy notification path. |
+| 5 | Open | Finish observability notifications | Medium | Medium | Metrics and logs are codified; the shared Apprise/ntfy notification path remains. |
 | 6 | Open | Add backups | Low | Medium/High | Useful for full rebuilds, but current irreplaceable data is small and easily exported; implementation spans AWS, CNPG, and PVC tooling. |
 | 7 | Open | Enable automated sync | Low | Low | Make pruning/self-healing explicit only after projects, namespaces, observability, and backups are in place. |
 
@@ -132,14 +132,18 @@ Acceptance checks:
 
 ### 5. Add Observability And Notifications
 
-Status: open. Draft catalog/value files exist for Prometheus/Grafana,
-Alertmanager, Loki, and Alloy. The implementation plan and remaining decisions
-are tracked in `docs/observability.md`.
+Status: open. Metrics and log collection are codified through
+`monitoring-crds`, `monitoring`, `node-exporter`, Loki, Alloy, and
+chart-native component monitoring integrations. Notification routing is still
+tracked in `docs/observability.md`.
 
 Target stack:
 
 - Prometheus, Alertmanager, Grafana, kube-state-metrics, and the Prometheus
   Operator via `kube-prometheus-stack`.
+- Prometheus Operator CRDs via a separate early `monitoring-crds` app, so
+  component charts can always render monitor resources without bootstrap
+  toggles.
 - Standalone node-exporter in `node-observability`, with that namespace
   explicitly labeled for privileged PodSecurity because host metrics require
   host network, host PID, and host filesystem access.
@@ -153,6 +157,9 @@ Implementation scope:
 
 - Add the stack under the `platform` ArgoCD project.
 - Use an `observability` namespace unless a chart requires a narrower split.
+- Add `argocd/catalog/platform/monitoring-crds.yaml` for
+  `prometheus-operator-crds` and sync it before apps that render
+  `ServiceMonitor`, `PodMonitor`, `PrometheusRule`, or `Probe` objects.
 - Add `argocd/catalog/platform/monitoring.yaml` for `kube-prometheus-stack`.
 - Add `services/platform/monitoring/values.yaml` with Grafana ingress, TLS,
   Authentik OIDC, and persistent storage on `zfs`.
@@ -186,6 +193,10 @@ Implementation scope:
   - external-secrets ServiceMonitor
   - CNPG operator monitoring
   - CNPG cluster monitoring
+  - Authentik server/worker ServiceMonitors
+  - CoreDNS ServiceMonitor
+  - Alloy ServiceMonitor
+  - Loki ServiceMonitor and dashboards
 
 Initial alerts to codify as PrometheusRules:
 

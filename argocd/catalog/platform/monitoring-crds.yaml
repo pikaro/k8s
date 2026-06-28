@@ -1,0 +1,7 @@
+name: monitoring-crds
+releaseName: monitoring-crds
+namespace: observability
+chartRepo: https://prometheus-community.github.io/helm-charts
+chart: prometheus-operator-crds
+chartVersion: 30.0.0
+serverSideApply: "true"

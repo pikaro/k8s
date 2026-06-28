@@ -30,13 +30,35 @@ configs:
 redis-ha:
   enabled: false
 
+redis:
+  exporter:
+    enabled: true
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
 controller:
   replicas: 1
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+dex:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
 
 server:
   autoscaling:
     enabled: true
     minReplicas: 1
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
 
   ingress:
     enabled: true
@@ -63,6 +85,20 @@ repoServer:
   autoscaling:
     enabled: true
     minReplicas: 1
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
 
 applicationSet:
   replicas: 1
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+
+notifications:
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true

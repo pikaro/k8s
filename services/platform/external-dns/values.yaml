@@ -8,6 +8,9 @@ policy: sync
 registry: dynamodb
 txtOwnerId: thule
 
+serviceMonitor:
+  enabled: true
+
 extraArgs:
   aws-prefer-cname:
   dynamodb-region: eu-central-1

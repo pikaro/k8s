@@ -18,6 +18,13 @@ processClusterGenerator: false
 processClusterPushSecret: false
 processPushSecret: false
 
+serviceMonitor:
+  enabled: true
+  renderMode: alwaysRender
+
+grafanaDashboard:
+  enabled: true
+
 serviceAccount:
   create: true
   automount: true

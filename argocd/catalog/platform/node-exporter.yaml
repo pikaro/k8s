@@ -4,4 +4,3 @@ chartRepo: https://prometheus-community.github.io/helm-charts
 chart: prometheus-node-exporter
 chartVersion: 4.55.0
 requirementsPath: services/platform/node-exporter/requirements
-skipDryRunOnMissingResource: "true"

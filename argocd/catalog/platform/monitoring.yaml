@@ -5,7 +5,6 @@ chartRepo: https://prometheus-community.github.io/helm-charts
 chart: kube-prometheus-stack
 chartVersion: 87.2.1
 serverSideApply: "true"
-skipDryRunOnMissingResource: "true"
 authentik:
   name: Grafana
   slug: grafana

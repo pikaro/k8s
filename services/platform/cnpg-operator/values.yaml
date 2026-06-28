@@ -104,13 +104,12 @@ topologySpreadConstraints: []
 tolerations: []
 affinity: {}
 monitoring:
-  # TODO: Enable
-  podMonitorEnabled: false
+  podMonitorEnabled: true
   podMonitorMetricRelabelings: []
   podMonitorRelabelings: []
   podMonitorAdditionalLabels: {}
   grafanaDashboard:
-    create: false
+    create: true
     namespace: ""
     configMapName: "cnpg-grafana-dashboard"
     sidecarLabel: "grafana_dashboard"

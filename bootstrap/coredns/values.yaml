@@ -3,6 +3,12 @@ serviceType: ClusterIP
 service:
   clusterIP: 10.38.0.10
 
+prometheus:
+  service:
+    enabled: true
+  monitor:
+    enabled: true
+
 servers:
 - zones:
   - zone: .

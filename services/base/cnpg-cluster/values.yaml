@@ -53,8 +53,7 @@ cluster:
         name: authentik-db-auth
 
   monitoring:
-    # TODO: Enable monitoring
-    enabled: false
+    enabled: true
     podMonitor:
       enabled: true
       labels: {}

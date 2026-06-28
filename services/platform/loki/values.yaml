@@ -50,3 +50,12 @@ lokiCanary:
 
 minio:
   enabled: false
+
+monitoring:
+  dashboards:
+    enabled: true
+  rules:
+    enabled: true
+    alerting: false
+  serviceMonitor:
+    enabled: true
