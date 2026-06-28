@@ -34,7 +34,7 @@ spec:
           args:
             - |
               if [ ! -e /state/.filestash-state-initialized ]; then
-                cp -a /app/data/state/. /state/
+                cp -R /app/data/state/. /state/
                 touch /state/.filestash-state-initialized
               fi
               mkdir -p /state/config
