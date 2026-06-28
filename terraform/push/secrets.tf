@@ -50,6 +50,7 @@ resource "kubernetes_secret_v1" "push_mobile" {
   data = {
     server_url = var.public_url
     username   = var.mobile_user
+    password   = random_password.ntfy_mobile.result
     token      = local.ntfy_mobile_token
     topics     = join(",", [for severity in local.alert_topic_order : local.alert_topics[severity].topic])
   }
