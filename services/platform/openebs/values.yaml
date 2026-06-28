@@ -7,6 +7,8 @@ engines:
       enabled: false
     zfs:
       enabled: true
+    hostpath:
+      enabled: false
 
 mayastor:
   csi:

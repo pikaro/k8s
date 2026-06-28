@@ -1,4 +1,4 @@
 name: openebs
 chartRepo: https://openebs.github.io/openebs
-chartVersion: 4.4.0
+chartVersion: 4.5.1
 resourcesPath: services/platform/openebs/resources
