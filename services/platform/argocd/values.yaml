@@ -46,10 +46,11 @@ controller:
       enabled: true
 
 dex:
+  enabled: false
   metrics:
-    enabled: true
+    enabled: false
     serviceMonitor:
-      enabled: true
+      enabled: false
 
 server:
   autoscaling:
