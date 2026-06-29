@@ -36,21 +36,6 @@ spec:
           ports:
             - name: smtp
               containerPort: 587
-          env:
-            - name: UPSTREAM_SMTP_HOST
-              value: smtp.protonmail.ch
-            - name: UPSTREAM_SMTP_PORT
-              value: "587"
-            - name: UPSTREAM_SMTP_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: mail-relay
-                  key: UPSTREAM_SMTP_USERNAME
-            - name: UPSTREAM_SMTP_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: mail-relay
-                  key: UPSTREAM_SMTP_PASSWORD
           resources:
             requests:
               cpu: 10m
@@ -87,10 +72,68 @@ spec:
               mountPath: /run/maddy
             - name: tmp
               mountPath: /tmp
+        - name: pgp-gateway
+          image: ghcr.io/pikaro/k8s/pgp-gateway:0.1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: metrics
+              containerPort: 9090
+          env:
+            - name: LISTEN_ADDR
+              value: 127.0.0.1:2525
+            - name: METRICS_ADDR
+              value: :9090
+            - name: PGP_KEY_RULES_FILE
+              value: /etc/pgp-gateway/keys.yaml
+            - name: SMTP_HOST
+              value: mail.smtp2go.com
+            - name: SMTP_PORT
+              value: "587"
+            - name: SMTP_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mail-relay
+                  key: SMTP_USERNAME
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mail-relay
+                  key: SMTP_PASSWORD
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: pgp-gateway-config
+              mountPath: /etc/pgp-gateway
+              readOnly: true
       volumes:
         - name: config
           configMap:
             name: mail-relay-config
+        - name: pgp-gateway-config
+          configMap:
+            name: mail-relay-pgp-gateway
         - name: auth
           secret:
             secretName: mail-relay

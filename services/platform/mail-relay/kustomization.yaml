@@ -4,6 +4,8 @@ namespace: mail
 
 resources:
   - configmap.yaml
+  - pgp-config.yaml
   - externalsecrets.yaml
   - deployment.yaml
   - service.yaml
+  - servicemonitor.yaml

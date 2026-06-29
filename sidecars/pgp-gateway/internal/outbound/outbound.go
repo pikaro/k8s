@@ -61,7 +61,7 @@ func (r Relay) Send(ctx context.Context, message Message) error {
 	if err != nil {
 		return err
 	}
-	if _, err := w.Write(message.Data); err != nil {
+	if err := WriteAll(w, message.Data); err != nil {
 		w.Close()
 		return err
 	}

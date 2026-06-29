@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mail-relay-pgp-gateway
+  labels:
+    app.kubernetes.io/name: mail-relay
+    app.kubernetes.io/component: pgp-gateway
+    app.kubernetes.io/part-of: platform
+data:
+  keys.yaml: |
+    rules:
+      - match:
+          - "*@d-reis.com"
+        keyFile: main.asc
+        fingerprint: "7D43A0CB95AC1CF2EE0179EEF02F25000E1EA603"
+  main.asc: |
+    -----BEGIN PGP PUBLIC KEY BLOCK-----
+
+    mDMEajgYshYJKwYBBAHaRw8BAQdAUSiIOIMprsyCEQJce38WDf9L46IgYGjOrYBJ
+    MyH8/pa0HERhdmlkIFJlaXMgPHBvc3RAZC1yZWlzLmNvbT6IrwQTFgoAVxYhBH1D
+    oMuVrBzy7gF57vAvJQAOHqYDBQJqOBiyGxSAAAAAAAQADm1hbnUyLDIuNSsxLjEy
+    LDAsMwIbAwULCQgHAgIiAgYVCgkICwIEFgIDAQIeBwIXgAAKCRDwLyUADh6mA0aP
+    AP9mnn/vVib+Nxf58d0v1fM2cTEj5SRvyOJSIGmFOYT1RwD9GRvGExd4wOhYT+1v
+    iq1EgUNnSG9asbFtk5xUvIFAWg24OARqOBiyEgorBgEEAZdVAQUBAQdAa5cuiMuB
+    ZKRjeBqpGzvkKtqXZKA3G374TuBqJUSbjFMDAQgHiJQEGBYKADwWIQR9Q6DLlawc
+    8u4Bee7wLyUADh6mAwUCajgYshsUgAAAAAAEAA5tYW51MiwyLjUrMS4xMiwwLDMC
+    GwwACgkQ8C8lAA4epgMupQD/VDBGpt56WWei70CvdY/wMxnhf5ERf6b7SMNsnuor
+    0tQBAP+yl8HvgdVGj9DO/4nB551ViFbAUAnnARsG9YMnba0B
+    =1Xv5
+    -----END PGP PUBLIC KEY BLOCK-----

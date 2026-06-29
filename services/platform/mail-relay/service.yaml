@@ -13,3 +13,6 @@ spec:
     - name: smtp
       port: 587
       targetPort: smtp
+    - name: metrics
+      port: 9090
+      targetPort: metrics

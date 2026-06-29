@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mail-relay-pgp-gateway
+  labels:
+    app.kubernetes.io/name: mail-relay
+    app.kubernetes.io/component: pgp-gateway
+    app.kubernetes.io/part-of: platform
+spec:
+  namespaceSelector:
+    matchNames:
+      - mail
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mail-relay
+  endpoints:
+    - port: metrics
+      path: /metrics

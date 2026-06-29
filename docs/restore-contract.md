@@ -19,6 +19,8 @@ To rebuild the readiness stack from an empty cluster, the inputs are:
 - SMTP upstream credentials in SSM for the mail relay:
   `/external-secrets/mail-relay/upstream-username` and
   `/external-secrets/mail-relay/upstream-password`.
+- Mail relay PGP recipient rules and armored public key material in
+  `services/platform/mail-relay/pgp-config.yaml`.
 
 The rsync.net-backed object-store gateway does not require SSM input values.
 Host, user, and known hosts are checked-in config. External Secrets generates
@@ -81,7 +83,8 @@ web-identity roles.
 | VolSync rsync.net transport keys | ESO `SSHKey` generators in each backed-up app namespace | Created once per namespace; register each generated `publicKey` with rsync.net after first sync. These keys are intentionally separate from the S3 gateway key. |
 | CNPG backup S3 credentials `cnpg-backup-s3-auth` | ESO Kubernetes provider in `services/base/cnpg-cluster/requirements/s3-auth.yaml` | Copied into `cnpg-database` from the gateway credential Secret and remapped to the key names expected by CNPG/Barman. |
 | Mail relay sender credential | `terraform/aws` `aws_ssm_parameter.mail_relay_sender_password` and `aws_ssm_parameter.mail_relay_sender_password_hash` | Generated once into SSM as the shared app-to-relay submission password and the Maddy-compatible bcrypt hash. External Secrets syncs the plaintext credential only into namespaces that may send mail. |
-| Mail relay upstream SMTP credentials | `terraform/aws` `aws_ssm_parameter.mail_relay_upstream_username` and `aws_ssm_parameter.mail_relay_upstream_password` | Created as KMS-encrypted SSM SecureStrings with an initial `undefined` sentinel and `ignore_changes` on value. External Secrets syncs them only into `mail` and refuses to render the relay Secret while either value is still `undefined`. |
+| Mail relay upstream SMTP credentials | `terraform/aws` `aws_ssm_parameter.mail_relay_upstream_username` and `aws_ssm_parameter.mail_relay_upstream_password` | Created as KMS-encrypted SSM SecureStrings with an initial `undefined` sentinel and `ignore_changes` on value. External Secrets syncs them only into `mail` for the PGP gateway sidecar and refuses to render the relay Secret while either value is still `undefined`. |
+| Mail relay PGP recipient rules and public key | `services/platform/mail-relay/pgp-config.yaml` | Checked-in non-secret OpenPGP public key material and recipient mapping. The placeholder intentionally has no rules so the relay cannot become ready until the real key and fingerprint are configured. |
 | Authentik database password Secret `authentik-db-auth` | ESO `Password` generator in `services/base/authentik/requirements/db-secret.yaml` | Created once in `cnpg-database`; CNPG consumes it for the `authentik` role. |
 | Authentik config Secret `authentik-config` | ESO Kubernetes provider plus ESO `Password` generator in `services/base/authentik/requirements/secret-copy.yaml` | Created once in `authentik`; contains generated app secret and copied CNPG credentials. |
 | Authentik SMTP Secret `authentik-smtp` | ESO SSM sync in `services/base/authentik/requirements/mail.yaml` | Copies the shared mail relay sender credential into `authentik` and sets Authentik email environment keys for the internal relay. |
