@@ -372,6 +372,8 @@ These are enabled in the owning chart values and rely on `monitoring-crds`:
 - Alloy: ServiceMonitor for controller health and scrape status.
 - VolSync: chart ServiceMonitor, local backup alerts, and a Grafana dashboard
   for backup freshness, missed intervals, out-of-sync state, and duration.
+- Mail relay: ServiceMonitor for the PGP gateway sidecar and a Grafana
+  dashboard for PGP gateway counters, Maddy/sidecar container health, and logs.
 
 ## Alerting Baseline
 

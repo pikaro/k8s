@@ -9,3 +9,14 @@ resources:
   - deployment.yaml
   - service.yaml
   - servicemonitor.yaml
+
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/name: mail-relay-dashboard
+    app.kubernetes.io/part-of: mail-relay
+configMapGenerator:
+  - name: mail-relay-dashboard
+    files:
+      - mail-relay.json
