@@ -68,7 +68,7 @@ the Kubernetes deployment image reference:
 
 ```text
 IMAGE=ghcr.io/pikaro/k8s/pgp-gateway
-VERSION=0.1.0
+VERSION=0.1.1
 ```
 
 The repo is not expected to be tagged for this sidecar. The sidecar version is

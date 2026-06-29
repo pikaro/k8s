@@ -73,7 +73,7 @@ spec:
             - name: tmp
               mountPath: /tmp
         - name: pgp-gateway
-          image: ghcr.io/pikaro/k8s/pgp-gateway:0.1.0
+          image: ghcr.io/pikaro/k8s/pgp-gateway:0.1.1
           imagePullPolicy: IfNotPresent
           ports:
             - name: metrics
