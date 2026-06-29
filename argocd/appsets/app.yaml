@@ -9,10 +9,12 @@ spec:
   goTemplate: true
   goTemplateOptions: ["missingkey=error"]
 
-  # syncPolicy:
-  #   applicationsSync: create-update
-  #   prune: true
-  #   selfHeal: true
+  syncPolicy:
+    applicationsSync: create-update
+    automated:
+      sync: true
+      prune: false
+      selfHeal: true
 
   generators:
     - git:

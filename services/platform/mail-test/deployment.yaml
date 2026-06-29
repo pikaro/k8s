@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mail-test
+  labels:
+    app.kubernetes.io/name: mail-test
+    app.kubernetes.io/part-of: platform
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: mail-test
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: mail-test
+        app.kubernetes.io/part-of: platform
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1654
+        runAsGroup: 1654
+        fsGroup: 1654
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: smtp4dev
+          image: rnwood/smtp4dev:3.9.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+            - name: smtp
+              containerPort: 2525
+          env:
+            - name: HOME
+              value: /smtp4dev
+            - name: DOTNET_CLI_HOME
+              value: /smtp4dev
+            - name: ASPNETCORE_HTTP_PORTS
+              value: "8080"
+            - name: ServerOptions__Urls
+              value: http://*:8080
+            - name: ServerOptions__HostName
+              value: mail-test.mail.svc.cluster.local
+            - name: ServerOptions__BasePath
+              value: /
+            - name: ServerOptions__LockSettings
+              value: "true"
+            - name: ServerOptions__Port
+              value: "2525"
+            - name: ServerOptions__TlsMode
+              value: None
+            - name: ServerOptions__DisableIPv6
+              value: "true"
+            - name: ServerOptions__NumberOfMessagesToKeep
+              value: "100"
+            - name: ServerOptions__NumberOfSessionsToKeep
+              value: "100"
+            - name: ServerOptions__ImapPort
+              value: "1143"
+            - name: ServerOptions__Pop3Port
+              value: "1110"
+            - name: RelayOptions__SmtpServer
+              value: mail-relay.mail.svc.cluster.local
+            - name: RelayOptions__SmtpPort
+              value: "587"
+            - name: RelayOptions__TlsMode
+              value: None
+            - name: RelayOptions__Login
+              valueFrom:
+                secretKeyRef:
+                  name: mail-test-smtp
+                  key: SMTP_USERNAME
+            - name: RelayOptions__Password
+              valueFrom:
+                secretKeyRef:
+                  name: mail-test-smtp
+                  key: SMTP_PASSWORD
+          resources:
+            requests:
+              cpu: 10m
+              memory: 128Mi
+            limits:
+              memory: 512Mi
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: data
+              mountPath: /smtp4dev
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: tmp
+          emptyDir:
+            medium: Memory

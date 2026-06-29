@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mail-test
+  labels:
+    app.kubernetes.io/name: mail-test
+    app.kubernetes.io/part-of: platform
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: mail-test
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+    - name: smtp
+      port: 25
+      targetPort: smtp
