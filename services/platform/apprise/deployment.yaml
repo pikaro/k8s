@@ -46,7 +46,7 @@ spec:
             - name: APPRISE_WORKER_COUNT
               value: "1"
             - name: APPRISE_ALLOW_SERVICES
-              value: ntfy
+              value: mailto
             - name: TZ
               value: Europe/Berlin
           readinessProbe:

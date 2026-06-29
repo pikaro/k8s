@@ -305,14 +305,6 @@ alertmanager:
               message: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
               priority: "2"
               click: https://o11y.d-reis.com/alerting/list
-              sequence_id: 'am-{{ .Receiver }}-{{ .GroupLabels.SortedPairs | toJson | reReplaceAll "[^A-Za-z0-9_.-]" "_" }}'
-          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-low/"
-            send_resolved: true
-            payload:
-              title: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ .CommonLabels.alertname }}'
-              body: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
-              format: text
-              type: '{{ if eq .Status "resolved" }}success{{ else }}info{{ end }}'
       - name: push-medium
         webhook_configs:
           - url: "http://push.observability.svc.cluster.local/"
@@ -326,14 +318,6 @@ alertmanager:
               message: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
               priority: "3"
               click: https://o11y.d-reis.com/alerting/list
-              sequence_id: 'am-{{ .Receiver }}-{{ .GroupLabels.SortedPairs | toJson | reReplaceAll "[^A-Za-z0-9_.-]" "_" }}'
-          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-medium/"
-            send_resolved: true
-            payload:
-              title: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ .CommonLabels.alertname }}'
-              body: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
-              format: text
-              type: '{{ if eq .Status "resolved" }}success{{ else }}warning{{ end }}'
       - name: push-high
         webhook_configs:
           - url: "http://push.observability.svc.cluster.local/"
@@ -347,14 +331,6 @@ alertmanager:
               message: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
               priority: "4"
               click: https://o11y.d-reis.com/alerting/list
-              sequence_id: 'am-{{ .Receiver }}-{{ .GroupLabels.SortedPairs | toJson | reReplaceAll "[^A-Za-z0-9_.-]" "_" }}'
-          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-high/"
-            send_resolved: true
-            payload:
-              title: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ .CommonLabels.alertname }}'
-              body: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
-              format: text
-              type: '{{ if eq .Status "resolved" }}success{{ else }}failure{{ end }}'
       - name: push-critical
         webhook_configs:
           - url: "http://push.observability.svc.cluster.local/"
@@ -368,14 +344,6 @@ alertmanager:
               message: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
               priority: "5"
               click: https://o11y.d-reis.com/alerting/list
-              sequence_id: 'am-{{ .Receiver }}-{{ .GroupLabels.SortedPairs | toJson | reReplaceAll "[^A-Za-z0-9_.-]" "_" }}'
-          - url: "http://apprise.observability.svc.cluster.local:8000/notify/alerts-critical/"
-            send_resolved: true
-            payload:
-              title: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ .CommonLabels.alertname }}'
-              body: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
-              format: text
-              type: '{{ if eq .Status "resolved" }}success{{ else }}failure{{ end }}'
     templates:
       - /etc/alertmanager/config/*.tmpl
   alertmanagerSpec:
