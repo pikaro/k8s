@@ -15,7 +15,7 @@ resource "authentik_application" "main" {
   name               = each.value.app.name
   slug               = each.value.app.slug
   protocol_provider  = local.app_providers[each.key]
-  policy_engine_mode = length(each.value.directory_groups) > 0 ? "any" : null
+  policy_engine_mode = length(local.app_access_groups[each.key]) > 0 ? "any" : null
 
   meta_hide       = each.value.app.hidden
   group           = each.value.app.group
@@ -27,9 +27,19 @@ resource "authentik_application" "main" {
 }
 
 locals {
+  default_app_access_groups = [
+    "global-admins",
+    "global-users",
+  ]
+
+  app_access_groups = {
+    for app_key, config in local.sso_configs :
+    app_key => distinct(concat(local.default_app_access_groups, config.directory_groups))
+  }
+
   app_group_bindings = merge({}, [
-    for app_key, config in local.sso_configs : {
-      for index, group in config.directory_groups :
+    for app_key, groups in local.app_access_groups : {
+      for index, group in groups :
       "${app_key}:${group}" => {
         app_key = app_key
         group   = group

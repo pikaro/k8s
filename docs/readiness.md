@@ -24,12 +24,13 @@ secrets/backups, without remembered imperative app setup.
 | OpenEBS/ZFS | `services/platform/openebs/` enables ZFS LocalPV and defines `zfs`, `zfs-bulk`, `zfs-spof`, and temporary variants. Hostpath LocalPV is disabled; ZFS is the intended local storage engine. | `VolumeSnapshotClass` is defined, but snapshot-controller/CRD ownership needs to be made explicit before relying on snapshot-based backups. Current VolSync backups use `copyMethod: Direct`. |
 | CNPG operator | Managed by `argocd/catalog/platform/cnpg-operator.yaml` with server-side apply. Operator PodMonitor and Grafana dashboard ConfigMap are enabled. | Operator resources are not tuned. |
 | CNPG cluster | Managed by `argocd/catalog/base/cnpg-cluster.yaml`. It creates a 3-instance PostgreSQL 16 cluster on `zfs` with PodMonitor and PrometheusRule monitoring enabled. Because the current CNPG chart does not provide standalone `DatabaseRole`, `services/base/cnpg-cluster/values.yaml` still declares the Authentik managed role inline. | Object-store backups are configured for the rsync.net-backed gateway, but a first manual backup and throwaway restore still need to be proven. Moving app roles to `DatabaseRole` after a chart/operator upgrade is cleanup, not a current readiness blocker. |
-| Authentik | Managed by `argocd/catalog/base/authentik.yaml` in the `authentik` namespace. `services/base/authentik/requirements/` creates the namespace, Authentik database, canonical CNPG password Secret in `cnpg-database`, and ESO copies of the app config and CNPG CA into `authentik`. The chart disables bundled PostgreSQL, consumes the copied config Secret, mounts the copied CNPG server CA, uses PostgreSQL `verify-full`, keeps chart service account creation enabled, enables server/worker metrics ServiceMonitors, and exposes `sso.d-reis.com` plus `sso.k8s.d-reis.com` through Traefik/cert-manager/external-dns. OpenTofu codifies users/groups, OIDC apps, proxy apps, and provider attachments from the ArgoCD catalog. | The SSO restore contract is documented in `docs/restore-contract.md`. SMTP relay is tracked as a readiness item so app mail and alert mail fanout do not depend on per-app SMTP wiring. |
-| Vaultwarden | Managed by `argocd/catalog/app/vaultwarden.yaml`. Uses ZFS PVCs, TLS/DNS annotations, SMTP Secret, Bitwarden installation Secret, and currently `database.type: default` with a FIXME to move off SQLite. | App modernization remains open, but Vaultwarden is not a current readiness blocker. |
+| Authentik | Managed by `argocd/catalog/base/authentik.yaml` in the `authentik` namespace. `services/base/authentik/requirements/` creates the namespace, Authentik database, canonical CNPG password Secret in `cnpg-database`, ESO copies of the app config and CNPG CA into `authentik`, and an SSM-backed `authentik-smtp` Secret for the cluster mail relay. The chart disables bundled PostgreSQL, consumes the copied config Secret, imports the SMTP Secret through `global.envFrom`, mounts the copied CNPG server CA, uses PostgreSQL `verify-full`, keeps chart service account creation enabled, enables server/worker metrics ServiceMonitors, and exposes `sso.d-reis.com` plus `sso.k8s.d-reis.com` through Traefik/cert-manager/external-dns. OpenTofu codifies users/groups, OIDC apps, proxy apps, and provider attachments from the ArgoCD catalog. | The SSO restore contract is documented in `docs/restore-contract.md`. |
+| Vaultwarden | Managed by `argocd/catalog/app/vaultwarden.yaml`. Uses ZFS PVCs, TLS/DNS annotations, an SSM-backed SMTP Secret for the cluster mail relay, Bitwarden installation Secret, and currently `database.type: default` with a FIXME to move off SQLite. | App modernization remains open, but Vaultwarden is not a current readiness blocker. |
 | Vikunja | Managed by `argocd/catalog/app/vikunja.yaml`. Uses ZFS PVCs and TLS/DNS annotations. Current values define file and database PVCs, so it is still effectively local-state backed. | App modernization remains open, but Vikunja is not a current readiness blocker. |
 | Odoo | `services/app/odoo/values.yaml` exists, but there is no `argocd/catalog/app/odoo.yaml`. | Intentionally parked until the chart/database/security issues are handled. Do not treat this as a readiness blocker for the current app set. |
 | Observability | Catalog/value files codify `monitoring-crds`, `monitoring`, `node-exporter`, `loki`, `alloy`, `push`/ntfy, and `apprise`, plus chart-native metrics integrations for current platform/base services, including Authentik. `terraform/push` owns generated ntfy users/tokens/ACL config, the Alertmanager ntfy publisher token, Apprise destination config, and the mobile client Secret. Alertmanager routes low/medium/high/critical alerts directly to ntfy and also to Apprise as a generic fanout path. Observability PVCs are disposable readiness state, not backup targets. | Sync and prove notification delivery with one synthetic Alertmanager alert and one ArgoCD failure/degraded condition. |
 | Object-store gateway | `argocd/catalog/platform/object-store-gateway.yaml` deploys a cluster-internal rclone S3 gateway backed by rsync.net over SFTP/SCP-compatible SSH. It exposes `object-store-gateway.object-store.svc.cluster.local:9000`. Host and user are checked-in config for `zh3928.rsync.net`/`zh3928`; the SSH key and S3 gateway password are generated by External Secrets; rsync.net host keys are pinned in a checked-in ConfigMap. | Needs a live sync/test and the generated SSH public key registered on rsync.net. This is a general external object-store endpoint; AWS S3 can still be preferred for workloads that need a real object store. |
+| Mail relay | `argocd/catalog/platform/mail-relay.yaml` deploys a cluster-internal Maddy submission relay in the `mail` namespace. External Secrets reads upstream SMTP credentials from SSM and the shared app-to-relay sender credential from SSM. Maddy authenticates the single relay user and authorizes it for any sender localpart under `d-reis.com`; Vaultwarden and Authentik receive namespace-local copies of that sender credential. | Needs a live sync/test. The upstream SMTP provider must also accept the `@d-reis.com` sender localparts used by workloads. |
 | Backups | CNPG object-store backups are configured against the rsync.net-backed gateway. `volsync` is installed as a platform app, and current app-owned PVCs declare VolSync/Restic backups to rsync.net through Restic's `rclone:` backend with checked-in host key pins and namespace-local generated SSH keys. Restic retention keeps 7 daily, 4 weekly, and 12 monthly snapshots per PVC. VolSync metrics, backup alerts, and a Grafana dashboard are declared with the VolSync platform app. Observability history/cache is intentionally excluded unless that policy changes later. | Needs a proven VolSync backup/restore. |
 
 ## Prioritized Readiness Work
@@ -46,7 +47,7 @@ repeatable convergence, day-to-day iteration, or debugging.
 | 4 | Done | Codify ArgoCD Projects and namespace ownership | High | Medium | Makes app categories and empty-cluster namespace creation real, while leaving root and CoreDNS in `default`. |
 | 5 | Open | Prove observability notifications | Medium | Low | Metrics, logs, direct ntfy push, and Apprise fanout are codified; live delivery still needs a synthetic alert test after sync. |
 | 6 | Open | Prove backups | Low | Medium | CNPG and VolSync backup declarations are codified; live backup completion and throwaway restore still need to be proven before considering the path trusted. |
-| 7 | Open | Add SMTP relay | Medium | Medium | Provides one cluster mail path for apps and Apprise email fanout; Postfix is the simplest first target and can be scraped with `postfix_exporter`. |
+| 7 | Open | Prove SMTP relay | Medium | Medium | Maddy relay manifests are codified; live delivery and upstream sender policy still need proof. |
 | 8 | Open | Enable automated sync | Low | Low | Make pruning/self-healing explicit only after projects, namespaces, observability, backups, and SMTP relay are in place. |
 
 Vaultwarden and Vikunja modernization is useful, but it is not part of the
@@ -292,29 +293,29 @@ Acceptance checks:
 - VolSync backups complete for the current app PVCs.
 - One throwaway restore is performed into a temporary namespace before trusting the setup.
 
-### 7. Add SMTP Relay
+### 7. Prove SMTP Relay
 
-Add one internal outbound SMTP relay before final automated sync if app mail or
-email alert fanout is part of the ready cluster definition.
+Prove the internal outbound SMTP relay before final automated sync if app mail
+or email alert fanout is part of the ready cluster definition.
 
-- Start with Postfix unless a simpler maintained relay fits the deployment
-  constraints better.
-- Keep submission cluster-internal by default and make allowed sender domains,
-  upstream smarthost/TLS/auth, and queue/bounce handling explicit.
-- Manage relay credentials and policy through the existing GitOps/External
-  Secrets ownership pattern.
-- Expose relay metrics with `postfix_exporter`, then add a ServiceMonitor and a
-  small Grafana dashboard for queue size, queue age, and mail error rates.
+- Keep submission cluster-internal and authenticated with the shared
+  `relay@d-reis.com` sender credential.
+- Keep the single relay user authorized for `d-reis.com`; workload sender
+  localparts identify the namespace or app by convention.
+- Keep upstream smarthost credentials in SSM and expose them through External
+  Secrets.
+- Verify whether the upstream provider accepts every sender localpart used by
+  workloads. Proton SMTP submission may require active addresses or aliases for
+  each sender identity.
 - Wire Apprise email fanout through the relay after the relay exists; keep ntfy
   as the direct Alertmanager mobile path.
 
 Acceptance checks:
 
-- Authentik, Vaultwarden, or another non-critical app can send a test email
-  through the relay.
+- Authentik and Vaultwarden can send test email through the relay.
+- The upstream smarthost accepts the configured `@d-reis.com` workload senders.
 - Apprise can add an email destination without bypassing the direct ntfy alert
   path.
-- Prometheus scrapes the Postfix exporter and Grafana shows queue/error panels.
 
 ### 8. Enable Automated Sync
 

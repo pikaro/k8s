@@ -8,4 +8,5 @@ resource "aws_ssm_parameter" "volsync_restic_password" {
   description = "Shared Restic repository password for VolSync PVC backups."
   type        = "SecureString"
   value       = random_password.volsync_restic.result
+  key_id      = local.kms_key_arn
 }

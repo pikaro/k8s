@@ -61,7 +61,7 @@ data "aws_iam_policy_document" "ssm_external_secrets" {
     ]
 
     resources = [
-      local.inputs.aws.kms_key_arn
+      local.kms_key_arn
     ]
 
     condition {

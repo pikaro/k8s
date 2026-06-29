@@ -41,6 +41,11 @@ resource "aws_dynamodb_table" "external_dns_registry" {
     name = "k"
     type = "S"
   }
+
+  server_side_encryption {
+    enabled     = true
+    kms_key_arn = local.kms_key_arn
+  }
 }
 
 data "aws_iam_policy_document" "external_dns_route53" {
@@ -208,6 +213,149 @@ data "aws_iam_policy_document" "external_dns_registry" {
     resources = [
       aws_dynamodb_table.external_dns_registry.arn,
     ]
+  }
+
+  statement {
+    sid    = "UseKmsForDynamoDbRegistryTable"
+    effect = "Allow"
+
+    actions = [
+      "kms:Decrypt",
+      "kms:Encrypt",
+      "kms:GenerateDataKey*",
+      "kms:ReEncrypt*",
+    ]
+
+    resources = [
+      local.kms_key_arn,
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+
+      values = [
+        "dynamodb.${local.region}.amazonaws.com",
+      ]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:EncryptionContext:aws:dynamodb:tableName"
+
+      values = [
+        aws_dynamodb_table.external_dns_registry.name,
+      ]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:EncryptionContext:aws:dynamodb:subscriberId"
+
+      values = [
+        local.account_id,
+      ]
+    }
+
+    condition {
+      test     = "ForAllValues:StringEquals"
+      variable = "kms:EncryptionContextKeys"
+
+      values = [
+        "aws:dynamodb:tableName",
+        "aws:dynamodb:subscriberId",
+      ]
+    }
+  }
+
+  statement {
+    sid    = "CreateKmsGrantForDynamoDbRegistryTable"
+    effect = "Allow"
+
+    actions = [
+      "kms:CreateGrant",
+    ]
+
+    resources = [
+      local.kms_key_arn,
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+
+      values = [
+        "dynamodb.${local.region}.amazonaws.com",
+      ]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:EncryptionContext:aws:dynamodb:tableName"
+
+      values = [
+        aws_dynamodb_table.external_dns_registry.name,
+      ]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:EncryptionContext:aws:dynamodb:subscriberId"
+
+      values = [
+        local.account_id,
+      ]
+    }
+
+    condition {
+      test     = "ForAllValues:StringEquals"
+      variable = "kms:EncryptionContextKeys"
+
+      values = [
+        "aws:dynamodb:tableName",
+        "aws:dynamodb:subscriberId",
+      ]
+    }
+
+    condition {
+      test     = "ArnLike"
+      variable = "kms:GrantConstraintSourceArn"
+
+      values = [
+        aws_dynamodb_table.external_dns_registry.arn,
+      ]
+    }
+
+    condition {
+      test     = "Bool"
+      variable = "kms:GrantIsForAWSResource"
+
+      values = [
+        "true",
+      ]
+    }
+  }
+
+  statement {
+    sid    = "DescribeKmsKeyForDynamoDbRegistry"
+    effect = "Allow"
+
+    actions = [
+      "kms:DescribeKey",
+    ]
+
+    resources = [
+      local.kms_key_arn,
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+
+      values = [
+        "dynamodb.${local.region}.amazonaws.com",
+      ]
+    }
   }
 }
 

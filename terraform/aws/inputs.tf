@@ -10,4 +10,6 @@ module "inputs" {
 
 locals {
   inputs = module.inputs.data
+
+  kms_key_arn = local.inputs.aws.kms_key_arn
 }

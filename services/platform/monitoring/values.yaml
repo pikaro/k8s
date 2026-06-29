@@ -262,6 +262,18 @@ alertmanager:
         - receiver: "null"
           matchers:
             - alertname = Watchdog
+        # ==========
+        # Custom ignored alerts
+        # ==========
+
+        # CNPGClusterInstancesOnSameNode is expected until we get more nodes
+        - receiver: "null"
+          matchers:
+            - alertname = CNPGClusterInstancesOnSameNode
+
+        # ==========
+        # End custom ignored alerts
+        # ==========
         - receiver: push-critical
           matchers:
             - severity = critical

@@ -16,6 +16,9 @@ To rebuild the readiness stack from an empty cluster, the inputs are:
 - The Kubernetes service-account issuer documents in
   `services/platform/oidc/oidc.json` and `services/platform/oidc/jwks.json`.
 - Any SSM parameters referenced by readiness-scope `ExternalSecret` objects.
+- SMTP upstream credentials in SSM for the mail relay:
+  `/external-secrets/mail-relay/upstream-username` and
+  `/external-secrets/mail-relay/upstream-password`.
 
 The rsync.net-backed object-store gateway does not require SSM input values.
 Host, user, and known hosts are checked-in config. External Secrets generates
@@ -77,8 +80,11 @@ web-identity roles.
 | rclone S3 gateway credentials | ESO `Password` generator in `services/platform/object-store-gateway/externalsecrets.yaml` | Created once in `object-store`; generated credentials protect only the in-cluster gateway and do not need off-cluster durability. |
 | VolSync rsync.net transport keys | ESO `SSHKey` generators in each backed-up app namespace | Created once per namespace; register each generated `publicKey` with rsync.net after first sync. These keys are intentionally separate from the S3 gateway key. |
 | CNPG backup S3 credentials `cnpg-backup-s3-auth` | ESO Kubernetes provider in `services/base/cnpg-cluster/requirements/s3-auth.yaml` | Copied into `cnpg-database` from the gateway credential Secret and remapped to the key names expected by CNPG/Barman. |
+| Mail relay sender credential | `terraform/aws` `aws_ssm_parameter.mail_relay_sender_password` and `aws_ssm_parameter.mail_relay_sender_password_hash` | Generated once into SSM as the shared app-to-relay submission password and the Maddy-compatible bcrypt hash. External Secrets syncs the plaintext credential only into namespaces that may send mail. |
+| Mail relay upstream SMTP credentials | `terraform/aws` `aws_ssm_parameter.mail_relay_upstream_username` and `aws_ssm_parameter.mail_relay_upstream_password` | Created as KMS-encrypted SSM SecureStrings with an initial `undefined` sentinel and `ignore_changes` on value. External Secrets syncs them only into `mail` and refuses to render the relay Secret while either value is still `undefined`. |
 | Authentik database password Secret `authentik-db-auth` | ESO `Password` generator in `services/base/authentik/requirements/db-secret.yaml` | Created once in `cnpg-database`; CNPG consumes it for the `authentik` role. |
 | Authentik config Secret `authentik-config` | ESO Kubernetes provider plus ESO `Password` generator in `services/base/authentik/requirements/secret-copy.yaml` | Created once in `authentik`; contains generated app secret and copied CNPG credentials. |
+| Authentik SMTP Secret `authentik-smtp` | ESO SSM sync in `services/base/authentik/requirements/mail.yaml` | Copies the shared mail relay sender credential into `authentik` and sets Authentik email environment keys for the internal relay. |
 | Copied CNPG CA Secret `cnpg-cluster-ca` in `authentik` | ESO Kubernetes provider in `services/base/authentik/requirements/secret-copy.yaml` | Copied from the canonical CNPG CA Secret in `cnpg-database`. |
 | ArgoCD OIDC Secret `argocd-sso` | `terraform/sso` `kubernetes_secret_v1.oidc` | Rewritten by OpenTofu from the Authentik provider client data. |
 | Authentik users, groups, applications, providers, signing certificate, and proxy outpost attachments | `terraform/sso` | Recreated by running `tofu -chdir=terraform/sso apply` after Authentik is reachable. |

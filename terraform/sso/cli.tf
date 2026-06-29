@@ -7,6 +7,12 @@ resource "authentik_flow" "default_device_code" {
   compatibility_mode = false
 }
 
+locals {
+  authentik_cli_access_groups = [
+    "global-admins",
+  ]
+}
+
 resource "random_id" "client_id_cli" {
   byte_length = 16
 }
@@ -35,11 +41,22 @@ resource "authentik_provider_oauth2" "cli" {
 }
 
 resource "authentik_application" "cli" {
-  name              = "CLI"
-  slug              = "cli"
-  protocol_provider = authentik_provider_oauth2.cli.id
+  name               = "CLI"
+  slug               = "cli"
+  protocol_provider  = authentik_provider_oauth2.cli.id
+  policy_engine_mode = "any"
 
   meta_hide = true
+}
+
+resource "authentik_policy_binding" "cli_groups" {
+  for_each = {
+    for index, group in local.authentik_cli_access_groups : group => index
+  }
+
+  target = authentik_application.cli.uuid
+  group  = authentik_group.main[each.key].id
+  order  = each.value
 }
 
 output "cli_client_id" {

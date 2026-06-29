@@ -6,6 +6,11 @@ locals {
     namespace   = local.sso_configs["platform/monitoring.yaml"].namespace
     grafana_url = local.sso_configs["platform/monitoring.yaml"].app.url
   }
+
+  grafana_mcp_access_groups = [
+    "global-admins",
+    "grafana-admins",
+  ]
 }
 
 resource "authentik_provider_oauth2" "grafana_mcp" {
@@ -31,11 +36,22 @@ resource "authentik_provider_oauth2" "grafana_mcp" {
 }
 
 resource "authentik_application" "grafana_mcp" {
-  name              = local.grafana_mcp.name
-  slug              = local.grafana_mcp.slug
-  protocol_provider = authentik_provider_oauth2.grafana_mcp.id
+  name               = local.grafana_mcp.name
+  slug               = local.grafana_mcp.slug
+  protocol_provider  = authentik_provider_oauth2.grafana_mcp.id
+  policy_engine_mode = "any"
 
   meta_hide = true
+}
+
+resource "authentik_policy_binding" "grafana_mcp_groups" {
+  for_each = {
+    for index, group in local.grafana_mcp_access_groups : group => index
+  }
+
+  target = authentik_application.grafana_mcp.uuid
+  group  = authentik_group.main[each.key].id
+  order  = each.value
 }
 
 resource "kubernetes_secret_v1" "grafana_mcp" {
