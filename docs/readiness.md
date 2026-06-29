@@ -48,7 +48,7 @@ repeatable convergence, day-to-day iteration, or debugging.
 | 5 | Open | Prove observability notifications | Medium | Low | Metrics, logs, and direct ntfy push are codified; live delivery still needs a synthetic alert test after sync. |
 | 6 | Open | Prove backups | Low | Medium | CNPG and VolSync backup declarations are codified; live backup completion and throwaway restore still need to be proven before considering the path trusted. |
 | 7 | Open | Prove SMTP relay | Medium | Medium | Maddy relay manifests are codified; live delivery and upstream sender policy still need proof. |
-| 8 | Open | Enable automated sync | Low | Low | Make pruning/self-healing explicit only after projects, namespaces, observability, backups, and SMTP relay are in place. |
+| 8 | Done | Enable automated sync | Low | Low | Generated Applications now auto-sync and self-heal; pruning remains disabled until it has been tested deliberately. |
 
 Vaultwarden and Vikunja modernization is useful, but it is not part of the
 current readiness gate.
@@ -318,22 +318,18 @@ Acceptance checks:
 
 ### 8. Enable Automated Sync
 
-Do this last in readiness, after projects, namespace ownership, observability,
-backups, and SMTP relay are in place.
-
-- Decide which root, ApplicationSet, and generated Applications should enable:
-  - automated sync
-  - pruning
-  - self-healing
-- Update `argocd/appsets/template.yaml.tpl` and generated ApplicationSets.
-- Keep exceptions explicit in catalog YAML when a workload should stay manual.
+Generated Applications enable automated sync and self-healing through
+`argocd/appsets/template.yaml.tpl`. ApplicationSets keep
+`applicationsSync: create-update` so they may create or update generated
+Applications without pruning Applications that disappear from the generator.
+Application resource pruning is still disabled deliberately.
 
 Acceptance checks:
 
 - Automated sync behavior is explicit rather than inherited from defaults.
 - A non-critical generated Application self-heals a harmless drift.
-- Prune behavior is tested on a non-critical managed resource before enabling
-  it broadly.
+- Prune behavior stays disabled until it is tested on a non-critical managed
+  resource.
 
 ## Completed Or Non-Blocking Work
 

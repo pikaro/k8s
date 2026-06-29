@@ -11,10 +11,6 @@ spec:
 
   syncPolicy:
     applicationsSync: create-update
-    automated:
-      sync: true
-      prune: false
-      selfHeal: true
 
   generators:
     - git:
@@ -45,6 +41,9 @@ spec:
     {{- $skipDryRunOnMissingResource := eq (dig "skipDryRunOnMissingResource" "false" .) "true" }}
     spec:
       syncPolicy:
+        automated:
+          prune: false
+          selfHeal: true
         syncOptions:
           - CreateNamespace=true
       {{- if $serverSideApply }}
