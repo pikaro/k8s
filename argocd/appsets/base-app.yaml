@@ -39,6 +39,7 @@ spec:
     {{- $requirementsPath := dig "requirementsPath" "" . }}
     {{- $resourcesPath := dig "resourcesPath" "" . }}
     {{- $extraHelmSources := dig "extraHelmSources" (list) . }}
+    {{- $createNamespace := eq (dig "createNamespace" "true" .) "true" }}
     {{- $serverSideApply := eq (dig "serverSideApply" "false" .) "true" }}
     {{- $skipDryRunOnMissingResource := eq (dig "skipDryRunOnMissingResource" "false" .) "true" }}
     spec:
@@ -47,7 +48,9 @@ spec:
           prune: false
           selfHeal: true
         syncOptions:
+      {{- if $createNamespace }}
           - CreateNamespace=true
+      {{- end }}
       {{- if $serverSideApply }}
           - ServerSideApply=true
       {{- end }}
