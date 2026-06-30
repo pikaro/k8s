@@ -2,6 +2,48 @@ develop: false
 
 environment: {}
 
+extraEnvVars:
+  - name: OPENPROJECT_SEED_ADMIN_USER_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: openproject-admin-password
+        key: password
+  - name: OPENPROJECT_OPENID__CONNECT_AUTHENTIK_IDENTIFIER
+    valueFrom:
+      secretKeyRef:
+        name: openproject-sso
+        key: client_id
+  - name: OPENPROJECT_OPENID__CONNECT_AUTHENTIK_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: openproject-sso
+        key: client_secret
+  - name: OPENPROJECT_OPENID__CONNECT_AUTHENTIK_ISSUER
+    valueFrom:
+      secretKeyRef:
+        name: openproject-sso
+        key: issuer
+  - name: OPENPROJECT_OPENID__CONNECT_AUTHENTIK_AUTHORIZATION__ENDPOINT
+    valueFrom:
+      secretKeyRef:
+        name: openproject-sso
+        key: auth_url
+  - name: OPENPROJECT_OPENID__CONNECT_AUTHENTIK_TOKEN__ENDPOINT
+    valueFrom:
+      secretKeyRef:
+        name: openproject-sso
+        key: token_url
+  - name: OPENPROJECT_OPENID__CONNECT_AUTHENTIK_USERINFO__ENDPOINT
+    valueFrom:
+      secretKeyRef:
+        name: openproject-sso
+        key: api_url
+  - name: OPENPROJECT_OPENID__CONNECT_AUTHENTIK_END__SESSION__ENDPOINT
+    valueFrom:
+      secretKeyRef:
+        name: openproject-sso
+        key: end_session_url
+
 extraVolumes:
   - name: enterprise
     configMap:
@@ -97,6 +139,7 @@ openproject:
   extraEnvVarsSecret: openproject-smtp
 
   admin_user:
+    password: ""
     password_reset: "true"
     name: "OpenProject Admin"
     mail: "root@d-reis.com"
