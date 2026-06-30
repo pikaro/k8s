@@ -57,7 +57,8 @@ vikunja:
       valueFrom:
         secretKeyRef:
           name: vikunja-sso
-          key: auth_url
+          # WARNING: NOT auth_url!
+          key: issuer
 
   configMaps:
     config:
