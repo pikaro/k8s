@@ -17,4 +17,4 @@ authentik:
     - vikunja-users
   oidc:
     redirectUris:
-      - https://todo.d-reis.com/auth/callback
+      - https://todo.d-reis.com/auth/openid/authentik

@@ -301,8 +301,9 @@ alertmanager:
                 credentials_file: /etc/alertmanager/secrets/push-ntfy-config/NTFY_ALERTMANAGER_TOKEN
             payload:
               topic: alerts-low
-              title: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ .CommonLabels.alertname }}'
-              message: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
+              # ntfy expects a valid JSON body; encode rendered strings before they are embedded.
+              title: '{{- $prefix := "" -}}{{- if eq .Status "resolved" -}}{{- $prefix = "Resolved: " -}}{{- end -}}{{- printf "%s%s" $prefix .CommonLabels.alertname | toJson }}'
+              message: '{{- $prefix := "" -}}{{- if eq .Status "resolved" -}}{{- $prefix = "Resolved: " -}}{{- end -}}{{- $text := "" -}}{{- with .CommonAnnotations.description -}}{{- $text = . -}}{{- else -}}{{- with .CommonAnnotations.summary -}}{{- $text = . -}}{{- else -}}{{- $text = .CommonLabels.alertname -}}{{- end -}}{{- end -}}{{- printf "%s%s" $prefix $text | toJson }}'
               priority: "2"
               click: https://o11y.d-reis.com/alerting/list
       - name: push-medium
@@ -314,8 +315,8 @@ alertmanager:
                 credentials_file: /etc/alertmanager/secrets/push-ntfy-config/NTFY_ALERTMANAGER_TOKEN
             payload:
               topic: alerts-medium
-              title: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ .CommonLabels.alertname }}'
-              message: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
+              title: '{{- $prefix := "" -}}{{- if eq .Status "resolved" -}}{{- $prefix = "Resolved: " -}}{{- end -}}{{- printf "%s%s" $prefix .CommonLabels.alertname | toJson }}'
+              message: '{{- $prefix := "" -}}{{- if eq .Status "resolved" -}}{{- $prefix = "Resolved: " -}}{{- end -}}{{- $text := "" -}}{{- with .CommonAnnotations.description -}}{{- $text = . -}}{{- else -}}{{- with .CommonAnnotations.summary -}}{{- $text = . -}}{{- else -}}{{- $text = .CommonLabels.alertname -}}{{- end -}}{{- end -}}{{- printf "%s%s" $prefix $text | toJson }}'
               priority: "3"
               click: https://o11y.d-reis.com/alerting/list
       - name: push-high
@@ -327,8 +328,8 @@ alertmanager:
                 credentials_file: /etc/alertmanager/secrets/push-ntfy-config/NTFY_ALERTMANAGER_TOKEN
             payload:
               topic: alerts-high
-              title: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ .CommonLabels.alertname }}'
-              message: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
+              title: '{{- $prefix := "" -}}{{- if eq .Status "resolved" -}}{{- $prefix = "Resolved: " -}}{{- end -}}{{- printf "%s%s" $prefix .CommonLabels.alertname | toJson }}'
+              message: '{{- $prefix := "" -}}{{- if eq .Status "resolved" -}}{{- $prefix = "Resolved: " -}}{{- end -}}{{- $text := "" -}}{{- with .CommonAnnotations.description -}}{{- $text = . -}}{{- else -}}{{- with .CommonAnnotations.summary -}}{{- $text = . -}}{{- else -}}{{- $text = .CommonLabels.alertname -}}{{- end -}}{{- end -}}{{- printf "%s%s" $prefix $text | toJson }}'
               priority: "4"
               click: https://o11y.d-reis.com/alerting/list
       - name: push-critical
@@ -340,8 +341,8 @@ alertmanager:
                 credentials_file: /etc/alertmanager/secrets/push-ntfy-config/NTFY_ALERTMANAGER_TOKEN
             payload:
               topic: alerts-critical
-              title: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ .CommonLabels.alertname }}'
-              message: '{{ if eq .Status "resolved" }}Resolved: {{ end }}{{ with .CommonAnnotations.description }}{{ . }}{{ else }}{{ with .CommonAnnotations.summary }}{{ . }}{{ else }}{{ .CommonLabels.alertname }}{{ end }}{{ end }}'
+              title: '{{- $prefix := "" -}}{{- if eq .Status "resolved" -}}{{- $prefix = "Resolved: " -}}{{- end -}}{{- printf "%s%s" $prefix .CommonLabels.alertname | toJson }}'
+              message: '{{- $prefix := "" -}}{{- if eq .Status "resolved" -}}{{- $prefix = "Resolved: " -}}{{- end -}}{{- $text := "" -}}{{- with .CommonAnnotations.description -}}{{- $text = . -}}{{- else -}}{{- with .CommonAnnotations.summary -}}{{- $text = . -}}{{- else -}}{{- $text = .CommonLabels.alertname -}}{{- end -}}{{- end -}}{{- printf "%s%s" $prefix $text | toJson }}'
               priority: "5"
               click: https://o11y.d-reis.com/alerting/list
     templates:
