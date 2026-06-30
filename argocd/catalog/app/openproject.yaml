@@ -20,4 +20,4 @@ authentik:
     - openproject-users
   oidc:
     redirectUris:
-      - https://proj.d-reis.com/auth/callback
+      - https://proj.d-reis.com/auth/authentik/callback
