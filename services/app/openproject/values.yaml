@@ -1,6 +1,14 @@
 develop: false
 
-environment: {}
+environment:
+  OPENPROJECT_SELF__REGISTRATION: "0"
+  OPENPROJECT_DISABLE__PASSWORD__LOGIN: "true"
+  OPENPROJECT_OMNIAUTH__DIRECT__LOGIN__PROVIDER: "authentik"
+  OPENPROJECT_DROP__OLD__SESSIONS__ON__LOGIN: "true"
+  OPENPROJECT_LOST__PASSWORD: "false"
+  OPENPROJECT_DISABLE__PASSWORD__CHOICE: "true"
+  OPENPROJECT_ONBOARDING__ENABLED: "false"
+  OPENPROJECT_SHOW__COMMUNITY__LINKS: "false"
 
 extraEnvVars:
   - name: OPENPROJECT_SEED_ADMIN_USER_PASSWORD
@@ -161,7 +169,11 @@ openproject:
     endSessionEndpoint: ""
     scope: "[openid profile email]"
 
-    attribute_map: {}
+    attribute_map:
+      login: preferred_username
+      email: email
+      first_name: given_name
+      last_name: family_name
 
     existingSecret: openproject-sso
     secretKeys:
