@@ -15,13 +15,13 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: habitsync
     - server: https://kubernetes.default.svc
+      namespace: openproject
+    - server: https://kubernetes.default.svc
       namespace: sso-debug
     - server: https://kubernetes.default.svc
       namespace: vaultwarden
     - server: https://kubernetes.default.svc
       namespace: vikunja
-    - server: https://kubernetes.default.svc
-      namespace: openproject
   clusterResourceWhitelist:
     - group: "*"
       kind: "*"
