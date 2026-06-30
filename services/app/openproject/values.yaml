@@ -8,6 +8,7 @@ extraVolumes:
       name: openproject-enterprise
       items:
         - key: enterprise.rb
+          path: enterprise.rb
 
 extraVolumeMounts:
   - name: enterprise
