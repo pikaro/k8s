@@ -131,10 +131,10 @@ openproject:
 persistence:
   enabled: true
   accessModes:
-    - "ReadWriteOnce"
+    - "ReadWriteMany"
   annotations: {}
   size: "10Gi"
-  storageClassName: zfs
+  storageClassName: zfs-bulk
 
 # TODO: Minio
 s3:
