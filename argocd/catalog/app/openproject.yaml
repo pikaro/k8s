@@ -2,6 +2,7 @@ name: openproject
 chartRepo: https://charts.openproject.org
 chartVersion: 13.8.1
 skipDryRunOnMissingResource: "true"
+createNamespace: "false"
 extraHelmSources:
   - path: helm/volsync-restic-consumer
     releaseName: openproject-backups
