@@ -99,10 +99,9 @@ openproject:
     password_reset: "true"
     name: "OpenProject Admin"
     mail: "root@d-reis.com"
-    secret:
-      existingSecret: openproject-admin-password
-      secretKeys:
-        password: "password"
+    secret: openproject-admin-password
+    secretKeys:
+      password: "password"
 
   oidc:
     enabled: true
