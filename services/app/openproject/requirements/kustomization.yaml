@@ -5,6 +5,5 @@ resources:
   - namespace.yaml
   - db-secret.yaml
   - mail.yaml
-  - secret-copy.yaml
   - enterprise.yaml
   - admin-secret.yaml
