@@ -1,0 +1,21 @@
+name: openproject
+chartRepo: https://charts.openproject.org
+chartVersion: 13.8.1
+skipDryRunOnMissingResource: "true"
+extraHelmSources:
+  - path: helm/volsync-restic-consumer
+    releaseName: openproject-backups
+    valuesFile: services/app/openproject/backups.yaml
+requirementsPath: services/app/openproject/requirements
+authentik:
+  name: OpenProject
+  group: Apps
+  url: https://proj.d-reis.com
+  directoryGroups:
+    - global-admins
+    - global-users
+    - openproject-admins
+    - openproject-users
+  oidc:
+    redirectUris:
+      - https://proj.d-reis.com/auth/callback

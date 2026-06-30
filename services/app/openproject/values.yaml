@@ -1,0 +1,218 @@
+develop: false
+
+environment: {}
+
+extraVolumes:
+  - name: enterprise
+    secret:
+      secretName: openproject-enterprise
+      items:
+        - key: "enterprise.rb"
+
+extraVolumeMounts:
+  - name: enterprise
+    mountPath: /app/app/models/enterprise_token.rb
+    subPath: enterprise.rb
+
+ingress:
+  enabled: true
+  ingressClassName: traefik
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: proj.d-reis.com,proj.k8s.d-reis.com
+    external-dns.alpha.kubernetes.io/target: thule.d-reis.com
+    cert-manager.io/cluster-issuer: letsencrypt
+
+  host: "proj.d-reis.com"
+  path: /
+  tls:
+    enabled: true
+    secretName: "openproject-tls"
+
+# TODO: Enable NetworkPolicy, also for hocuspocus
+
+# TODO: Centralized memcached
+memcached:
+  bundled: true
+  image:
+    repository: bitnamilegacy/memcached
+    tag: 1.6.24-debian-12-r0
+
+  global:
+    containerSecurityContext:
+      enabled: true
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+          - "ALL"
+      seccompProfile:
+        type: "RuntimeDefault"
+      readOnlyRootFilesystem: true
+      runAsNonRoot: true
+
+strategy:
+  type: "Recreate"
+
+workers:
+  default:
+    queues: ""
+    maxThreads:
+    replicaCount: 1
+    strategy:
+      type: "Recreate"
+    resourcesPreset: ~
+    resources:
+      requests:
+        memory: "512Mi"
+        cpu: "250m"
+      limits:
+        memory: "4Gi"
+        cpu: "4"
+
+hocuspocus:
+  enabled: true
+  ingress:
+    path: /hocuspocus
+    pathType: "Prefix"
+
+  podAnnotations:
+
+  service:
+    port: 1234
+
+  resourcesPreset: ~
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "2"
+
+openproject:
+  https: true
+  hsts: true
+  cache:
+    store: "memcache"
+  extraEnvVarsSecret: openproject-smtp
+
+  admin_user:
+    password_reset: "true"
+    name: "OpenProject Admin"
+    mail: "root@d-reis.com"
+    secret:
+      existingSecret: openproject-admin-password
+      secretKeys:
+        password: "password"
+
+  oidc:
+    enabled: true
+    provider: Authentik
+    displayName: Authentik
+    # TODO: From Secret
+    host: "https://sso.d-reis.com"
+    identifier: ""
+    secret: ""
+    authorizationEndpoint: ""
+    tokenEndpoint: ""
+    userinfoEndpoint: ""
+    endSessionEndpoint: ""
+    scope: "[openid profile email]"
+
+    attribute_map: {}
+
+    existingSecret: openproject-sso
+    secretKeys:
+      identifier: "client_id"
+      secret: "client_secret"
+
+  tmpVolumesStorageClassName: zfs-temp
+  tmpVolumesPermissionFix: true
+
+persistence:
+  enabled: true
+  accessModes:
+    - "ReadWriteOnce"
+  annotations: {}
+  size: "10Gi"
+  storageClassName: zfs
+
+# TODO: Minio
+s3:
+  enabled: false
+
+podSecurityContext:
+  enabled: true
+  fsGroup: 1000
+
+containerSecurityContext:
+  enabled: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - "ALL"
+  seccompProfile:
+    type: "RuntimeDefault"
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+
+postgresql:
+  bundled: false
+
+  connection:
+    host: cnpg-cluster-rw.cnpg-database.svc.cluster.local
+    port: 5432
+
+  auth:
+    existingSecret: "openproject-database"
+
+    secretKeys:
+      userPasswordKey: "password"
+
+    username: "openproject"
+    database: "openproject"
+
+
+replicaCount: 1
+backgroundReplicaCount: 1
+autoscaling:
+  enabled: false
+
+metrics:
+  enabled: true
+  path: "/metrics"
+  port: 9394
+  serviceMonitor:
+    enabled: true
+    interval: "5s"
+    scrapeTimeout: "5s"
+
+resourcesPreset: ~
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "4Gi"
+    cpu: "4"
+
+service:
+  enabled: true
+  type: "ClusterIP"
+  ports:
+    http:
+      containerPort: 8080
+      port: 8080
+      protocol: "TCP"
+
+serviceAccount:
+  create: true
+
+seederJob:
+  resourcesPreset: ~
+  resources:
+    limits:
+      memory: "1Gi"
+    requests:
+      memory: "512Mi"

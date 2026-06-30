@@ -52,6 +52,8 @@ restic:
       serviceAccount: volsync-restic-secret-reader
     - namespace: vikunja
       serviceAccount: volsync-restic-secret-reader
+    - namespace: openproject
+      serviceAccount: volsync-restic-secret-reader
 
 resources:
   init:

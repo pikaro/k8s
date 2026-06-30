@@ -1,0 +1,13 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: cnpg-cluster-openproject
+  namespace: cnpg-database
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  name: openproject
+  cluster:
+    name: cnpg-cluster
+  owner: openproject
+  databaseReclaimPolicy: retain

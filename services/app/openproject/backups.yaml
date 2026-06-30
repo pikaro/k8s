@@ -1,0 +1,12 @@
+namespace: openproject
+
+objectStore:
+  resticSecretName: volsync-restic-openproject
+
+restic:
+  repositoryPrefix: openproject
+
+backups:
+  - name: openproject
+    sourcePVC: openproject
+    schedule: "55 3 * * *"
