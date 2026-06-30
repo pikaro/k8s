@@ -170,10 +170,7 @@ openproject:
     scope: "[openid profile email]"
 
     attribute_map:
-      login: preferred_username
-      email: email
-      first_name: given_name
-      last_name: family_name
+      # TODO: No separate first / last name in Authentik
 
     existingSecret: openproject-sso
     secretKeys:
