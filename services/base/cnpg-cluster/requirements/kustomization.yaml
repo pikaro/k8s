@@ -3,3 +3,4 @@ kind: Kustomization
 
 resources:
   - s3-auth.yaml
+  - habitsync.yaml

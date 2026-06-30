@@ -1,0 +1,139 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: habitsync
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "habitsync.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "habitsync.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "habitsync.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/part-of: habitsync
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: habitsync
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - dumb-init
+            - --
+            - java
+          args:
+            - -XX:+UseContainerSupport
+            - -XX:MaxRAMPercentage=75.0
+            - -Duser.timezone={{ .Values.timeZone }}
+            - -jar
+            - /app/app.jar
+          ports:
+            - name: http
+              containerPort: 6842
+          env:
+            - name: BASE_URL
+              value: {{ .Values.baseUrl | quote }}
+            - name: APP_SECURITY_ISSUERS_{{ .Values.auth.oidc.issuerName }}_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.auth.oidc.secretName }}
+                  key: issuer
+            - name: APP_SECURITY_ISSUERS_{{ .Values.auth.oidc.issuerName }}_CLIENT-ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.auth.oidc.secretName }}
+                  key: client_id
+            - name: APP_SECURITY_ISSUERS_{{ .Values.auth.oidc.issuerName }}_NEEDS-CONFIRMATION
+              value: {{ .Values.auth.oidc.needsConfirmation | quote }}
+            - name: SPRING_DATASOURCE_URL
+              value: {{ include "habitsync.datasourceUrl" . | quote }}
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.secretName }}
+                  key: SPRING_DATASOURCE_USERNAME
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.secretName }}
+                  key: SPRING_DATASOURCE_PASSWORD
+            - name: SPRING_DATASOURCE_DRIVER_CLASS_NAME
+              value: org.postgresql.Driver
+            - name: SPRING_MAIL_ENABLED
+              value: {{ .Values.mail.enabled | quote }}
+            {{- if .Values.mail.enabled }}
+            - name: SPRING_MAIL_HOST
+              value: {{ .Values.mail.host | quote }}
+            - name: SPRING_MAIL_PORT
+              value: {{ .Values.mail.port | quote }}
+            - name: SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH
+              value: "true"
+            - name: SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE
+              value: "false"
+            - name: SPRING_MAIL_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mail.secretName }}
+                  key: SPRING_MAIL_USERNAME
+            - name: SPRING_MAIL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.mail.secretName }}
+                  key: SPRING_MAIL_PASSWORD
+            {{- end }}
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.database.secretName }}
+                  key: JWT_SECRET
+            - name: TRACKER_DATEFORMAT_TEMPLATE
+              value: {{ .Values.tracker.dateFormatTemplate | quote }}
+            - name: TRACKER_FIRSTDAYOFWEEK
+              value: {{ .Values.tracker.firstDayOfWeek | quote }}
+            - name: PAGE_CHALLENGES_VISIBLE
+              value: {{ .Values.pages.challengesVisible | quote }}
+            - name: TZ
+              value: {{ .Values.timeZone | quote }}
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            failureThreshold: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          volumeMounts:
+            - name: postgres-ca
+              mountPath: /postgres-ca
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: postgres-ca
+          secret:
+            secretName: {{ .Values.database.secretName }}
+            items:
+              - key: ca.crt
+                path: ca.crt
+        - name: tmp
+          emptyDir:
+            medium: Memory

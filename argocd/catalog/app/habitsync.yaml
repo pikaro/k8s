@@ -1,0 +1,19 @@
+name: habitsync
+sourceType: helmLocal
+skipDryRunOnMissingResource: "true"
+authentik:
+  name: HabitSync
+  group: Apps
+  url: https://habits.d-reis.com
+  directoryGroups:
+    - habitsync-admins
+    - habitsync-users
+  oidc:
+    clientType: public
+    redirectUris:
+      - https://habits.d-reis.com/auth-callback
+      - habitsync://auth-callback
+    secret: habitsync-sso
+    secretLabels:
+      app.kubernetes.io/part-of: habitsync
+      app.kubernetes.io/name: habitsync-sso

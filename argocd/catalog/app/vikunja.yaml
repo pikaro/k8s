@@ -6,3 +6,15 @@ extraHelmSources:
   - path: helm/volsync-restic-consumer
     releaseName: vikunja-backups
     valuesFile: services/app/vikunja/backups.yaml
+authentik:
+  name: Vikunja
+  group: Apps
+  url: https://todo.d-reis.com
+  directoryGroups:
+    - global-admins
+    - global-users
+    - vikunja-admins
+    - vikunja-users
+  oidc:
+    redirectUris:
+      - https://todo.d-reis.com/auth/callback

@@ -10,7 +10,7 @@ resource "authentik_provider_oauth2" "main" {
   name = local.sso_configs[each.key].app.name
 
   client_id               = random_id.client_id[each.key].hex
-  client_type             = "confidential"
+  client_type             = each.value.provider.client_type
   access_token_validity   = "hours=${each.value.provider.session_hours}"
   refresh_token_threshold = "hours=${each.value.provider.refresh_hours}"
 
@@ -56,14 +56,18 @@ resource "kubernetes_secret_v1" "oidc" {
     )
   }
 
-  data = {
-    issuer        = "${local.authentik.url}/application/o/${authentik_application.main[each.key].slug}/"
-    auth_url      = "${local.authentik.url}/application/o/authorize/"
-    token_url     = "${local.authentik.url}/application/o/token/"
-    api_url       = "${local.authentik.url}/application/o/userinfo/"
-    client_id     = authentik_provider_oauth2.main[each.key].client_id
-    client_secret = authentik_provider_oauth2.main[each.key].client_secret
-  }
+  data = merge(
+    {
+      issuer    = "${local.authentik.url}/application/o/${authentik_application.main[each.key].slug}/"
+      auth_url  = "${local.authentik.url}/application/o/authorize/"
+      token_url = "${local.authentik.url}/application/o/token/"
+      api_url   = "${local.authentik.url}/application/o/userinfo/"
+      client_id = authentik_provider_oauth2.main[each.key].client_id
+    },
+    each.value.provider.client_type == "confidential" ? {
+      client_secret = authentik_provider_oauth2.main[each.key].client_secret
+    } : {}
+  )
 
   type = "Opaque"
 }

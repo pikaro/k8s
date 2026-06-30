@@ -10,6 +10,7 @@ locals {
       }
 
       provider = {
+        client_type       = lookup(v.protoconf, "clientType", "confidential")
         session_hours     = lookup(v.protoconf, "sessionHours", 8)
         refresh_hours     = lookup(v.protoconf, "refreshHours", 0)
         auth_flow         = lookup(v.protoconf, "authFlow", "implicit")
@@ -32,6 +33,11 @@ locals {
     "client_credentials",
     "password",
     "urn:ietf:params:oauth:grant-type:device_code",
+  ]
+
+  valid_oidc_client_types = [
+    "confidential",
+    "public",
   ]
 }
 
@@ -60,6 +66,11 @@ resource "terraform_data" "validation_appsets_oidc" {
     precondition {
       condition     = alltrue([for k, v in local.sso_configs_oidc : length(setsubtract(v.provider.grant_types, local.valid_oidc_grant_types)) == 0])
       error_message = "Invalid grant types in appset configuration. Valid grant types are: ${join(", ", local.valid_oidc_grant_types)}"
+    }
+
+    precondition {
+      condition     = alltrue([for k, v in local.sso_configs_oidc : contains(local.valid_oidc_client_types, v.provider.client_type)])
+      error_message = "Invalid OIDC client type in appset configuration. Valid client types are: ${join(", ", local.valid_oidc_client_types)}"
     }
   }
 }

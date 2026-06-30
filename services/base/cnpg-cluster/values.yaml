@@ -55,6 +55,15 @@ cluster:
       replication: false
       passwordSecret:
         name: authentik-db-auth
+    - name: habitsync
+      ensure: present
+      login: true
+      superuser: false
+      createdb: false
+      createrole: false
+      replication: false
+      passwordSecret:
+        name: habitsync-db-auth
 
   monitoring:
     enabled: true

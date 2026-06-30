@@ -42,6 +42,31 @@ vikunja:
     VIKUNJA_SERVICE_PUBLICURL: "https://todo.d-reis.com"
     VIKUNJA_SERVICE_ENABLEREGISTRATION: "false"
 
+  api:
+    env:
+      VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_NAME: Authentik
+      VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_SCOPE: "openid profile email"
+      VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_LOGOUTURL:
+        valueFrom:
+          secretKeyRef:
+            name: vikunja-sso
+            key: logout_url
+      VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_CLIENTID:
+        valueFrom:
+          secretKeyRef:
+            name: vikunja-sso
+            key: client_id
+      VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_CLIENTSECRET:
+        valueFrom:
+          secretKeyRef:
+            name: vikunja-sso
+            key: client_secret
+      VIKUNJA_AUTH_OPENID_PROVIDERS_AUTHENTIK_AUTHURL:
+        valueFrom:
+          secretKeyRef:
+            name: vikunja-sso
+            key: auth_url
+
   configMaps:
     config:
       enabled: true
@@ -49,3 +74,10 @@ vikunja:
         config.yml: |
           service:
             enableregistration: false
+          auth:
+            local:
+              enabled: false
+            openid:
+              enabled: true
+              providers:
+                authentik:

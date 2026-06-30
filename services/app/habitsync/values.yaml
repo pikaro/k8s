@@ -1,0 +1,82 @@
+replicaCount: 1
+
+image:
+  repository: ghcr.io/jofoerster/habitsync
+  tag: latest
+  pullPolicy: IfNotPresent
+
+baseUrl: https://habits.d-reis.com
+timeZone: Europe/Berlin
+
+auth:
+  oidc:
+    issuerName: AUTHENTIK
+    secretName: habitsync-sso
+    needsConfirmation: "false"
+
+database:
+  host: cnpg-cluster-rw.cnpg-database.svc.cluster.local
+  port: 5432
+  name: habitsync
+  secretName: habitsync-config
+  sslRootCert: /postgres-ca/ca.crt
+
+mail:
+  enabled: true
+  secretName: habitsync-smtp
+  host: mail-relay.mail.svc.cluster.local
+  port: 587
+  username: relay@d-reis.com
+
+tracker:
+  dateFormatTemplate: DD.MM.
+  firstDayOfWeek: MONDAY
+
+pages:
+  challengesVisible: "true"
+
+externalSecrets:
+  serviceAccountName: habitsync-secret-reader
+  jwtSecretGenerator:
+    length: 96
+    digits: 12
+    symbols: 0
+    noUpper: false
+    allowRepeat: true
+
+service:
+  port: 80
+
+ingress:
+  enabled: true
+  className: traefik
+  host: habits.d-reis.com
+  tlsSecret: habitsync-tls
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: habits.d-reis.com
+    external-dns.alpha.kubernetes.io/target: thule.d-reis.com
+    cert-manager.io/cluster-issuer: letsencrypt
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 6842
+  runAsGroup: 6842
+  fsGroup: 6842
+  fsGroupChangePolicy: OnRootMismatch
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop:
+      - ALL
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 512Mi
+  limits:
+    memory: 1Gi
