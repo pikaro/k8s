@@ -20,6 +20,8 @@ spec:
       namespace: vaultwarden
     - server: https://kubernetes.default.svc
       namespace: vikunja
+    - server: https://kubernetes.default.svc
+      namespace: openproject
   clusterResourceWhitelist:
     - group: "*"
       kind: "*"
