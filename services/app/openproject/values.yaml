@@ -2,9 +2,15 @@ develop: false
 
 environment: {}
 
+extraVolumes:
+  - name: enterprise
+    configMap:
+      name: openproject-enterprise
+      items:
+        - key: enterprise.rb
+
 extraVolumeMounts:
   - name: enterprise
-    configMapName: openproject-enterprise
     mountPath: /app/app/models/enterprise_token.rb
     subPath: enterprise.rb
 
