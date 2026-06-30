@@ -1,0 +1,68 @@
+image:
+  repository: rclone/rclone
+  tag: latest
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+rsyncnet:
+  remoteName: rsyncnet
+  host: zh3928.rsync.net
+  user: zh3928
+  port: 22
+  shellType: unix
+  root: object-store/thule
+  knownHosts: |
+    zh3928.rsync.net ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDPgHxQyaDaVxUefoUJZO/lITh0Gp0sqbP7HejQcCfZi7gAcuM6/IAuUXLHFImefCHh52x6T/cHxgL1qz26GKgdxykl06WRXlRIuE45QFSy/cd9JKr6l58fKq30ApmXRsCNwFrMlFPoEpCTqxzddZ9cLXs1Yt9dRxvFlQVEuAzw7ayvt8DE6RP9/CHYVp54wbbvUToECGwu70sxY1vFg51K+vNpvJ3J0t5j3s4c1Wls4BrIwqi2U8kqCq9Nj2CUIQqjM+93CSqEacR3qOGvG/6QMzd733wzpJ/iZee+lcyTYzA0YNMosnaF01hrv7NMwtZ6xRFLlJZtMZ7JpfySrOBr
+    zh3928.rsync.net ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBLR2uz+YLn2KiQK0Luu8rhfWS6LHgUfGAWB1j8rM2MKn4KZ2/LhIX1CYkPKMTPxHr6mzayeL1T1hyJIylxXv0BY=
+    zh3928.rsync.net ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJtclizeBy1Uo3D86HpgD3LONGVH0CJ0NT+YfZlldAJd
+
+ensureDirectories:
+  - backups
+  - backups/volsync
+
+s3:
+  port: 9000
+  accessKeyID: object-store
+  secretGenerator:
+    length: 48
+    digits: 12
+    symbols: 0
+    noUpper: false
+    allowRepeat: true
+  readers:
+    - namespace: files
+      serviceAccount: filestash-secret-reader
+    - namespace: cnpg-database
+      serviceAccount: cnpg-backup-secret-reader
+
+restic:
+  port: 8000
+  root: backups/volsync
+  secretGenerator:
+    length: 48
+    digits: 12
+    symbols: 0
+    noUpper: false
+    allowRepeat: true
+  users:
+    - namespace: files
+      serviceAccount: volsync-restic-secret-reader
+    - namespace: vaultwarden
+      serviceAccount: volsync-restic-secret-reader
+    - namespace: vikunja
+      serviceAccount: volsync-restic-secret-reader
+
+resources:
+  init:
+    requests:
+      cpu: 5m
+      memory: 32Mi
+    limits:
+      memory: 128Mi
+  gateway:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      memory: 256Mi

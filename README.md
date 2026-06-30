@@ -42,10 +42,11 @@ This repo is the GitOps and OpenTofu source for the Thule Kubernetes cluster.
    For PVC backups, sync `object-store-gateway`, then `volsync`, then resync
    the backed-up app Applications. Current VolSync backup declarations live
    with the owning apps and use Restic retention of 7 daily, 4 weekly, and 12
-   monthly snapshots. The mover uses Restic's `rclone:` backend to write to
-   rsync.net over SFTP directly; it does not write through the in-cluster S3
-   gateway. Each backed-up namespace owns its own generated rsync.net SSH key;
-   register those public keys after the app backup resources first sync.
+   monthly snapshots. The mover uses Restic's REST backend against the
+   `object-store-gateway` Restic endpoint. That endpoint is backed by rsync.net
+   over the gateway's single SSH key and uses per-namespace private-repository
+   credentials generated in `object-store`; app namespaces pull only their own
+   connection Secret through External Secrets.
 
 Observability PVCs are disposable readiness/debugging state. Do not treat
 Prometheus, Loki, Grafana, Alertmanager, Apprise, or ntfy local state as backup

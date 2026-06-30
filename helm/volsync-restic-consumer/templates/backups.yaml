@@ -1,0 +1,103 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ include "volsync-restic-consumer.namespace" . }}
+  {{- if .Values.privilegedMovers }}
+  annotations:
+    volsync.backube/privileged-movers: "true"
+  {{- end }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.serviceAccountName }}
+  namespace: {{ include "volsync-restic-consumer.namespace" . }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-20"
+---
+apiVersion: external-secrets.io/v1
+kind: SecretStore
+metadata:
+  name: {{ .Values.objectStore.secretStoreName }}
+  namespace: {{ include "volsync-restic-consumer.namespace" . }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-18"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  provider:
+    kubernetes:
+      remoteNamespace: {{ .Values.objectStore.namespace }}
+      server:
+        url: {{ .Values.objectStore.kubernetesServer }}
+        caProvider:
+          type: ConfigMap
+          name: kube-root-ca.crt
+          key: ca.crt
+      auth:
+        serviceAccount:
+          name: {{ .Values.serviceAccountName }}
+          namespace: {{ include "volsync-restic-consumer.namespace" . }}
+{{- range $backup := .Values.backups }}
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: {{ $backup.name }}-restic
+  namespace: {{ include "volsync-restic-consumer.namespace" $ }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-17"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  secretStoreRef:
+    kind: SecretStore
+    name: {{ $.Values.objectStore.secretStoreName }}
+  target:
+    name: {{ $backup.name }}-restic
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+      type: Opaque
+      data:
+        RESTIC_REPOSITORY: {{ include "volsync-restic-consumer.repository" (list $ $backup) }}
+        RESTIC_PASSWORD: {{ "{{ .RESTIC_PASSWORD }}" | quote }}
+        RESTIC_REST_USERNAME: {{ "{{ .RESTIC_REST_USERNAME }}" | quote }}
+        RESTIC_REST_PASSWORD: {{ "{{ .RESTIC_REST_PASSWORD }}" | quote }}
+  data:
+    - secretKey: RESTIC_REST_USERNAME
+      remoteRef:
+        key: {{ include "volsync-restic-consumer.resticSecretName" $ }}
+        property: RESTIC_REST_USERNAME
+    - secretKey: RESTIC_REST_PASSWORD
+      remoteRef:
+        key: {{ include "volsync-restic-consumer.resticSecretName" $ }}
+        property: RESTIC_REST_PASSWORD
+    - secretKey: RESTIC_PASSWORD
+      sourceRef:
+        storeRef:
+          kind: {{ $.Values.restic.password.storeKind }}
+          name: {{ $.Values.restic.password.storeName }}
+      remoteRef:
+        key: {{ $.Values.restic.password.remoteKey }}
+---
+apiVersion: volsync.backube/v1alpha1
+kind: ReplicationSource
+metadata:
+  name: {{ $backup.name }}
+  namespace: {{ include "volsync-restic-consumer.namespace" $ }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  sourcePVC: {{ required "backup.sourcePVC is required" $backup.sourcePVC }}
+  trigger:
+    schedule: {{ required "backup.schedule is required" $backup.schedule | quote }}
+  restic:
+    repository: {{ $backup.name }}-restic
+    copyMethod: {{ $.Values.restic.copyMethod }}
+    pruneIntervalDays: {{ $.Values.restic.pruneIntervalDays }}
+    cacheStorageClassName: {{ $.Values.restic.cacheStorageClassName }}
+    retain:
+      daily: {{ $.Values.restic.retain.daily }}
+      weekly: {{ $.Values.restic.retain.weekly }}
+      monthly: {{ $.Values.restic.retain.monthly }}
+{{- end }}

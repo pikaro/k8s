@@ -2,6 +2,10 @@ sourceType: kustomize
 name: filestash
 namespace: files
 skipDryRunOnMissingResource: "true"
+extraHelmSources:
+  - path: helm/volsync-restic-consumer
+    releaseName: filestash-backups
+    valuesFile: services/app/filestash/backups.yaml
 authentik:
   name: Filestash
   protocol: proxy

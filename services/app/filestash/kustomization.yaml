@@ -4,7 +4,6 @@ namespace: files
 
 resources:
   - externalsecrets.yaml
-  - backups.yaml
   - configmap.yaml
   - deployment.yaml
   - service.yaml

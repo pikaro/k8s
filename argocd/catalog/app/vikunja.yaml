@@ -1,5 +1,8 @@
 name: vikunja
 chartRepo: oci://ghcr.io/go-vikunja/helm-chart/vikunja
 chartVersion: 2.0.0
-resourcesPath: services/app/vikunja/resources
 skipDryRunOnMissingResource: "true"
+extraHelmSources:
+  - path: helm/volsync-restic-consumer
+    releaseName: vikunja-backups
+    valuesFile: services/app/vikunja/backups.yaml

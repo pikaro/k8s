@@ -26,6 +26,7 @@ repos:
         priority: 0
       - id: check-yaml
         args: [--allow-multiple-documents]
+        exclude: '(^|/)templates/.*\.ya?ml$'
         priority: 0
       - id: destroyed-symlinks
         priority: 0
@@ -46,6 +47,7 @@ repos:
     hooks:
       - id: yamllint
         args: [-d, relaxed]
+        exclude: '(^|/)templates/.*\.ya?ml$'
         priority: 10
 
   - repo: https://github.com/antonbabenko/pre-commit-terraform

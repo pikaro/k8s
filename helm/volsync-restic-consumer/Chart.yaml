@@ -1,0 +1,5 @@
+apiVersion: v2
+name: volsync-restic-consumer
+description: Consumer-side VolSync restic backup resources
+type: application
+version: 0.1.0

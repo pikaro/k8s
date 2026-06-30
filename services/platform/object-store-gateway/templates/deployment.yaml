@@ -1,0 +1,210 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: object-store-gateway
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "object-store-gateway.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "object-store-gateway.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        object-store-gateway.d-reis.com/restic-users: {{ .Values.restic.users | toJson | sha256sum }}
+      labels:
+        {{- include "object-store-gateway.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/part-of: object-storage
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        {{- range $dir := .Values.ensureDirectories }}
+        - name: ensure-{{ $dir | replace "/" "-" }}
+          image: {{ $.Values.image.repository }}:{{ $.Values.image.tag }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          command:
+            - rclone
+          args:
+            - mkdir
+            - $(RCLONE_REMOTE)/{{ $dir }}
+          env:
+            - name: HOME
+              value: /tmp
+            - name: RCLONE_CACHE_DIR
+              value: /tmp/rclone-cache
+            - name: RCLONE_REMOTE
+              value: {{ include "object-store-gateway.remotePath" $ | quote }}
+            {{- include "object-store-gateway.rsyncEnv" $ | nindent 12 }}
+          resources:
+            {{- toYaml $.Values.resources.init | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: ssh
+              mountPath: /ssh
+              readOnly: true
+            - name: known-hosts
+              mountPath: /known-hosts
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+        {{- end }}
+      containers:
+        - name: rclone
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - serve
+            - s3
+            - $(RCLONE_REMOTE)
+            - --addr
+            - :{{ .Values.s3.port }}
+            - --auth-key
+            - $(AWS_ACCESS_KEY_ID),$(AWS_SECRET_ACCESS_KEY)
+            - --log-format
+            - date,time,microseconds
+            - --log-level
+            - INFO
+          ports:
+            - name: s3
+              containerPort: {{ .Values.s3.port }}
+          env:
+            - name: HOME
+              value: /tmp
+            - name: RCLONE_CACHE_DIR
+              value: /tmp/rclone-cache
+            - name: RCLONE_REMOTE
+              value: {{ include "object-store-gateway.remotePath" . | quote }}
+            {{- include "object-store-gateway.rsyncEnv" . | nindent 12 }}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: object-store-gateway-s3-auth
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: object-store-gateway-s3-auth
+                  key: AWS_SECRET_ACCESS_KEY
+          readinessProbe:
+            tcpSocket:
+              port: s3
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: s3
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.resources.gateway | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: ssh
+              mountPath: /ssh
+              readOnly: true
+            - name: known-hosts
+              mountPath: /known-hosts
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+        - name: restic
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - serve
+            - restic
+            - $(RCLONE_RESTIC_REMOTE)
+            - --addr
+            - :{{ .Values.restic.port }}
+            - --htpasswd
+            - /auth/htpasswd
+            - --private-repos
+            - --log-format
+            - date,time,microseconds
+            - --log-level
+            - INFO
+          ports:
+            - name: restic
+              containerPort: {{ .Values.restic.port }}
+          env:
+            - name: HOME
+              value: /tmp
+            - name: RCLONE_CACHE_DIR
+              value: /tmp/rclone-restic-cache
+            - name: RCLONE_RESTIC_REMOTE
+              value: {{ include "object-store-gateway.resticRemotePath" . | quote }}
+            {{- include "object-store-gateway.rsyncEnv" . | nindent 12 }}
+          readinessProbe:
+            tcpSocket:
+              port: restic
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: restic
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.resources.gateway | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: ssh
+              mountPath: /ssh
+              readOnly: true
+            - name: known-hosts
+              mountPath: /known-hosts
+              readOnly: true
+            - name: restic-auth
+              mountPath: /auth
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: ssh
+          secret:
+            secretName: object-store-gateway-rsyncnet-ssh
+            defaultMode: 0440
+            items:
+              - key: privateKey
+                path: id_ed25519
+        - name: known-hosts
+          configMap:
+            name: rsyncnet-known-hosts
+            items:
+              - key: known_hosts
+                path: known_hosts
+        - name: restic-auth
+          secret:
+            secretName: volsync-restic-htpasswd
+            defaultMode: 0440
+            items:
+              - key: htpasswd
+                path: htpasswd
+        - name: tmp
+          emptyDir:
+            medium: Memory

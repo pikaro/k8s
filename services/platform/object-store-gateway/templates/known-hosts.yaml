@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rsyncnet-known-hosts
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "object-store-gateway.labels" . | nindent 4 }}
+data:
+  known_hosts: |
+    {{- .Values.rsyncnet.knownHosts | nindent 4 }}

@@ -1,0 +1,15 @@
+namespace: vikunja
+
+objectStore:
+  resticSecretName: volsync-restic-vikunja
+
+restic:
+  repositoryPrefix: vikunja
+
+backups:
+  - name: vikunja-data
+    sourcePVC: vikunja-data
+    schedule: "35 3 * * *"
+  - name: vikunja-database
+    sourcePVC: vikunja-database
+    schedule: "45 3 * * *"

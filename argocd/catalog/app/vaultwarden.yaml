@@ -3,3 +3,7 @@ chartRepo: https://guerzon.github.io/vaultwarden
 chartVersion: 0.34.4
 resourcesPath: services/app/vaultwarden/resources
 skipDryRunOnMissingResource: "true"
+extraHelmSources:
+  - path: helm/volsync-restic-consumer
+    releaseName: vaultwarden-backups
+    valuesFile: services/app/vaultwarden/backups.yaml

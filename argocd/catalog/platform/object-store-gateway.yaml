@@ -1,3 +1,3 @@
 name: object-store-gateway
 namespace: object-store
-sourceType: kustomize
+sourceType: helmLocal

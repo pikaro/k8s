@@ -35,8 +35,10 @@ spec:
     {{- $chart := dig "chart" $name . }}
     {{- $releaseName := dig "releaseName" $name . }}
     {{- $valuesFile := dig "valuesFile" (printf "services/${TYPE}/%s/values.yaml" $name) . }}
+    {{- $localValuesFile := dig "valuesFile" "values.yaml" . }}
     {{- $requirementsPath := dig "requirementsPath" "" . }}
     {{- $resourcesPath := dig "resourcesPath" "" . }}
+    {{- $extraHelmSources := dig "extraHelmSources" (list) . }}
     {{- $serverSideApply := eq (dig "serverSideApply" "false" .) "true" }}
     {{- $skipDryRunOnMissingResource := eq (dig "skipDryRunOnMissingResource" "false" .) "true" }}
     spec:
@@ -57,6 +59,14 @@ spec:
         - repoURL: https://github.com/pikaro/k8s.git
           targetRevision: main
           path: {{ $basePath }}
+        {{- else if eq $sourceType "helmLocal" }}
+        - repoURL: https://github.com/pikaro/k8s.git
+          targetRevision: main
+          path: {{ $basePath }}
+          helm:
+            releaseName: {{ $releaseName }}
+            valueFiles:
+              - {{ $localValuesFile }}
         {{- else if eq $sourceType "helm" }}
         - repoURL: {{ .chartRepo }}
           chart: {{ $chart }}
@@ -65,9 +75,12 @@ spec:
             releaseName: {{ $releaseName }}
             valueFiles:
               - $values/{{ $valuesFile }}
+        {{- end }}
+        {{- if or (eq $sourceType "helm") $extraHelmSources }}
         - repoURL: https://github.com/pikaro/k8s.git
           targetRevision: main
           ref: values
+        {{- end }}
         {{- if $requirementsPath }}
         - repoURL: https://github.com/pikaro/k8s.git
           targetRevision: main
@@ -78,4 +91,12 @@ spec:
           targetRevision: main
           path: {{ $resourcesPath }}
         {{- end }}
+        {{- range $extraHelmSource := $extraHelmSources }}
+        - repoURL: https://github.com/pikaro/k8s.git
+          targetRevision: main
+          path: {{ $extraHelmSource.path }}
+          helm:
+            releaseName: {{ $extraHelmSource.releaseName }}
+            valueFiles:
+              - $values/{{ $extraHelmSource.valuesFile }}
         {{- end }}

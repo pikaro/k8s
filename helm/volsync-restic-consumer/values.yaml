@@ -1,0 +1,28 @@
+namespace: ""
+
+serviceAccountName: volsync-restic-secret-reader
+privilegedMovers: true
+
+objectStore:
+  namespace: object-store
+  serviceName: object-store-gateway
+  port: 8000
+  secretStoreName: object-store-gateway
+  resticSecretName: ""
+  kubernetesServer: https://kubernetes.default.svc
+
+restic:
+  repositoryPrefix: ""
+  copyMethod: Direct
+  pruneIntervalDays: 7
+  cacheStorageClassName: zfs-temp
+  retain:
+    daily: 7
+    weekly: 4
+    monthly: 12
+  password:
+    storeKind: ClusterSecretStore
+    storeName: aws-ssm
+    remoteKey: /external-secrets/volsync/restic-password
+
+backups: []
