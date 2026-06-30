@@ -8,6 +8,7 @@ extraHelmSources:
     releaseName: openproject-backups
     valuesFile: services/app/openproject/backups.yaml
 requirementsPath: services/app/openproject/requirements
+resourcesPath: services/app/openproject/resources
 authentik:
   name: OpenProject
   group: Apps

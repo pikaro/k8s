@@ -1,3 +1,4 @@
+{{- if .Values.createNamespace }}
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -7,6 +8,7 @@ metadata:
     volsync.backube/privileged-movers: "true"
   {{- end }}
 ---
+{{- end }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:

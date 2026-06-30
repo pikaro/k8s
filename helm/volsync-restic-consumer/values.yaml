@@ -1,4 +1,5 @@
 namespace: ""
+createNamespace: true
 
 serviceAccountName: volsync-restic-secret-reader
 privilegedMovers: true

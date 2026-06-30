@@ -4,3 +4,4 @@ metadata:
   name: openproject
   annotations:
     argocd.argoproj.io/sync-wave: "-30"
+    volsync.backube/privileged-movers: "true"
