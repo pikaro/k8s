@@ -13,7 +13,9 @@ objectStore:
 
 restic:
   repositoryPrefix: ""
-  copyMethod: Direct
+  copyMethod: Snapshot
+  storageClassName: zfs-temp
+  volumeSnapshotClassName: zfs-snapshot
   pruneIntervalDays: 7
   cacheStorageClassName: zfs-temp
   retain:

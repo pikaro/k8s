@@ -94,6 +94,12 @@ spec:
   restic:
     repository: {{ $backup.name }}-restic
     copyMethod: {{ $.Values.restic.copyMethod }}
+    {{- with $.Values.restic.storageClassName }}
+    storageClassName: {{ . }}
+    {{- end }}
+    {{- with $.Values.restic.volumeSnapshotClassName }}
+    volumeSnapshotClassName: {{ . }}
+    {{- end }}
     pruneIntervalDays: {{ $.Values.restic.pruneIntervalDays }}
     cacheStorageClassName: {{ $.Values.restic.cacheStorageClassName }}
     retain:
