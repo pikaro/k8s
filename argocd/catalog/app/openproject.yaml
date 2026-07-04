@@ -18,7 +18,14 @@ authentik:
     - global-users
     - openproject-admins
     - openproject-users
+  groupProperties:
+    is_openproject_admin:
+      groups:
+        - global-admins
+        - openproject-admins
   oidc:
+    groupPropertyMappings:
+      - is_openproject_admin
     redirectUris:
       - https://proj.d-reis.com/auth/authentik/callback
       - openprojectapp://oauth-callback

@@ -29,3 +29,9 @@ groups = {
   global-admins = {}
   global-users  = {}
 }
+
+custom_group_properties = {
+  is_global_admin = {
+    groups = ["global-admins"]
+  }
+}

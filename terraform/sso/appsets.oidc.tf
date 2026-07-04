@@ -10,13 +10,14 @@ locals {
       }
 
       provider = {
-        client_type       = lookup(v.protoconf, "clientType", "confidential")
-        session_hours     = lookup(v.protoconf, "sessionHours", 8)
-        refresh_hours     = lookup(v.protoconf, "refreshHours", 0)
-        auth_flow         = lookup(v.protoconf, "authFlow", "implicit")
-        invalidation_flow = lookup(v.protoconf, "invalidationFlow", "invalidation")
-        oauth_scopes      = lookup(v.protoconf, "oauthScopes", ["openid", "email", "profile"])
-        grant_types       = lookup(v.protoconf, "grantTypes", ["authorization_code"])
+        client_type             = lookup(v.protoconf, "clientType", "confidential")
+        session_hours           = lookup(v.protoconf, "sessionHours", 8)
+        refresh_hours           = lookup(v.protoconf, "refreshHours", 0)
+        auth_flow               = lookup(v.protoconf, "authFlow", "implicit")
+        invalidation_flow       = lookup(v.protoconf, "invalidationFlow", "invalidation")
+        oauth_scopes            = lookup(v.protoconf, "oauthScopes", ["openid", "email", "profile"])
+        grant_types             = lookup(v.protoconf, "grantTypes", ["authorization_code"])
+        group_property_mappings = distinct(lookup(v.protoconf, "groupPropertyMappings", []))
         redirect_uris = lookup(
           v.protoconf, "redirectUris",
           v.app.url != null ? ["${v.app.url}/auth/callback"] : []
@@ -71,6 +72,14 @@ resource "terraform_data" "validation_appsets_oidc" {
     precondition {
       condition     = alltrue([for k, v in local.sso_configs_oidc : contains(local.valid_oidc_client_types, v.provider.client_type)])
       error_message = "Invalid OIDC client type in appset configuration. Valid client types are: ${join(", ", local.valid_oidc_client_types)}"
+    }
+
+    precondition {
+      condition = alltrue([
+        for k, v in local.sso_configs_oidc :
+        length(setsubtract(toset(v.provider.group_property_mappings), toset(keys(local.custom_group_properties)))) == 0
+      ])
+      error_message = "Invalid group property mappings in appset OIDC configuration. Group property mappings must be defined in custom_group_properties or authentik.groupProperties."
     }
   }
 }

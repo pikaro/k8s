@@ -30,7 +30,14 @@ resource "authentik_provider_oauth2" "main" {
     }
   ]
 
-  property_mappings = [for v in each.value.provider.oauth_scopes : local.oauth_scopes[v]]
+  property_mappings = concat(
+    [for v in each.value.provider.oauth_scopes : local.oauth_scopes[v]],
+    local.common_oidc_property_mappings,
+    [
+      for property in each.value.provider.group_property_mappings :
+      local.custom_group_property_mapping_ids[property]
+    ],
+  )
 }
 
 resource "kubernetes_secret_v1" "oidc" {

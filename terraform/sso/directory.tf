@@ -7,8 +7,17 @@ resource "authentik_group" "main" {
   attributes   = jsonencode(each.value.attributes)
 }
 
+locals {
+  users = {
+    for k, v in var.users : k => merge(v, {
+      given_name  = coalesce(v.given_name, replace(v.name, "/(.*) .*/", "$1"))
+      family_name = coalesce(v.family_name, replace(v.name, "/.* (.*)/", "$1"))
+    })
+  }
+}
+
 resource "authentik_user" "main" {
-  for_each = var.users
+  for_each = local.users
 
   username = each.key
   name     = each.value.name
@@ -17,6 +26,11 @@ resource "authentik_user" "main" {
 
   is_active = each.value.active
   type      = each.value.type
+
+  attributes = jsonencode({
+    given_name  = each.value.given_name
+    family_name = each.value.family_name
+  })
 
   groups = [
     for v in each.value.groups : authentik_group.main[v].id

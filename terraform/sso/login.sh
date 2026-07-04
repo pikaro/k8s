@@ -1,5 +1,7 @@
 #!/bin/bash
 
+{ aws sts get-caller-identity 2>/dev/null | jq; } || aws sso login
+
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 ORIG_PWD="$(pwd)"
 
