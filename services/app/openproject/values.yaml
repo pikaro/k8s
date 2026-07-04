@@ -147,10 +147,9 @@ openproject:
   extraEnvVarsSecret: openproject-smtp
 
   admin_user:
-    password: ""
     password_reset: "true"
     name: "OpenProject Admin"
-    mail: "root@d-reis.com"
+    mail: "admin.openproject@d-reis.com"
     secret: openproject-admin-password
     secretKeys:
       password: "password"

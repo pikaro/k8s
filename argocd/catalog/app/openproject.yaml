@@ -21,3 +21,4 @@ authentik:
   oidc:
     redirectUris:
       - https://proj.d-reis.com/auth/authentik/callback
+      - openprojectapp://oauth-callback
