@@ -14,6 +14,10 @@ resource "authentik_provider_proxy" "main" {
   external_host = each.value.provider.external_host
 
   skip_path_regex = each.value.provider.skip_path_regex
+
+  jwt_federation_providers = each.value.provider.agent_token_auth ? [
+    authentik_provider_oauth2.agent.id,
+  ] : []
 }
 
 resource "authentik_outpost_provider_attachment" "proxy" {

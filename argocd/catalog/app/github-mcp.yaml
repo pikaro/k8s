@@ -19,3 +19,4 @@ authentik:
   proxy:
     mode: forward_single
     externalHost: https://github.mcp.k8s.d-reis.com
+    agentTokenAuth: true

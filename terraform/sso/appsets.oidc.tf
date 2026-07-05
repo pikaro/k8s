@@ -15,7 +15,7 @@ locals {
         refresh_hours           = lookup(v.protoconf, "refreshHours", 0)
         auth_flow               = lookup(v.protoconf, "authFlow", "implicit")
         invalidation_flow       = lookup(v.protoconf, "invalidationFlow", "invalidation")
-        oauth_scopes            = lookup(v.protoconf, "oauthScopes", ["openid", "email", "profile"])
+        oauth_scopes            = lookup(v.protoconf, "oauthScopes", local.appset_oidc_oauth_scopes)
         grant_types             = lookup(v.protoconf, "grantTypes", ["authorization_code"])
         group_property_mappings = distinct(lookup(v.protoconf, "groupPropertyMappings", []))
         redirect_uris = lookup(
@@ -40,6 +40,12 @@ locals {
     "confidential",
     "public",
   ]
+
+  appset_oidc_oauth_scopes = [
+    "openid",
+    "email",
+    "profile",
+  ]
 }
 
 resource "terraform_data" "validation_appsets_oidc" {
@@ -60,8 +66,8 @@ resource "terraform_data" "validation_appsets_oidc" {
     }
 
     precondition {
-      condition     = alltrue([for k, v in local.sso_configs_oidc : alltrue([for scope in v.provider.oauth_scopes : contains(keys(local.oauth_scopes), scope)])])
-      error_message = "Invalid OAuth scopes in appset configuration. Valid scopes are: ${join(", ", keys(local.oauth_scopes))}"
+      condition     = alltrue([for k, v in local.sso_configs_oidc : alltrue([for scope in v.provider.oauth_scopes : contains(local.appset_oidc_oauth_scopes, scope)])])
+      error_message = "Invalid OAuth scopes in appset configuration. Valid scopes are: ${join(", ", local.appset_oidc_oauth_scopes)}"
     }
 
     precondition {

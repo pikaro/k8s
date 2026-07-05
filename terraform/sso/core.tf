@@ -61,16 +61,21 @@ data "authentik_property_mapping_provider_scope" "openid" {
   managed = "goauthentik.io/providers/oauth2/scope-openid"
 }
 
+data "authentik_property_mapping_provider_scope" "offline_access" {
+  managed = "goauthentik.io/providers/oauth2/scope-offline_access"
+}
+
 data "authentik_property_mapping_provider_scope" "api" {
   managed = "goauthentik.io/providers/oauth2/scope-authentik_api"
 }
 
 locals {
   oauth_scopes = {
-    profile = data.authentik_property_mapping_provider_scope.profile.id
-    email   = data.authentik_property_mapping_provider_scope.email.id
-    openid  = data.authentik_property_mapping_provider_scope.openid.id
-    api     = data.authentik_property_mapping_provider_scope.api.id
+    profile        = data.authentik_property_mapping_provider_scope.profile.id
+    email          = data.authentik_property_mapping_provider_scope.email.id
+    openid         = data.authentik_property_mapping_provider_scope.openid.id
+    offline_access = data.authentik_property_mapping_provider_scope.offline_access.id
+    api            = data.authentik_property_mapping_provider_scope.api.id
   }
 }
 

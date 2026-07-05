@@ -12,6 +12,7 @@ locals {
         skip_path_regex   = lookup(v.protoconf, "skipPathRegex", null)
         auth_flow         = lookup(v.protoconf, "authFlow", "implicit")
         invalidation_flow = lookup(v.protoconf, "invalidationFlow", "invalidation")
+        agent_token_auth  = lookup(v.protoconf, "agentTokenAuth", false)
       }
     }
   }
