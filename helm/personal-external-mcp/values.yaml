@@ -17,6 +17,8 @@ scripts: {}
 
 extraExternalSecrets: []
 
+persistentVolumeClaims: []
+
 mcp:
   fullnameOverride: ""
   mode: direct

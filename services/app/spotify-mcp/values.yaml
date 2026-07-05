@@ -11,36 +11,29 @@ scripts:
       exit 1
     fi
 
-    if [ ! -s /spotify-token-seed/.spotify_token_cache ] || grep -qx "undefined" /spotify-token-seed/.spotify_token_cache; then
-      echo "Spotify token cache is undefined; set /external-secrets/mcp/spotify/token-cache to the Spotipy .spotify_token_cache JSON for this account." >&2
-      exit 1
-    fi
-
     mkdir -p /spotify-cache
-    if [ -f /spotify-token-seed/.spotify_token_cache ] && [ ! -f /spotify-cache/.spotify_token_cache ]; then
-      cp /spotify-token-seed/.spotify_token_cache /spotify-cache/.spotify_token_cache
-      chmod 0600 /spotify-cache/.spotify_token_cache
-    fi
 
     if ! command -v spotify-mcp >/dev/null 2>&1; then
       python -m pip install --no-cache-dir "https://github.com/gupta-kush/spotify-mcp/archive/refs/heads/master.zip" >/tmp/spotify-mcp-pip-install.log 2>&1
     fi
 
+    if [ ! -s /spotify-cache/.spotify_token_cache ]; then
+      echo "Spotify token cache is missing from /spotify-cache/.spotify_token_cache; bootstrap the spotify-mcp-cache PVC before starting this service." >&2
+      exit 1
+    fi
+
+    python -c 'import json; from pathlib import Path; p = Path("/spotify-cache/.spotify_token_cache"); token = json.loads(p.read_text()); assert token.get("refresh_token"), f"Spotify token cache at {p} does not contain refresh_token"'
+
+    python -c 'from spotify_mcp.auth import get_spotify_client; user = get_spotify_client().current_user(); assert user.get("id"), "Spotify auth preflight failed: current_user() returned no id"'
+
     exec spotify-mcp --toolsets="${SPOTIFY_MCP_TOOLSETS:-core,power}"
 
-extraExternalSecrets:
-  - name: spotify-mcp-token-cache
-    refreshInterval: 1h
-    secretStoreRef:
-      kind: ClusterSecretStore
-      name: aws-ssm
-    target:
-      name: spotify-mcp-token-cache
-      creationPolicy: Owner
-    data:
-      - secretKey: .spotify_token_cache
-        remoteRef:
-          key: /external-secrets/mcp/spotify/token-cache
+persistentVolumeClaims:
+  - name: spotify-mcp-cache
+    accessModes:
+      - ReadWriteOnce
+    storageClassName: zfs
+    size: 128Mi
 
 mcp:
   fullnameOverride: spotify-mcp
@@ -127,20 +120,14 @@ mcp:
       configMap:
         name: spotify-mcp-scripts
         defaultMode: 0550
-    - name: spotify-token-seed
-      secret:
-        secretName: spotify-mcp-token-cache
-        defaultMode: 0440
     - name: spotify-cache
-      emptyDir: {}
+      persistentVolumeClaim:
+        claimName: spotify-mcp-cache
     - name: tmp
       emptyDir: {}
   volumeMounts:
     - name: scripts
       mountPath: /scripts
-      readOnly: true
-    - name: spotify-token-seed
-      mountPath: /spotify-token-seed
       readOnly: true
     - name: spotify-cache
       mountPath: /spotify-cache

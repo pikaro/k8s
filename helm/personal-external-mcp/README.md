@@ -11,14 +11,11 @@ specific to that generic chart:
 - ingress-only `NetworkPolicy`
 - optional script ConfigMap for gateway stdio commands
 - optional extra ExternalSecrets for mounted files
+- optional PVCs for service-local mutable state
 
 Each service supplies its backend-specific configuration through the `mcp:`
 values block and is expected to use an Authentik catalog entry with
 `authentik.accessGroups`.
-
-The Spotify service uses `gupta-kush/spotify-mcp`. It is installed from the
-GitHub repository archive at runtime because the current PyPI `spotify-mcp`
-package name resolves to a different older implementation.
 
 ## Catalog-backed SSM parameters
 
@@ -31,23 +28,11 @@ The matching Helm values still reference the concrete ExternalSecret
 `remoteRef.key` values because ArgoCD and Terraform render independently. The
 catalog declaration is authoritative for creating the backing SSM parameter.
 
-Current catalog-backed parameters:
+Service-specific parameter names and bootstrap steps belong in the owning
+`services/app/<name>/README.md` file.
 
-- `/external-secrets/mcp/github/personal-access-token`
-- `/external-secrets/mcp/spotify/client-id`
-- `/external-secrets/mcp/spotify/token-cache`
+## Service-local state
 
-## Spotify token cache
-
-The Spotify token cache value is the Spotipy `.spotify_token_cache` JSON content
-for the personal account. It contains the user OAuth grant, including the
-refresh token and access-token expiry metadata.
-
-The Spotify client ID identifies the Spotify application, but it does not
-authorize access to personal playback, library, or listening-history data on its
-own. The selected `gupta-kush/spotify-mcp` server uses PKCE auth, so no Spotify
-client secret is required. The MCP pod is not expected to run an interactive
-browser OAuth callback, so the account authorization is seeded through this
-cache file. The startup script copies it into a writable `emptyDir` before
-launching the stdio server so access-token refresh can update the runtime cache
-without mutating the Kubernetes Secret.
+Use `persistentVolumeClaims` for mutable state that must survive pod restarts
+but should not be stored in SSM. Keep bootstrap and cleanup instructions for
+that state in the owning service directory.

@@ -1,0 +1,28 @@
+{{- range $pvc := .Values.persistentVolumeClaims }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ required "persistentVolumeClaims[].name is required" $pvc.name }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    {{- include "personal-external-mcp.labels" $ | nindent 4 }}
+    {{- with $pvc.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with $pvc.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    {{- range required "persistentVolumeClaims[].accessModes is required" $pvc.accessModes }}
+    - {{ . | quote }}
+    {{- end }}
+  {{- with $pvc.storageClassName }}
+  storageClassName: {{ . | quote }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ required "persistentVolumeClaims[].size is required" $pvc.size | quote }}
+{{- end }}
