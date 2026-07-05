@@ -1,0 +1,20 @@
+name: vault
+chartRepo: https://helm.releases.hashicorp.com
+chartVersion: 0.34.0
+serverSideApply: "true"
+authentik:
+  name: Vault
+  group: Management
+  url: https://vault.d-reis.com
+  directoryGroups:
+    - vault-users
+    - vault-admins
+  oidc:
+    redirectUris:
+      - https://vault.d-reis.com/ui/vault/auth/oidc/oidc/callback
+      - http://localhost:8250/oidc/callback
+      - http://127.0.0.1:8250/oidc/callback
+    secret: vault-sso
+    secretLabels:
+      app.kubernetes.io/part-of: vault
+      app.kubernetes.io/name: vault-sso

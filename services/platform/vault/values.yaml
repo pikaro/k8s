@@ -1,0 +1,148 @@
+global:
+  tlsDisable: true
+
+injector:
+  enabled: false
+
+csi:
+  enabled: false
+
+server:
+  logLevel: info
+  logFormat: standard
+  updateStrategyType: OnDelete
+  includeConfigAnnotation: true
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+
+  ingress:
+    enabled: true
+    ingressClassName: traefik
+    activeService: false
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: vault.d-reis.com
+      external-dns.alpha.kubernetes.io/target: thule.d-reis.com
+      cert-manager.io/cluster-issuer: letsencrypt
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    hosts:
+      - host: vault.d-reis.com
+        paths: []
+    tls:
+      - secretName: vault-tls
+        hosts:
+          - vault.d-reis.com
+
+  authDelegator:
+    enabled: false
+
+  extraEnvironmentVars:
+    AWS_DEFAULT_REGION: eu-central-1
+    AWS_REGION: eu-central-1
+    AWS_ROLE_ARN: arn:aws:iam::891152304175:role/vault
+    AWS_WEB_IDENTITY_TOKEN_FILE: /var/run/secrets/aws/token
+
+  volumes:
+    - name: aws-web-identity-token
+      projected:
+        sources:
+          - serviceAccountToken:
+              audience: sts.amazonaws.com
+              expirationSeconds: 3600
+              path: token
+
+  volumeMounts:
+    - name: aws-web-identity-token
+      mountPath: /var/run/secrets/aws
+      readOnly: true
+
+  dataStorage:
+    enabled: true
+    size: 5Gi
+    storageClass: zfs
+    accessMode: ReadWriteOnce
+
+  auditStorage:
+    enabled: true
+    size: 1Gi
+    storageClass: zfs
+    accessMode: ReadWriteOnce
+
+  standalone:
+    enabled: false
+
+  ha:
+    enabled: true
+    replicas: 1
+    disruptionBudget:
+      enabled: false
+    raft:
+      enabled: true
+      setNodeId: true
+      config: |
+        ui = true
+        disable_mlock = true
+
+        listener "tcp" {
+          tls_disable = 1
+          address = "[::]:8200"
+          cluster_address = "[::]:8201"
+          telemetry {
+            unauthenticated_metrics_access = "true"
+          }
+        }
+
+        storage "raft" {
+          path = "/vault/data"
+        }
+
+        seal "awskms" {
+          region     = "eu-central-1"
+          kms_key_id = "alias/vault"
+        }
+
+        service_registration "kubernetes" {}
+
+        telemetry {
+          prometheus_retention_time = "30s"
+          disable_hostname = true
+        }
+
+  serviceAccount:
+    create: true
+    name: vault
+    annotations:
+      eks.amazonaws.com/role-arn: "arn:aws:iam::891152304175:role/vault"
+      eks.amazonaws.com/audience: "sts.amazonaws.com"
+    serviceDiscovery:
+      enabled: true
+
+  statefulSet:
+    securityContext:
+      pod:
+        runAsNonRoot: true
+        runAsUser: 100
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      container:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+
+ui:
+  enabled: true
+  serviceType: ClusterIP
+
+serverTelemetry:
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    scrapeTimeout: 10s

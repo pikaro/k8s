@@ -302,6 +302,7 @@ following order:
 - OIDC issuer
 - CNPG Operator
 - external-secrets
+- Vault
 
 Sync the Applications in the `base` ApplicationSet one by one, in the following
 order:

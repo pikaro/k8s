@@ -33,6 +33,15 @@ resource "aws_iam_role" "vault" {
   }
 }
 
+resource "aws_kms_alias" "vault" {
+  name          = "alias/vault"
+  target_key_id = local.kms_key_arn
+
+  lifecycle {
+    enabled = var.enable_oidc_roles
+  }
+}
+
 data "aws_iam_policy_document" "vault" {
   statement {
     effect = "Allow"
@@ -62,4 +71,8 @@ resource "aws_iam_role_policy_attachment" "vault" {
   lifecycle {
     enabled = var.enable_oidc_roles
   }
+}
+
+output "vault_role_arn" {
+  value = try(aws_iam_role.vault.arn, null)
 }
