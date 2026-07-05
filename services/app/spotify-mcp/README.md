@@ -32,8 +32,10 @@ The Spotify token cache is the Spotipy `.spotify_token_cache` JSON content for
 the personal account. It contains the user OAuth grant, including the refresh
 token and access-token expiry metadata.
 
-The cache is mutable refresh state. It is stored on the `spotify-mcp-cache` PVC
-mounted at `/spotify-cache`, not in SSM. The pod startup script fails until
+The cache is mutable refresh state. It is stored on the
+`spotify-mcp-cache-rwx` PVC mounted at `/spotify-cache`, not in SSM. The PVC
+uses `ReadWriteMany` on `zfs-bulk` so a temporary bootstrap pod can mount it
+without scaling the MCP Deployment down. The pod startup script fails until
 `/spotify-cache/.spotify_token_cache` exists and passes a lightweight
 `current_user()` auth preflight.
 
@@ -104,47 +106,27 @@ set -eu
 
 test -s "$SPOTIFY_BOOTSTRAP_DIR/.spotify_token_cache"
 
-until kubectl -n mcp-personal get pvc spotify-mcp-cache >/dev/null 2>&1; do
-  echo "Waiting for spotify-mcp-cache PVC to exist..."
+until kubectl -n mcp-personal get pvc spotify-mcp-cache-rwx >/dev/null 2>&1; do
+  echo "Waiting for spotify-mcp-cache-rwx PVC to exist..."
   sleep 2
 done
 
-until [ "$(kubectl -n mcp-personal get pvc spotify-mcp-cache -o jsonpath='{.status.phase}')" = "Bound" ]; do
-  echo "Waiting for spotify-mcp-cache PVC to be Bound..."
+until [ "$(kubectl -n mcp-personal get pvc spotify-mcp-cache-rwx -o jsonpath='{.status.phase}')" = "Bound" ]; do
+  echo "Waiting for spotify-mcp-cache-rwx PVC to be Bound..."
   sleep 2
 done
 
-kubectl -n mcp-personal delete pod spotify-mcp-cache-bootstrap --ignore-not-found=true
-while kubectl -n mcp-personal get pod spotify-mcp-cache-bootstrap >/dev/null 2>&1; do
-  echo "Waiting for old spotify-mcp-cache-bootstrap pod to be deleted..."
-  sleep 1
-done
+kubectl -n mcp-personal delete pod spotify-mcp-cache-bootstrap --ignore-not-found=true --wait=true
 
-kubectl -n mcp-personal apply -f - <<'EOF'
-apiVersion: v1
-kind: Pod
-metadata:
-  name: spotify-mcp-cache-bootstrap
-spec:
-  restartPolicy: Never
-  volumes:
-    - name: spotify-cache
-      persistentVolumeClaim:
-        claimName: spotify-mcp-cache
-  containers:
-    - name: bootstrap
-      image: busybox:1.36
-      command: ["sh", "-c", "sleep 3600"]
-      volumeMounts:
-        - name: spotify-cache
-          mountPath: /spotify-cache
-EOF
+kubectl -n mcp-personal run spotify-mcp-cache-bootstrap \
+  --image=busybox:1.36 \
+  --restart=Never \
+  --attach=true \
+  --stdin=true \
+  --rm=true \
+  --overrides='{"spec":{"automountServiceAccountToken":false,"volumes":[{"name":"spotify-cache","persistentVolumeClaim":{"claimName":"spotify-mcp-cache-rwx"}}],"containers":[{"name":"spotify-mcp-cache-bootstrap","image":"busybox:1.36","stdin":true,"stdinOnce":true,"command":["sh","-c","cat > /spotify-cache/.spotify_token_cache && chmod 0600 /spotify-cache/.spotify_token_cache && test -s /spotify-cache/.spotify_token_cache"],"volumeMounts":[{"name":"spotify-cache","mountPath":"/spotify-cache"}]}]}}' \
+  < "$SPOTIFY_BOOTSTRAP_DIR/.spotify_token_cache"
 
-kubectl -n mcp-personal wait --for=condition=Ready pod/spotify-mcp-cache-bootstrap --timeout=120s
-kubectl -n mcp-personal cp "$SPOTIFY_BOOTSTRAP_DIR/.spotify_token_cache" spotify-mcp-cache-bootstrap:/spotify-cache/.spotify_token_cache
-kubectl -n mcp-personal exec spotify-mcp-cache-bootstrap -- chmod 0600 /spotify-cache/.spotify_token_cache
-kubectl -n mcp-personal exec spotify-mcp-cache-bootstrap -- ls -l /spotify-cache/.spotify_token_cache
-kubectl -n mcp-personal delete pod spotify-mcp-cache-bootstrap
 kubectl -n mcp-personal rollout restart deployment/spotify-mcp
 kubectl -n mcp-personal rollout status deployment/spotify-mcp --timeout=180s
 ```
@@ -156,4 +138,5 @@ manually after the PVC-backed pod is healthy:
 ```sh
 kubectl -n mcp-personal delete externalsecret spotify-mcp-token-cache --ignore-not-found=true
 kubectl -n mcp-personal delete secret spotify-mcp-token-cache --ignore-not-found=true
+kubectl -n mcp-personal delete pvc spotify-mcp-cache --ignore-not-found=true
 ```

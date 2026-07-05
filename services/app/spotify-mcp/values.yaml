@@ -18,7 +18,7 @@ scripts:
     fi
 
     if [ ! -s /spotify-cache/.spotify_token_cache ]; then
-      echo "Spotify token cache is missing from /spotify-cache/.spotify_token_cache; bootstrap the spotify-mcp-cache PVC before starting this service." >&2
+      echo "Spotify token cache is missing from /spotify-cache/.spotify_token_cache; bootstrap the spotify-mcp-cache-rwx PVC before starting this service." >&2
       exit 1
     fi
 
@@ -29,11 +29,11 @@ scripts:
     exec spotify-mcp --toolsets="${SPOTIFY_MCP_TOOLSETS:-core,power}"
 
 persistentVolumeClaims:
-  - name: spotify-mcp-cache
+  - name: spotify-mcp-cache-rwx
     accessModes:
-      - ReadWriteOnce
-    storageClassName: zfs
-    size: 128Mi
+      - ReadWriteMany
+    storageClassName: zfs-bulk
+    size: 16Mi
 
 mcp:
   fullnameOverride: spotify-mcp
@@ -122,7 +122,7 @@ mcp:
         defaultMode: 0550
     - name: spotify-cache
       persistentVolumeClaim:
-        claimName: spotify-mcp-cache
+        claimName: spotify-mcp-cache-rwx
     - name: tmp
       emptyDir: {}
   volumeMounts:
