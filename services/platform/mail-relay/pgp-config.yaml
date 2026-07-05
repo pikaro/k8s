@@ -11,8 +11,26 @@ data:
     rules:
       - match:
           - "*@d-reis.com"
-        keyFile: main.asc
+        keyFile: proton.asc
         fingerprint: "7D43A0CB95AC1CF2EE0179EEF02F25000E1EA603"
+  proton.asc: |
+    -----BEGIN PGP PUBLIC KEY BLOCK-----
+
+    xjMEaT64rRYJKwYBBAHaRw8BAQdALIIIohOUfnwm+tDO3sXu9C3/QvRKdNf5
+    CStkZ6DzX8bNIXBvc3RAZC1yZWlzLmNvbSA8cG9zdEBkLXJlaXMuY29tPsLA
+    EQQTFgoAgwWCaT64rQMLCQcJEHbwEFBi0Rs5RRQAAAAAABwAIHNhbHRAbm90
+    YXRpb25zLm9wZW5wZ3Bqcy5vcmcWBEr3qrqrAK29EEtyLN0F45eZI1sNwTl6
+    f69ZNQJbrQMVCggEFgACAQIZAQKbAwIeARYhBHoY/9cMQpv61+T+KnbwEFBi
+    0Rs5AABwLwD+I35bqLDOPpZZHFTMzQXLMpzMauGOChunFbp4ZCyc/3kA/25m
+    dfBrcHPLLBG2fNQ8+C+Co6Zft31L3qOIlyKAl7kEzjgEaT64rRIKKwYBBAGX
+    VQEFAQEHQKIuSJr+AHamlJqPQZ8u9ymA19t9D1ymq55EQ1vIfrNnAwEIB8K+
+    BBgWCgBwBYJpPritCRB28BBQYtEbOUUUAAAAAAAcACBzYWx0QG5vdGF0aW9u
+    cy5vcGVucGdwanMub3Jni/FLDzO/7Q/LYu4lYhCceKzT3iISbsk20tcHzjRd
+    lA8CmwwWIQR6GP/XDEKb+tfk/ip28BBQYtEbOQAAeIwA/31omNWt/l0z6KES
+    YbdzgbGPi4R8jePl8VnZ2gsugdWxAQC9Iux65j4nYNhPPTcABhl+ZQHHJ2Vk
+    POPlnVwFE0VLCg==
+    =ZVTJ
+    -----END PGP PUBLIC KEY BLOCK-----
   main.asc: |
     -----BEGIN PGP PUBLIC KEY BLOCK-----
 
