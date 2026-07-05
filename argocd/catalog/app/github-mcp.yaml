@@ -1,0 +1,21 @@
+name: github-mcp
+namespace: mcp-personal
+sourceType: helmLocal
+basePath: helm/personal-external-mcp
+valuesFile: services/app/github-mcp/values.yaml
+skipDryRunOnMissingResource: "true"
+externalSecrets:
+  ssmParameters:
+    - path: mcp/github/personal-access-token
+      description: Personal GitHub token used by the single-principal GitHub MCP server.
+authentik:
+  name: GitHub MCP
+  slug: github-mcp
+  protocol: proxy
+  hidden: true
+  url: https://github.mcp.k8s.d-reis.com
+  accessGroups:
+    - personal-mcp-users
+  proxy:
+    mode: forward_single
+    externalHost: https://github.mcp.k8s.d-reis.com

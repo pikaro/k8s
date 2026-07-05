@@ -1,0 +1,25 @@
+host: ""
+tlsSecret: ""
+
+authentikOutpost:
+  enabled: true
+  serviceName: authentik-server
+  serviceNamespace: authentik
+  servicePort: 80
+
+networkPolicy:
+  enabled: true
+  ingressNamespaces:
+    - traefik
+  extraIngress: []
+
+scripts: {}
+
+extraExternalSecrets: []
+
+mcp:
+  fullnameOverride: ""
+  mode: direct
+  containerPort: 8080
+  serviceAccount:
+    automountServiceAccountToken: false

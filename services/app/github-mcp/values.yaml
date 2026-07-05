@@ -1,0 +1,105 @@
+host: github.mcp.k8s.d-reis.com
+tlsSecret: github-mcp-tls
+
+scripts:
+  github-stdio.sh: |
+    #!/bin/sh
+    set -eu
+
+    if [ "${GITHUB_PERSONAL_ACCESS_TOKEN:-undefined}" = "undefined" ]; then
+      echo "GITHUB_PERSONAL_ACCESS_TOKEN is undefined; set /external-secrets/mcp/github/personal-access-token in SSM." >&2
+      exit 1
+    fi
+
+    exec npx -y mcp-remote@0.1.38 https://api.githubcopilot.com/mcp/ \
+      --transport http-only \
+      --header "Authorization:Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}" \
+      --header "X-MCP-Toolsets:${GITHUB_TOOLSETS:-default,actions}"
+
+mcp:
+  fullnameOverride: github-mcp
+  mode: proxy
+  containerPort: 8080
+  proxy:
+    image:
+      repository: node
+      tag: 20-slim
+      pullPolicy: IfNotPresent
+    gateway:
+      package: "@michlyn/mcpgateway@4.0.4"
+      stdioCommand: /scripts/github-stdio.sh
+      outputTransport: streamable-http
+      port: 8080
+      httpPath: /mcp
+  env:
+    - name: HOME
+      value: /tmp
+    - name: npm_config_cache
+      value: /tmp/npm-cache
+    - name: GITHUB_TOOLSETS
+      value: default,actions
+  externalSecrets:
+    enabled: true
+    refreshInterval: 1h
+    secretStoreRef:
+      kind: ClusterSecretStore
+      name: aws-ssm
+    target:
+      name: github-mcp-env
+      creationPolicy: Owner
+    data:
+      - secretKey: GITHUB_PERSONAL_ACCESS_TOKEN
+        remoteRef:
+          key: /external-secrets/mcp/github/personal-access-token
+  service:
+    type: ClusterIP
+    port: 80
+  ingress:
+    enabled: true
+    className: traefik
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: github.mcp.k8s.d-reis.com
+      external-dns.alpha.kubernetes.io/target: thule.d-reis.com
+      cert-manager.io/cluster-issuer: letsencrypt
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      traefik.ingress.kubernetes.io/router.middlewares: traefik-forward-auth@kubernetescrd
+      traefik.ingress.kubernetes.io/router.priority: "10"
+    hosts:
+      - host: github.mcp.k8s.d-reis.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: github-mcp-tls
+        hosts:
+          - github.mcp.k8s.d-reis.com
+  serviceAccount:
+    create: true
+    automountServiceAccountToken: false
+  podSecurityContext:
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+  resources:
+    requests:
+      cpu: 25m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+  volumes:
+    - name: scripts
+      configMap:
+        name: github-mcp-scripts
+        defaultMode: 0550
+    - name: tmp
+      emptyDir: {}
+  volumeMounts:
+    - name: scripts
+      mountPath: /scripts
+      readOnly: true
+    - name: tmp
+      mountPath: /tmp

@@ -1,0 +1,23 @@
+name: spotify-mcp
+namespace: mcp-personal
+sourceType: helmLocal
+basePath: helm/personal-external-mcp
+valuesFile: services/app/spotify-mcp/values.yaml
+skipDryRunOnMissingResource: "true"
+externalSecrets:
+  ssmParameters:
+    - path: mcp/spotify/client-id
+      description: Spotify OAuth client ID used by the single-principal Spotify MCP server.
+    - path: mcp/spotify/token-cache
+      description: Spotipy OAuth token cache JSON for the personal Spotify account used by the Spotify MCP server.
+authentik:
+  name: Spotify MCP
+  slug: spotify-mcp
+  protocol: proxy
+  hidden: true
+  url: https://spotify.mcp.k8s.d-reis.com
+  accessGroups:
+    - personal-mcp-users
+  proxy:
+    mode: forward_single
+    externalHost: https://spotify.mcp.k8s.d-reis.com

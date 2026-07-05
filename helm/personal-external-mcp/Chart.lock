@@ -1,0 +1,6 @@
+dependencies:
+- name: mcp
+  repository: oci://ghcr.io/javdet/charts
+  version: 0.4.1
+digest: sha256:a7f485639bed01ed030613fca7e3f91dea082eeb0f2761dabfc996e49d62c695
+generated: "2026-07-05T15:48:07.344063+02:00"

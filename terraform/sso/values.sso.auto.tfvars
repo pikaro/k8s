@@ -17,7 +17,7 @@ users = {
   pikaro = {
     name   = "David Reis"
     email  = "post@d-reis.com"
-    groups = ["global-users"]
+    groups = ["global-users", "personal-mcp-users"]
   }
 }
 
@@ -28,6 +28,8 @@ groups = {
 
   global-admins = {}
   global-users  = {}
+
+  personal-mcp-users = {}
 }
 
 custom_group_properties = {

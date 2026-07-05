@@ -35,7 +35,6 @@ spec:
     {{- $chart := dig "chart" $name . }}
     {{- $releaseName := dig "releaseName" $name . }}
     {{- $valuesFile := dig "valuesFile" (printf "services/${TYPE}/%s/values.yaml" $name) . }}
-    {{- $localValuesFile := dig "valuesFile" "values.yaml" . }}
     {{- $requirementsPath := dig "requirementsPath" "" . }}
     {{- $resourcesPath := dig "resourcesPath" "" . }}
     {{- $extraHelmSources := dig "extraHelmSources" (list) . }}
@@ -69,7 +68,7 @@ spec:
           helm:
             releaseName: {{ $releaseName }}
             valueFiles:
-              - {{ $localValuesFile }}
+              - $values/{{ $valuesFile }}
         {{- else if eq $sourceType "helm" }}
         - repoURL: {{ .chartRepo }}
           chart: {{ $chart }}
@@ -79,7 +78,7 @@ spec:
             valueFiles:
               - $values/{{ $valuesFile }}
         {{- end }}
-        {{- if or (eq $sourceType "helm") $extraHelmSources }}
+        {{- if or (eq $sourceType "helm") (eq $sourceType "helmLocal") $extraHelmSources }}
         - repoURL: https://github.com/pikaro/k8s.git
           targetRevision: main
           ref: values

@@ -1,0 +1,148 @@
+host: spotify.mcp.k8s.d-reis.com
+tlsSecret: spotify-mcp-tls
+
+scripts:
+  spotify-stdio.sh: |
+    #!/bin/sh
+    set -eu
+
+    if [ "${SPOTIFY_CLIENT_ID:-undefined}" = "undefined" ]; then
+      echo "SPOTIFY_CLIENT_ID is undefined; set /external-secrets/mcp/spotify/client-id in SSM." >&2
+      exit 1
+    fi
+
+    if [ ! -s /spotify-token-seed/.spotify_token_cache ] || grep -qx "undefined" /spotify-token-seed/.spotify_token_cache; then
+      echo "Spotify token cache is undefined; set /external-secrets/mcp/spotify/token-cache to the Spotipy .spotify_token_cache JSON for this account." >&2
+      exit 1
+    fi
+
+    mkdir -p /spotify-cache
+    if [ -f /spotify-token-seed/.spotify_token_cache ] && [ ! -f /spotify-cache/.spotify_token_cache ]; then
+      cp /spotify-token-seed/.spotify_token_cache /spotify-cache/.spotify_token_cache
+      chmod 0600 /spotify-cache/.spotify_token_cache
+    fi
+
+    if ! command -v spotify-mcp >/dev/null 2>&1; then
+      python -m pip install --no-cache-dir "https://github.com/gupta-kush/spotify-mcp/archive/refs/heads/master.zip" >/tmp/spotify-mcp-pip-install.log 2>&1
+    fi
+
+    exec spotify-mcp --toolsets="${SPOTIFY_MCP_TOOLSETS:-core,power}"
+
+extraExternalSecrets:
+  - name: spotify-mcp-token-cache
+    refreshInterval: 1h
+    secretStoreRef:
+      kind: ClusterSecretStore
+      name: aws-ssm
+    target:
+      name: spotify-mcp-token-cache
+      creationPolicy: Owner
+    data:
+      - secretKey: .spotify_token_cache
+        remoteRef:
+          key: /external-secrets/mcp/spotify/token-cache
+
+mcp:
+  fullnameOverride: spotify-mcp
+  mode: proxy
+  containerPort: 8080
+  proxy:
+    image:
+      repository: nikolaik/python-nodejs
+      tag: python3.12-nodejs20-slim
+      pullPolicy: IfNotPresent
+    gateway:
+      package: "@michlyn/mcpgateway@4.0.4"
+      stdioCommand: /scripts/spotify-stdio.sh
+      outputTransport: streamable-http
+      port: 8080
+      httpPath: /mcp
+  env:
+    - name: HOME
+      value: /tmp
+    - name: PIP_CACHE_DIR
+      value: /tmp/pip-cache
+    - name: XDG_CACHE_HOME
+      value: /tmp
+    - name: SPOTIFY_CACHE_DIR
+      value: /spotify-cache
+    - name: SPOTIFY_REDIRECT_URI
+      value: http://127.0.0.1:8888/callback
+    - name: SPOTIFY_MCP_TOOLSETS
+      value: core,power
+  externalSecrets:
+    enabled: true
+    refreshInterval: 1h
+    secretStoreRef:
+      kind: ClusterSecretStore
+      name: aws-ssm
+    target:
+      name: spotify-mcp-env
+      creationPolicy: Owner
+    data:
+      - secretKey: SPOTIFY_CLIENT_ID
+        remoteRef:
+          key: /external-secrets/mcp/spotify/client-id
+  service:
+    type: ClusterIP
+    port: 80
+  ingress:
+    enabled: true
+    className: traefik
+    annotations:
+      external-dns.alpha.kubernetes.io/hostname: spotify.mcp.k8s.d-reis.com
+      external-dns.alpha.kubernetes.io/target: thule.d-reis.com
+      cert-manager.io/cluster-issuer: letsencrypt
+      traefik.ingress.kubernetes.io/router.entrypoints: websecure
+      traefik.ingress.kubernetes.io/router.middlewares: traefik-forward-auth@kubernetescrd
+      traefik.ingress.kubernetes.io/router.priority: "10"
+    hosts:
+      - host: spotify.mcp.k8s.d-reis.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: spotify-mcp-tls
+        hosts:
+          - spotify.mcp.k8s.d-reis.com
+  serviceAccount:
+    create: true
+    automountServiceAccountToken: false
+  podSecurityContext:
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+  resources:
+    requests:
+      cpu: 25m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+  volumes:
+    - name: scripts
+      configMap:
+        name: spotify-mcp-scripts
+        defaultMode: 0550
+    - name: spotify-token-seed
+      secret:
+        secretName: spotify-mcp-token-cache
+        defaultMode: 0440
+    - name: spotify-cache
+      emptyDir: {}
+    - name: tmp
+      emptyDir: {}
+  volumeMounts:
+    - name: scripts
+      mountPath: /scripts
+      readOnly: true
+    - name: spotify-token-seed
+      mountPath: /spotify-token-seed
+      readOnly: true
+    - name: spotify-cache
+      mountPath: /spotify-cache
+    - name: tmp
+      mountPath: /tmp

@@ -4,5 +4,7 @@ controlplane.yaml
 worker.yaml
 build/*
 credentials
+.env
+**/.env
 **/.terraform/*
 *.tfstate

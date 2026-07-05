@@ -49,7 +49,7 @@ locals {
     for k, v in local.raw_custom_group_properties : k => merge(v, {
       pretty_name = coalesce(v.name, k)
       joiner      = v.match == "all" ? " and " : " or "
-      tests       = [for g in v.groups : "ak_is_group_member(request.user, \"${g}\")"]
+      tests       = [for g in v.groups : "ak_is_group_member(request.user, name=\"${g}\")"]
     })
   }
 }

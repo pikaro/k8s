@@ -34,7 +34,7 @@ locals {
 
   app_access_groups = {
     for app_key, config in local.sso_configs :
-    app_key => distinct(concat(local.default_app_access_groups, config.directory_groups))
+    app_key => distinct(coalesce(config.access_groups, concat(local.default_app_access_groups, config.directory_groups)))
   }
 
   app_group_bindings = merge({}, [
