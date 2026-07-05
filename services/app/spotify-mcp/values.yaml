@@ -14,7 +14,7 @@ scripts:
     mkdir -p /spotify-cache
 
     if ! command -v spotify-mcp >/dev/null 2>&1; then
-      python -m pip install --no-cache-dir "https://github.com/gupta-kush/spotify-mcp/archive/refs/heads/master.zip" >/tmp/spotify-mcp-pip-install.log 2>&1
+      python -m pip install --no-cache-dir "https://github.com/pikaro/spotify-mcp/archive/refs/heads/master.zip" >/tmp/spotify-mcp-pip-install.log 2>&1
     fi
 
     if [ ! -s /spotify-cache/.spotify_token_cache ]; then

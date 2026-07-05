@@ -32,10 +32,10 @@ The Spotify token cache is the Spotipy `.spotify_token_cache` JSON content for
 the personal account. It contains the user OAuth grant, including the refresh
 token and access-token expiry metadata.
 
-The cache is mutable refresh state. It is stored on the
-`spotify-mcp-cache-rwx` PVC mounted at `/spotify-cache`, not in SSM. The PVC
-uses `ReadWriteMany` on `zfs-bulk` so a temporary bootstrap pod can mount it
-without scaling the MCP Deployment down. The pod startup script fails until
+The cache is mutable refresh state. It is stored on the `spotify-mcp-cache-rwx`
+PVC mounted at `/spotify-cache`, not in SSM. The PVC uses `ReadWriteMany` on
+`zfs-bulk` so a temporary bootstrap pod can mount it without scaling the MCP
+Deployment down. The pod startup script fails until
 `/spotify-cache/.spotify_token_cache` exists and passes a lightweight
 `current_user()` auth preflight.
 
@@ -115,8 +115,6 @@ until [ "$(kubectl -n mcp-personal get pvc spotify-mcp-cache-rwx -o jsonpath='{.
   echo "Waiting for spotify-mcp-cache-rwx PVC to be Bound..."
   sleep 2
 done
-
-kubectl -n mcp-personal delete pod spotify-mcp-cache-bootstrap --ignore-not-found=true --wait=true
 
 kubectl -n mcp-personal run spotify-mcp-cache-bootstrap \
   --image=busybox:1.36 \
