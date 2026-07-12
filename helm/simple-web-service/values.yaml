@@ -1,5 +1,9 @@
 namespace: ""
 createNamespace: true
+privilegedMovers: false
+
+labels: {}
+annotations: {}
 
 nameOverride: ""
 fullnameOverride: ""
@@ -10,8 +14,12 @@ ingressName: ""
 
 deployment:
   replicas: 1
+  automountServiceAccountToken: false
+  serviceAccountName: ""
   labels: {}
   annotations: {}
+  podLabels: {}
+  podAnnotations: {}
 
 image:
   repository: ""
@@ -21,7 +29,7 @@ image:
 persistence:
   enabled: false
   defaults:
-    storageClass: "zfs"
+    storageClassName: "zfs"
     accessModes:
       - ReadWriteOnce
     size: 1Gi
@@ -30,8 +38,10 @@ persistence:
   volumes: []
 
 container:
+  command: []
   args: []
   env: {}
+  envFrom: []
   resources: {}
 
   livenessProbe:
@@ -79,3 +89,30 @@ securityContext:
   runAsUser: 1000
   runAsGroup: 1000
   fsGroup: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+  annotations: {}
+  labels: {}
+
+ingress:
+  enabled: false
+  className: traefik
+  host: ""
+  path: /
+  pathType: Prefix
+  annotations: {}
+  tls:
+    enabled: true
+    secretName: ""
+  authentikOutpost:
+    enabled: false
+    serviceName: authentik-server
+    serviceNamespace: authentik
+    servicePort: 80
+
+networkPolicy:
+  enabled: true
+  allowSameNamespace: true
+  ingressNamespaces: []

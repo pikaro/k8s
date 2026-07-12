@@ -7,14 +7,14 @@
 {{- end -}}
 
 {{- define "simple-web-service.name" -}}
-{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- default .Release.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
 {{- define "simple-web-service.fullname" -}}
 {{- if .Values.fullnameOverride -}}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
-{{- printf "%s-%s" .Release.Name (include "simple-web-service.name" .) | trunc 63 | trimSuffix "-" -}}
+{{- include "simple-web-service.name" . -}}
 {{- end -}}
 {{- end -}}
 

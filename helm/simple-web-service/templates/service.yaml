@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "simple-web-service.serviceName" . }}
+  namespace: {{ include "simple-web-service.namespace" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "simple-web-service.name" . }}
+    helm.sh/chart: {{ include "simple-web-service.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    {{- with .Values.service.labels }}
+{{ toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with .Values.service.annotations }}
+  annotations:
+{{ toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ include "simple-web-service.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: {{ .Values.container.portName }}
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.container.portName }}
+      protocol: {{ .Values.container.portProtocol }}

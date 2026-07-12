@@ -1,5 +1,5 @@
 apiVersion: v2
 name: simple-web-service
-description: Simple OIDC-authenticated web service with Ingress / Service / Deployment
+description: Opinionated deployment for web services without their own Helm chart
 type: application
-version: 0.1.0
+version: 0.2.0

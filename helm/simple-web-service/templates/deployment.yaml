@@ -27,7 +27,18 @@ spec:
       labels:
         app.kubernetes.io/name: {{ include "simple-web-service.name" . }}
         app.kubernetes.io/instance: {{ .Release.Name }}
+{{- range $key, $value := .Values.deployment.podLabels }}
+        {{ $key }}: {{ $value | quote }}
+{{- end }}
+      {{- with .Values.deployment.podAnnotations }}
+      annotations:
+{{ toYaml . | nindent 8 }}
+      {{- end }}
     spec:
+      automountServiceAccountToken: {{ .Values.deployment.automountServiceAccountToken }}
+      {{- with .Values.deployment.serviceAccountName }}
+      serviceAccountName: {{ . }}
+      {{- end }}
       securityContext:
         runAsUser: {{ .Values.securityContext.runAsUser }}
         runAsGroup: {{ .Values.securityContext.runAsGroup }}
@@ -44,18 +55,32 @@ spec:
             runAsNonRoot: {{ .Values.container.securityContext.runAsNonRoot }}
             seccompProfile:
               type: {{ .Values.container.securityContext.seccompProfile.type }}
+{{- with .Values.container.command }}
+          command:
+{{ toYaml . | nindent 12 }}
+{{- end }}
 {{- with .Values.container.args }}
           args:
-{{- range . }}
-            - {{ . | quote }}
-{{- end }}
+{{ toYaml . | nindent 12 }}
 {{- end }}
 {{- with .Values.container.env }}
           env:
+{{- if kindIs "slice" . }}
+{{ toYaml . | nindent 12 }}
+{{- else }}
 {{- range $key, $value := . }}
             - name: {{ $key }}
+  {{- if kindIs "map" $value }}
+{{ toYaml $value | nindent 14 }}
+  {{- else }}
               value: {{ $value | quote }}
+  {{- end }}
 {{- end }}
+{{- end }}
+{{- end }}
+{{- with .Values.container.envFrom }}
+          envFrom:
+{{ toYaml . | nindent 12 }}
 {{- end }}
           ports:
             - name: {{ .Values.container.portName }}

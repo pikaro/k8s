@@ -27,8 +27,7 @@ ingress:
     cert-manager.io/cluster-issuer: letsencrypt
   host: "ai.d-reis.com"
   additionalHosts:
-    - host: "ai.k8s.d-reis.com"
-      paths: []
+    - "ai.k8s.d-reis.com"
   tls: true
   existingSecret: "openwebui-tls"
 

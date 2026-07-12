@@ -9,15 +9,13 @@ chart: open-webui
 requirementsPath: services/app/openwebui/requirements
 # resourcesPath: services/app/openwebui/resources
 authentik:
-  name: openwebui
+  name: OpenWebUI
   slug: openwebui
-  protocol: proxy
   hidden: true
   url: https://ai.d-reis.com
   directoryGroups:
     - ai-users
     - openwebui-users
-  proxy:
-    mode: forward_single
-    externalHost: https://ai.d-reis.com
-    agentTokenAuth: true
+  oidc:
+    redirectUris:
+      - https://ai.d-reis.com/oauth/oidc/callback
