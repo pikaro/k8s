@@ -29,7 +29,7 @@
 {{- end -}}
 
 {{- define "simple-web-service.image" -}}
-{{- required "image.repository is required" .Values.image.repository -}}
-{{- required "image.tag is required" .Values.image.tag -}}
-{{- printf "%s:%s" .Values.image.repository .Values.image.tag -}}
+{{- $repository := required "image.repository is required" .Values.image.repository -}}
+{{- $tag := required "image.tag is required" .Values.image.tag -}}
+{{- printf "%s:%s" $repository $tag -}}
 {{- end -}}
