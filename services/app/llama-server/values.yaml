@@ -17,7 +17,6 @@ persistence:
 
 container:
   env:
-    HF_HOME: /models/huggingface
     LLAMA_CACHE: /models
     LLAMA_ARG_HOST: "0.0.0.0"
     LLAMA_ARG_PORT: "8080"

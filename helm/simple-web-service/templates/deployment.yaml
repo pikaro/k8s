@@ -32,16 +32,15 @@ spec:
         runAsUser: {{ .Values.securityContext.runAsUser }}
         runAsGroup: {{ .Values.securityContext.runAsGroup }}
         fsGroup: {{ .Values.securityContext.fsGroup }}
+        fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: {{ include "simple-web-service.name" . }}
           image: {{ include "simple-web-service.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext:
-            runAsUser: {{ .Values.container.securityContext.runAsUser }}
-            runAsGroup: {{ .Values.container.securityContext.runAsGroup }}
             allowPrivilegeEscalation: {{ .Values.container.securityContext.allowPrivilegeEscalation }}
             capabilities:
-{{ toYaml .Values.container.securityContext.capabilities | indent 14 }}
+{{ toYaml .Values.container.securityContext.capabilities | nindent 14 }}
             runAsNonRoot: {{ .Values.container.securityContext.runAsNonRoot }}
             seccompProfile:
               type: {{ .Values.container.securityContext.seccompProfile.type }}
@@ -51,7 +50,6 @@ spec:
             - {{ . | quote }}
 {{- end }}
 {{- end }}
-
 {{- with .Values.container.env }}
           env:
 {{- range $key, $value := . }}
@@ -64,7 +62,7 @@ spec:
               containerPort: {{ .Values.container.port }}
               protocol: {{ .Values.container.portProtocol }}
           resources:
-{{ toYaml .Values.container.resources | indent 12 }}
+{{ toYaml .Values.container.resources | nindent 12 }}
 {{- if .Values.container.livenessProbe.enabled }}
           livenessProbe:
             periodSeconds: {{ .Values.container.livenessProbe.periodSeconds }}
