@@ -20,7 +20,7 @@ container:
     HF_HOME: /models/huggingface
   volumeMounts:
     - name: data
-      mountPath: /models/huggingface
+      mountPath: /models
   livenessProbe:
     enabled: true
   readinessProbe:

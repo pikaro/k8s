@@ -1,0 +1,46 @@
+namespace: llm
+
+labels:
+  d-reis.com/context: ai
+annotations:
+  d-reis.com/context: ai
+
+image:
+  repository: ghcr.io/ggml-org/llama.cpp
+  tag: server-b9976
+
+persistence:
+  enabled: true
+  volumes:
+    - name: data
+      storageClassName: zfs-temp-bulk
+
+container:
+  env:
+    HF_HOME: /models/huggingface
+    LLAMA_CACHE: /models
+    LLAMA_ARG_HOST: "0.0.0.0"
+    LLAMA_ARG_PORT: "8080"
+    LLAMA_ARG_HF_REPO: Qwen/Qwen3-1.7B-GGUF
+    LLAMA_ARG_HF_FILE: Qwen3-1.7B-Q8_0.gguf
+    LLAMA_ARG_ALIAS: qwen3-1.7b
+    LLAMA_ARG_CTX_SIZE: "8192"
+    LLAMA_ARG_N_PARALLEL: "4"
+    LLAMA_ARG_THREADS: "5"
+    LLAMA_ARG_THREADS_BATCH: "5"
+    LLAMA_ARG_CACHE_PROMPT: "true"
+    LLAMA_ARG_ENDPOINT_SLOTS: "true"
+    LLAMA_ARG_SLOT_SAVE_PATH: /models
+    LLAMA_ARG_ENDPOINT_METRICS: "true"
+    LLAMA_ARG_UI: "false"
+  volumeMounts:
+    - name: data
+      mountPath: /models
+  livenessProbe:
+    enabled: false
+  readinessProbe:
+    enabled: true
+    path: /health
+  startupProbe:
+    enabled: true
+    path: /health
