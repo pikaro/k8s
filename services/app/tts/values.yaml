@@ -13,7 +13,7 @@ persistence:
   enabled: true
   volumes:
     - name: data
-      storageClassName: zfs-temp
+      storageClassName: zfs-temp-bulk
 
 container:
   env:
