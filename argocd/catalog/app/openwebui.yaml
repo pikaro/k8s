@@ -1,7 +1,7 @@
 name: openwebui
 chartRepo: https://helm.openwebui.com/
 chartVersion: 15.2.0
-chartName: open-webui
+chart: open-webui
 # extraHelmSources:
 #   - path: helm/volsync-restic-consumer
 #     releaseName: openwebui-backups
