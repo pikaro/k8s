@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - db-secret.yaml
+  - secret.yaml
