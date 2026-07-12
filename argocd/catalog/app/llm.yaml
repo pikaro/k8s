@@ -1,0 +1,19 @@
+name: llm
+namespace: llm
+sourceType: helmLocal
+basePath: helm/simple-web-service
+valuesFile: services/app/llm/values.yaml
+authentik:
+  name: llm
+  slug: llm
+  protocol: proxy
+  hidden: true
+  url: https://llm.d-reis.com
+  directoryGroups:
+    - llm-users
+  accessGroups:
+    # - ai-users
+  proxy:
+    mode: forward_single
+    externalHost: https://llm.d-reis.com
+    agentTokenAuth: true
