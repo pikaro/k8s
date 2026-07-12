@@ -15,15 +15,19 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: habitsync
     - server: https://kubernetes.default.svc
+      namespace: llama-server
+    - server: https://kubernetes.default.svc
       namespace: mcp-personal
+    - server: https://kubernetes.default.svc
+      namespace: nemo-asr
     - server: https://kubernetes.default.svc
       namespace: openproject
     - server: https://kubernetes.default.svc
+      namespace: openwebui
+    - server: https://kubernetes.default.svc
+      namespace: pockettts
+    - server: https://kubernetes.default.svc
       namespace: sso-debug
-    - server: https://kubernetes.default.svc
-      namespace: stt
-    - server: https://kubernetes.default.svc
-      namespace: tts
     - server: https://kubernetes.default.svc
       namespace: vaultwarden
     - server: https://kubernetes.default.svc
