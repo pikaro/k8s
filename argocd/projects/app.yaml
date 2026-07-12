@@ -21,6 +21,10 @@ spec:
     - server: https://kubernetes.default.svc
       namespace: sso-debug
     - server: https://kubernetes.default.svc
+      namespace: stt
+    - server: https://kubernetes.default.svc
+      namespace: tts
+    - server: https://kubernetes.default.svc
       namespace: vaultwarden
     - server: https://kubernetes.default.svc
       namespace: vikunja
