@@ -11,11 +11,9 @@ image:
 
 persistence:
   enabled: true
-  defaults:
-    storageClassName: zfs-temp
-
   volumes:
     - name: data
+      storageClassName: zfs-temp
 
 container:
   env:
