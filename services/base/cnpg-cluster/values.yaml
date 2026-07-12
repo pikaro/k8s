@@ -73,6 +73,15 @@ cluster:
       replication: false
       passwordSecret:
         name: openproject-db-auth
+    - name: openwebui
+      ensure: present
+      login: true
+      superuser: false
+      createdb: false
+      createrole: false
+      replication: false
+      passwordSecret:
+        name: openwebui-db-auth
 
   monitoring:
     enabled: true
