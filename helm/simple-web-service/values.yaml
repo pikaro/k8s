@@ -30,14 +30,14 @@ persistence:
 
 container:
   args: []
-  env: []
+  env: {}
   resources: {}
 
   livenessProbe:
     enabled: false
     path: /health/live
     port: ""
-    httpHeaders: []
+    httpHeaders: {}
     periodSeconds: 10
     timeoutSeconds: 1
     failureThreshold: 3
@@ -46,7 +46,7 @@ container:
     enabled: false
     path: /health/ready
     port: ""
-    httpHeaders: []
+    httpHeaders: {}
     periodSeconds: 5
     timeoutSeconds: 1
     failureThreshold: 2
@@ -55,7 +55,7 @@ container:
     enabled: false
     path: /health/live
     port: ""
-    httpHeaders: []
+    httpHeaders: {}
     periodSeconds: 10
     timeoutSeconds: 1
     failureThreshold: 10

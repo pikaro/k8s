@@ -1,3 +1,7 @@
+{{- define "simple-web-service.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" -}}
+{{- end -}}
+
 {{- define "simple-web-service.namespace" -}}
 {{- required "namespace is required" .Values.namespace -}}
 {{- end -}}

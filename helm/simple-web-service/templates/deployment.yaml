@@ -54,9 +54,9 @@ spec:
 
 {{- with .Values.container.env }}
           env:
-{{- range . }}
-            - name: {{ .name }}
-              value: {{ .value | quote }}
+{{- range $key, $value := . }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
 {{- end }}
 {{- end }}
           ports:
@@ -74,9 +74,9 @@ spec:
               path: {{ .Values.container.livenessProbe.path | quote }}
               port: {{ default .Values.container.port .Values.container.livenessProbe.port }}
               httpHeaders:
-  {{- range $header := .Values.container.livenessProbe.httpHeaders }}
-                - name: {{ $header.name }}
-                  value: {{ $header.value | quote }}
+  {{- range $key, $value := .Values.container.livenessProbe.httpHeaders }}
+                - name: {{ $key }}
+                  value: {{ $value | quote }}
 {{- end }}
 {{- end }}
 {{- if .Values.container.readinessProbe.enabled }}
@@ -88,9 +88,9 @@ spec:
               path: {{ .Values.container.readinessProbe.path | quote }}
               port: {{ default .Values.container.port .Values.container.readinessProbe.port }}
               httpHeaders:
-  {{- range $header := .Values.container.readinessProbe.httpHeaders }}
-                - name: {{ $header.name }}
-                  value: {{ $header.value | quote }}
+  {{- range $key, $value := .Values.container.readinessProbe.httpHeaders }}
+                - name: {{ $key }}
+                  value: {{ $value | quote }}
 {{- end }}
 {{- end }}
 {{- if .Values.container.startupProbe.enabled }}
@@ -102,9 +102,9 @@ spec:
               path: {{ .Values.container.startupProbe.path | quote }}
               port: {{ default .Values.container.port .Values.container.startupProbe.port }}
               httpHeaders:
-  {{- range $header := .Values.container.startupProbe.httpHeaders }}
-                - name: {{ $header.name }}
-                  value: {{ $header.value | quote }}
+  {{- range $key, $value := .Values.container.startupProbe.httpHeaders }}
+                - name: {{ $key }}
+                  value: {{ $value | quote }}
 {{- end }}
 {{- end }}
 {{- if .Values.container.volumeMounts }}
