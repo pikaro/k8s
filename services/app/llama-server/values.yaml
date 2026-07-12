@@ -14,6 +14,7 @@ persistence:
   volumes:
     - name: data
       storageClassName: zfs-temp-bulk
+      size: 10Gi
 
 container:
   env:
