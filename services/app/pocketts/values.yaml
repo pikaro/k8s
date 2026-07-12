@@ -1,4 +1,4 @@
-namespace: stt
+namespace: pockettts
 
 labels:
   d-reis.com/context: ai
@@ -6,7 +6,7 @@ annotations:
   d-reis.com/context: ai
 
 image:
-  repository: ghcr.io/pikaro/ai-stt
+  repository: ghcr.io/pikaro/ai-tts
   tag: sha-5550d36
 
 persistence:

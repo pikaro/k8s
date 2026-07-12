@@ -1,0 +1,12 @@
+namespace: openwebui
+
+objectStore:
+  resticSecretName: volsync-restic-openwebui
+
+restic:
+  repositoryPrefix: openwebui
+
+backups:
+  # - name: openwebui-data
+  #   sourcePVC: vaultwarden-data-vaultwarden-0
+  #   schedule: "15 3 * * *"

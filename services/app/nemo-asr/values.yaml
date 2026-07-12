@@ -1,4 +1,4 @@
-namespace: tts
+namespace: nemo-asr
 
 labels:
   d-reis.com/context: ai
@@ -6,7 +6,7 @@ annotations:
   d-reis.com/context: ai
 
 image:
-  repository: ghcr.io/pikaro/ai-tts
+  repository: ghcr.io/pikaro/ai-stt
   tag: sha-5550d36
 
 persistence:

@@ -1,18 +1,18 @@
-name: stt
-namespace: stt
+name: nemo-asr
+namespace: nemo-asr
 sourceType: helmLocal
 basePath: helm/simple-web-service
-valuesFile: services/app/stt/values.yaml
+valuesFile: services/app/nemo-asr/values.yaml
 authentik:
-  name: STT
-  slug: stt
+  name: nemo-asr
+  slug: nemo-asr
   protocol: proxy
   hidden: true
   url: https://stt.d-reis.com
   directoryGroups:
     - stt-users
   accessGroups:
-    # - ai-users
+    - ai-users
   proxy:
     mode: forward_single
     externalHost: https://stt.d-reis.com

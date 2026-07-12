@@ -3,20 +3,18 @@ chartRepo: https://charts.openproject.org
 chartVersion: 13.8.1
 skipDryRunOnMissingResource: "true"
 createNamespace: "false"
-extraHelmSources:
-  - path: helm/volsync-restic-consumer
-    releaseName: openproject-backups
-    valuesFile: services/app/openproject/backups.yaml
+# extraHelmSources:
+#   - path: helm/volsync-restic-consumer
+#     releaseName: openproject-backups
+#     valuesFile: services/app/openproject/backups.yaml
 requirementsPath: services/app/openproject/requirements
-resourcesPath: services/app/openproject/resources
+# resourcesPath: services/app/openproject/resources
 authentik:
   name: OpenProject
   group: Apps
   url: https://proj.d-reis.com
   agentGroup: openproject-users
   directoryGroups:
-    - global-admins
-    - global-users
     - openproject-admins
     - openproject-users
   groupProperties:

@@ -1,18 +1,18 @@
-name: tts
-namespace: tts
+name: pockettts
+namespace: pockettts
 sourceType: helmLocal
 basePath: helm/simple-web-service
-valuesFile: services/app/tts/values.yaml
+valuesFile: services/app/pockettts/values.yaml
 authentik:
-  name: tts
-  slug: tts
+  name: pockettts
+  slug: pockettts
   protocol: proxy
   hidden: true
   url: https://tts.d-reis.com
   directoryGroups:
     - tts-users
   accessGroups:
-    # - ai-users
+    - ai-users
   proxy:
     mode: forward_single
     externalHost: https://tts.d-reis.com

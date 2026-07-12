@@ -1,18 +1,18 @@
-name: llm
-namespace: llm
+name: llama-server
+namespace: llama-server
 sourceType: helmLocal
 basePath: helm/simple-web-service
-valuesFile: services/app/llm/values.yaml
+valuesFile: services/app/llama-server/values.yaml
 authentik:
-  name: llm
-  slug: llm
+  name: llama-server
+  slug: llama-server
   protocol: proxy
   hidden: true
   url: https://llm.d-reis.com
   directoryGroups:
     - llm-users
   accessGroups:
-    # - ai-users
+    - ai-users
   proxy:
     mode: forward_single
     externalHost: https://llm.d-reis.com
