@@ -13,6 +13,8 @@ authentik:
     - stt-users
   accessGroups:
     - ai-users
+  serviceAccounts:
+    esp32: {}
   proxy:
     mode: forward_single
     externalHost: https://stt.d-reis.com

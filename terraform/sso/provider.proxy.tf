@@ -13,7 +13,8 @@ resource "authentik_provider_proxy" "main" {
   internal_host = each.value.provider.internal_host
   external_host = each.value.provider.external_host
 
-  skip_path_regex = each.value.provider.skip_path_regex
+  skip_path_regex       = each.value.provider.skip_path_regex
+  intercept_header_auth = true
 
   jwt_federation_providers = each.value.provider.agent_token_auth ? [
     authentik_provider_oauth2.agent.id,

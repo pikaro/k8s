@@ -19,6 +19,7 @@ locals {
       directory_groups = lookup(config.authentik, "directoryGroups", [])
       access_groups    = lookup(config.authentik, "accessGroups", null)
       group_properties = lookup(config.authentik, "groupProperties", {})
+      service_accounts = lookup(config.authentik, "serviceAccounts", {})
 
       app = {
         name      = lookup(config.authentik, "name", title(config.name))
@@ -53,6 +54,11 @@ resource "terraform_data" "validation_appsets" {
     precondition {
       condition     = alltrue([for k, v in local.sso_configs : contains(keys(v), "name")])
       error_message = "Missing 'name' in appset configuration."
+    }
+
+    precondition {
+      condition     = alltrue([for k, v in local.sso_configs : length(v.service_accounts) == 0 || v.protocol == "proxy"])
+      error_message = "authentik.serviceAccounts is only supported for proxy applications."
     }
   }
 }

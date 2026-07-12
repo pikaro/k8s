@@ -38,7 +38,7 @@ server:
           - vault.d-reis.com
 
   authDelegator:
-    enabled: false
+    enabled: true
 
   extraEnvironmentVars:
     AWS_DEFAULT_REGION: eu-central-1

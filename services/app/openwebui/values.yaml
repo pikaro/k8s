@@ -47,6 +47,11 @@ enableOpenaiApi: false
 # openaiApiKeysExistingSecretKey: api-keys
 
 extraEnvVars:
+  - name: WEBUI_SECRET_KEY
+    valueFrom:
+      secretKeyRef:
+        name: openwebui-secret
+        key: token
   - name: ENABLE_PERSISTENT_CONFIG
     value: "false"
   - name: DATABASE_TYPE

@@ -15,6 +15,31 @@ Secret generated from their ArgoCD catalog entry through `container.env` or
 enable `ingress.authentikOutpost` and configure the Traefik forward-auth
 middleware annotation.
 
+When `vault.enabled` is set, the chart also creates a namespace-local
+`vault-secrets` ServiceAccount and `SecretStore`. Entries in
+`vault.serviceAccounts` persist Authentik machine credential Secrets beneath
+`k8s/<namespace>/machine-auth/<account>` in Vault. These entries are normally
+injected from `authentik.serviceAccounts` in the ArgoCD catalog rather than
+duplicated in a service values file. Authentik remains authoritative, so token
+rotation replaces the Vault copy while deleting the Helm release leaves the
+Vault value intact.
+
+Catalog entries declare machine identities as a map. An empty object uses the
+derived account and Secret names; `username`, `name`, and `secretName` can be
+overridden per entry when needed:
+
+```yaml
+authentik:
+  serviceAccounts:
+    kitchen-display: {}
+    workshop-controller:
+      name: Workshop ESP32
+```
+
+Each generated Secret contains `username`, `password`, `authorization`, and
+`authentik_username`. Constrained clients can send the ready-made
+`authorization` value as their HTTP `Authorization` header.
+
 ```yaml
 namespace: example
 

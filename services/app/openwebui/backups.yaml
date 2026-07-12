@@ -7,6 +7,6 @@ restic:
   repositoryPrefix: openwebui
 
 backups:
-  # - name: openwebui-data
-  #   sourcePVC: vaultwarden-data-vaultwarden-0
-  #   schedule: "15 3 * * *"
+  - name: openwebui-data
+    sourcePVC: openwebui-open-webui
+    schedule: "33 3 * * *"

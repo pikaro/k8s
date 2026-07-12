@@ -1,73 +1,52 @@
 # Vault
 
-Vault is deployed as a platform service for personal CLI-managed secrets. It
-uses integrated Raft storage on a `zfs` PVC and AWS KMS auto-unseal through the
-`vault` service account.
+Vault is deployed as a platform service for personal CLI-managed secrets and
+namespace-isolated Kubernetes workload secrets. It uses integrated Raft
+storage on a `zfs` PVC and AWS KMS auto-unseal through the `vault` service
+account.
 
 The Argo catalog creates the Authentik OIDC client and writes its client
-configuration to the `vault-sso` Secret in the `vault` namespace. Vault itself
-still needs a one-time post-initialization configuration because auth methods,
-policies, audit devices, and secret engines are Vault API state.
+configuration to the `vault-sso` Secret in the `vault` namespace. Vault API
+state is managed by the sibling `~/src/dre/vault` OpenTofu configuration after
+the one-time initialization.
 
 ## Bootstrap
 
 Apply `terraform/aws` before syncing the ArgoCD Application so the Vault IRSA
 role and `alias/vault` KMS alias exist.
 
-After the pod is running for the first time:
+After the pod is running for the first time, initialize it and retain the
+recovery key securely:
 
 ```sh
 export VAULT_ADDR=https://vault.d-reis.com
 
 vault operator init -recovery-shares=1 -recovery-threshold=1
 vault login
-
-vault audit enable file file_path=/vault/audit/audit.log
-vault secrets enable -path=kv kv-v2
-
-vault policy write personal-kv - <<'EOF'
-path "kv/data/*" {
-  capabilities = ["create", "read", "update", "delete", "list"]
-}
-
-path "kv/metadata/*" {
-  capabilities = ["read", "list", "delete"]
-}
-EOF
 ```
 
-Configure OIDC after `terraform/sso apply` has created `vault-sso`:
+Then follow `~/src/dre/vault/README.md` to apply the audit device, KV mounts,
+OIDC and Kubernetes auth methods, and policies. Apply `terraform/sso` first so
+the `vault-sso` Secret exists.
 
-```sh
-OIDC_CLIENT_ID="$(
-  kubectl -n vault get secret vault-sso -o jsonpath='{.data.client_id}' | base64 -d
-)"
-OIDC_CLIENT_SECRET="$(
-  kubectl -n vault get secret vault-sso -o jsonpath='{.data.client_secret}' | base64 -d
-)"
+## Namespace workload access
 
-vault auth enable oidc
+Participating namespaces use a namespaced External Secrets `SecretStore` and a
+`vault-secrets` ServiceAccount. Vault authenticates its projected token and
+derives the allowed KV prefix from the service account namespace. A workload
+in namespace `example` can therefore use `k8s/example/*` but cannot select a
+different namespace through an `ExternalSecret` or `PushSecret`.
 
-vault write auth/oidc/config \
-  oidc_discovery_url=https://sso.d-reis.com/application/o/vault/ \
-  oidc_client_id="${OIDC_CLIENT_ID}" \
-  oidc_client_secret="${OIDC_CLIENT_SECRET}" \
-  default_role=personal
+The reusable `helm/simple-web-service` chart creates these namespace resources
+when machine accounts are present in an application's Authentik catalog entry.
 
-vault write auth/oidc/role/personal \
-  role_type=oidc \
-  user_claim=sub \
-  groups_claim=groups \
-  oidc_scopes=openid,email,profile \
-  allowed_redirect_uris=https://vault.d-reis.com/ui/vault/auth/oidc/oidc/callback,http://localhost:8250/oidc/callback,http://127.0.0.1:8250/oidc/callback \
-  token_policies=personal-kv \
-  token_ttl=8h
-```
+## CLI login
 
-CLI login:
+After the sibling Vault OpenTofu configuration has been applied:
 
 ```sh
 vault login -method=oidc role=personal
 vault kv put kv/example value=test
 vault kv get kv/example
+vault kv get k8s/llama-server/machine-auth/esp32
 ```

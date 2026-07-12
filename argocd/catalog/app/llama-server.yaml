@@ -13,6 +13,8 @@ authentik:
     - llm-users
   accessGroups:
     - ai-users
+  serviceAccounts:
+    esp32: {}
   proxy:
     mode: forward_single
     externalHost: https://llm.d-reis.com

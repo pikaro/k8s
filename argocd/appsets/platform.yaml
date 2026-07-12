@@ -38,6 +38,8 @@ spec:
     {{- $requirementsPath := dig "requirementsPath" "" . }}
     {{- $resourcesPath := dig "resourcesPath" "" . }}
     {{- $extraHelmSources := dig "extraHelmSources" (list) . }}
+    {{- $authentik := dig "authentik" (dict) . }}
+    {{- $serviceAccounts := dig "serviceAccounts" (dict) $authentik }}
     {{- $createNamespace := eq (dig "createNamespace" "true" .) "true" }}
     {{- $serverSideApply := eq (dig "serverSideApply" "false" .) "true" }}
     {{- $skipDryRunOnMissingResource := eq (dig "skipDryRunOnMissingResource" "false" .) "true" }}
@@ -69,6 +71,16 @@ spec:
             releaseName: {{ $releaseName }}
             valueFiles:
               - $values/{{ $valuesFile }}
+            {{- if and (eq $basePath "helm/simple-web-service") $serviceAccounts }}
+            values: |
+              vault:
+                enabled: true
+                serviceAccounts:
+                {{- range $accountName := keys $serviceAccounts | sortAlpha }}
+                  {{ $accountName }}:
+                    secretName: {{ dig "secretName" (printf "%s-%s-auth" $name $accountName) (index $serviceAccounts $accountName) }}
+                {{- end }}
+            {{- end }}
         {{- else if eq $sourceType "helm" }}
         - repoURL: {{ .chartRepo }}
           chart: {{ $chart }}

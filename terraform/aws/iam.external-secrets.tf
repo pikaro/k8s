@@ -34,7 +34,8 @@ resource "aws_iam_role" "external_secrets" {
 }
 
 locals {
-  external_secrets_ssm_arn_prefix = "arn:aws:ssm:${local.region}:${local.account_id}:parameter/${var.external_secrets_ssm_prefix}/*"
+  external_secrets_ssm_arn_prefix         = "arn:aws:ssm:${local.region}:${local.account_id}:parameter/${var.external_secrets_ssm_prefix}/*"
+  external_secrets_ssm_exports_arn_prefix = "arn:aws:ssm:${local.region}:${local.account_id}:parameter/${var.external_secrets_ssm_prefix}/exports/*"
 }
 
 data "aws_iam_policy_document" "ssm_external_secrets" {
@@ -48,6 +49,20 @@ data "aws_iam_policy_document" "ssm_external_secrets" {
 
     resources = [
       local.external_secrets_ssm_arn_prefix
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "ssm:AddTagsToResource",
+      "ssm:ListTagsForResource",
+      "ssm:PutParameter",
+    ]
+
+    resources = [
+      local.external_secrets_ssm_exports_arn_prefix
     ]
   }
 
@@ -81,11 +96,45 @@ data "aws_iam_policy_document" "ssm_external_secrets" {
       ]
     }
   }
+
+  statement {
+    effect = "Allow"
+
+    actions = [
+      "kms:Encrypt",
+    ]
+
+    resources = [
+      local.kms_key_arn
+    ]
+
+    condition {
+      test     = "StringEquals"
+      variable = "kms:ViaService"
+
+      values = [
+        "ssm.${local.region}.amazonaws.com",
+      ]
+    }
+
+    condition {
+      test     = "ArnLike"
+      variable = "kms:EncryptionContext:PARAMETER_ARN"
+      values = [
+        local.external_secrets_ssm_exports_arn_prefix,
+      ]
+    }
+  }
+}
+
+resource "aws_kms_alias" "external_secrets" {
+  name          = "alias/external-secrets"
+  target_key_id = local.kms_key_arn
 }
 
 resource "aws_iam_policy" "ssm_external_secrets" {
   name        = "SSMExternalSecretsPolicy"
-  description = "Policy to allow External Secrets to read from SSM Parameter Store"
+  description = "Policy to allow External Secrets to read from SSM Parameter Store and write under the exports prefix"
   policy      = data.aws_iam_policy_document.ssm_external_secrets.json
 }
 

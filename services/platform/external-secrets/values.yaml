@@ -9,14 +9,14 @@ crds:
   createSecretStore: true
   createClusterGenerator: false
   createClusterPushSecret: false
-  createPushSecret: false
+  createPushSecret: true
 
 processClusterExternalSecret: false
 processClusterStore: true
 processSecretStore: true
 processClusterGenerator: false
 processClusterPushSecret: false
-processPushSecret: false
+processPushSecret: true
 
 serviceMonitor:
   enabled: true

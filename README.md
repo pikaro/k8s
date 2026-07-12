@@ -27,8 +27,17 @@ This repo is the GitOps and OpenTofu source for the Thule Kubernetes cluster.
 
    `terraform/aws` also owns the shared VolSync Restic repository password in
    SSM Parameter Store. Apply it before syncing app backup resources.
+   External Secrets may export cluster-generated encryption keys as encrypted
+   parameters beneath `/external-secrets/exports/`; its IAM write access is
+   restricted to that subtree.
    It also owns the Vault auto-unseal IAM role and KMS alias. Apply it before
    syncing the `vault` Application.
+
+   After Vault is initialized and `terraform/sso` has created `vault-sso`,
+   apply `~/src/dre/vault`. That configuration owns Vault's API state,
+   including the namespace-isolated `k8s/` KV mount and Kubernetes auth role.
+   Apply it before syncing applications that create Vault-backed
+   `SecretStore` or `PushSecret` resources.
 
    `terraform/push` owns generated ntfy users, tokens, ACL config, Apprise
    destination config, and the mobile client Secret. The push and Apprise

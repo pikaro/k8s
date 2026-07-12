@@ -2,10 +2,10 @@ name: openwebui
 chartRepo: https://helm.openwebui.com/
 chartVersion: 15.2.0
 chart: open-webui
-# extraHelmSources:
-#   - path: helm/volsync-restic-consumer
-#     releaseName: openwebui-backups
-#     valuesFile: services/app/openwebui/backups.yaml
+extraHelmSources:
+  - path: helm/volsync-restic-consumer
+    releaseName: openwebui-backups
+    valuesFile: services/app/openwebui/backups.yaml
 requirementsPath: services/app/openwebui/requirements
 # resourcesPath: services/app/openwebui/resources
 authentik:

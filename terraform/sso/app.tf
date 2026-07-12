@@ -15,7 +15,7 @@ resource "authentik_application" "main" {
   name               = each.value.app.name
   slug               = each.value.app.slug
   protocol_provider  = local.app_providers[each.key]
-  policy_engine_mode = length(local.app_access_groups[each.key]) > 0 ? "any" : null
+  policy_engine_mode = length(local.app_access_groups[each.key]) > 0 || length(each.value.service_accounts) > 0 ? "any" : null
 
   meta_hide       = each.value.app.hidden
   group           = each.value.app.group
