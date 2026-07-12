@@ -22,7 +22,8 @@ persistence:
   enabled: false
   defaults:
     storageClass: "zfs"
-    accessMode: ReadWriteOnce
+    accessModes:
+      - ReadWriteOnce
     size: 1Gi
     volumeMode: Filesystem
 
