@@ -7,7 +7,7 @@ annotations:
 
 image:
   repository: ghcr.io/pikaro/ai-stt
-  tag: sha-ce7c2c1
+  tag: sha-5550d36
 
 persistence:
   enabled: true
