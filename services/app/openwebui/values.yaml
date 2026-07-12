@@ -40,11 +40,9 @@ persistence:
 service:
   type: ClusterIP
 
-enableOpenaiApi: false
-# openaiBaseApiUrls:
-#   - http://llm.svc.cluster.local:8000/v1
-# openaiApiKeysExistingSecret: openwebui-openai-connections
-# openaiApiKeysExistingSecretKey: api-keys
+enableOpenaiApi: true
+openaiBaseApiUrl: http://llama-server.llama-server.svc.cluster.local/v1
+openaiApiKey: not-required
 
 extraEnvVars:
   - name: WEBUI_SECRET_KEY
@@ -76,30 +74,24 @@ extraEnvVars:
     value: "false"
   - name: OAUTH_AUTO_REDIRECT
     value: "true"
-  # - name: AUDIO_STT_ENGINE
-  #   value: openai
-  # - name: AUDIO_STT_MODEL
-  #   value: whisper-1
-  # - name: AUDIO_STT_OPENAI_API_BASE_URL
-  #   value: http://whisper.stt.svc.cluster.local:8000/v1
-  # - name: AUDIO_STT_OPENAI_API_KEY
-  #   valueFrom:
-  #     secretKeyRef:
-  #       name: openwebui-audio
-  #       key: stt-api-key
-  # - name: AUDIO_TTS_ENGINE
-  #   value: openai
-  # - name: AUDIO_TTS_MODEL
-  #   value: tts-1
-  # - name: AUDIO_TTS_VOICE
-  #   value: alloy
-  # - name: AUDIO_TTS_OPENAI_API_BASE_URL
-  #   value: http://kokoro.tts.svc.cluster.local:8880/v1
-  # - name: AUDIO_TTS_OPENAI_API_KEY
-  #   valueFrom:
-  #     secretKeyRef:
-  #       name: openwebui-audio
-  #       key: tts-api-key
+  - name: AUDIO_STT_ENGINE
+    value: openai
+  - name: AUDIO_STT_MODEL
+    value: whisper-1
+  - name: AUDIO_STT_OPENAI_API_BASE_URL
+    value: http://nemo-asr.nemo-asr.svc.cluster.local/v1
+  - name: AUDIO_STT_OPENAI_API_KEY
+    value: not-required
+  - name: AUDIO_TTS_ENGINE
+    value: openai
+  - name: AUDIO_TTS_MODEL
+    value: tts-1
+  - name: AUDIO_TTS_VOICE
+    value: alloy
+  - name: AUDIO_TTS_OPENAI_API_BASE_URL
+    value: http://pockettts.pockettts.svc.cluster.local/v1
+  - name: AUDIO_TTS_OPENAI_API_KEY
+    value: not-required
 
 podSecurityContext:
   fsGroupChangePolicy: Always
