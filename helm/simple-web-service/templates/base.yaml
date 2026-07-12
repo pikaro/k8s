@@ -1,0 +1,11 @@
+{{- if .Values.createNamespace }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ include "simple-web-service.namespace" . }}
+  {{- if .Values.privilegedMovers }}
+  annotations:
+    volsync.backube/privileged-movers: "true"
+  {{- end }}
+---
+{{- end }}

@@ -11,8 +11,6 @@ authentik:
   group: Apps
   url: https://todo.d-reis.com
   directoryGroups:
-    - global-admins
-    - global-users
     - vikunja-admins
     - vikunja-users
   oidc:

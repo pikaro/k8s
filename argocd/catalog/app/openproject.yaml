@@ -13,6 +13,7 @@ authentik:
   name: OpenProject
   group: Apps
   url: https://proj.d-reis.com
+  agentGroup: openproject-users
   directoryGroups:
     - global-admins
     - global-users

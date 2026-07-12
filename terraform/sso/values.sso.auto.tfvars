@@ -19,6 +19,11 @@ users = {
     email  = "post@d-reis.com"
     groups = ["global-users", "personal-mcp-users"]
   }
+
+  agent = {
+    name  = "LLM Agent"
+    email = "agent@d-reis.cm"
+  }
 }
 
 groups = {

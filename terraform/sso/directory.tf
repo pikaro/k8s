@@ -8,11 +8,17 @@ resource "authentik_group" "main" {
 }
 
 locals {
+  agent_groups = [
+    for k, v in local.sso_configs : v.agent_group if v.agent_group != null
+  ]
   users = {
-    for k, v in var.users : k => merge(v, {
-      given_name  = coalesce(v.given_name, replace(v.name, "/(.*) .*/", "$1"))
-      family_name = coalesce(v.family_name, replace(v.name, "/.* (.*)/", "$1"))
-    })
+    for k, v in var.users : k => merge(v,
+      {
+        given_name  = coalesce(v.given_name, replace(v.name, "/(.*) .*/", "$1"))
+        family_name = coalesce(v.family_name, replace(v.name, "/.* (.*)/", "$1"))
+      },
+      k == "agent" ? { groups = local.agent_groups } : {},
+    )
   }
 }
 

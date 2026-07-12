@@ -1,0 +1,31 @@
+namespace: tts
+
+labels:
+  d-reis.com/context: ai
+annotations:
+  d-reis.com/context: ai
+
+image:
+  repository: ghcr.io/pikaro/ai-tts
+  tag: sha-ce7c2c1
+
+persistence:
+  enabled: true
+  defaults:
+    storageClassName: zfs-temp
+
+  volumes:
+    - name: data
+
+container:
+  env:
+    HF_HOME: /models/huggingface
+  volumeMounts:
+    - name: data
+      mountPath: /models/huggingface
+  livenessProbe:
+    enabled: true
+  readinessProbe:
+    enabled: true
+  startupProbe:
+    enabled: true

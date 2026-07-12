@@ -1,0 +1,28 @@
+{{- if .Values.persistence.enabled }}
+{{- $root := . }}
+{{- $defaults := .Values.persistence.defaults }}
+
+{{- range $volume := .Values.persistence.volumes }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ printf "%s-%s-pvc" (include "simple-web-service.fullname" $root) $volume.name | trunc 63 | trimSuffix "-" }}
+  namespace: {{ include "simple-web-service.namespace" $root }}
+  labels:
+    app.kubernetes.io/name: {{ include "simple-web-service.name" $root }}
+    helm.sh/chart: {{ include "simple-web-service.chart" $root }}
+    app.kubernetes.io/instance: {{ $root.Release.Name }}
+    app.kubernetes.io/managed-by: {{ $root.Release.Service }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  accessModes:
+    {{- toYaml (default $defaults.accessModes $volume.accessModes) | nindent 4 }}
+  resources:
+    requests:
+      storage: {{ default $defaults.size $volume.size }}
+  storageClassName: {{ default $defaults.storageClassName $volume.storageClassName | quote }}
+  volumeMode: {{ default $defaults.volumeMode $volume.volumeMode }}
+{{- end }}
+{{- end }}

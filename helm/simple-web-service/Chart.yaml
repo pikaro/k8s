@@ -1,0 +1,5 @@
+apiVersion: v2
+name: simple-web-service
+description: Simple OIDC-authenticated web service with Ingress / Service / Deployment
+type: application
+version: 0.1.0

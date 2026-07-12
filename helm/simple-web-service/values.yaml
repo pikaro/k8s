@@ -1,0 +1,80 @@
+namespace: ""
+createNamespace: true
+
+nameOverride: ""
+fullnameOverride: ""
+
+deploymentName: ""
+serviceName: ""
+ingressName: ""
+
+deployment:
+  replicas: 1
+  labels: {}
+  annotations: {}
+
+image:
+  repository: ""
+  tag: ""
+  pullPolicy: IfNotPresent
+
+persistence:
+  enabled: false
+  defaults:
+    storageClass: "zfs"
+    accessMode: ReadWriteOnce
+    size: 1Gi
+    volumeMode: Filesystem
+
+  volumes: []
+
+container:
+  args: []
+  env: []
+  resources: {}
+
+  livenessProbe:
+    enabled: false
+    path: /health/live
+    port: ""
+    httpHeaders: []
+    periodSeconds: 10
+    timeoutSeconds: 1
+    failureThreshold: 3
+
+  readinessProbe:
+    enabled: false
+    path: /health/ready
+    port: ""
+    httpHeaders: []
+    periodSeconds: 5
+    timeoutSeconds: 1
+    failureThreshold: 2
+
+  startupProbe:
+    enabled: false
+    path: /health/live
+    port: ""
+    httpHeaders: []
+    periodSeconds: 10
+    timeoutSeconds: 1
+    failureThreshold: 10
+
+  port: 8080
+  portName: http
+  portProtocol: TCP
+  volumeMounts: []
+
+  securityContext:
+    allowPrivilegeEscalation: false
+    runAsNonRoot: true
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000

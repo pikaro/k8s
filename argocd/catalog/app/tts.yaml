@@ -1,0 +1,19 @@
+name: tts
+namespace: tts
+sourceType: helmLocal
+basePath: helm/simple-web-service
+valuesFile: services/app/tts/values.yaml
+authentik:
+  name: tts
+  slug: tts
+  protocol: proxy
+  hidden: true
+  url: https://tts.d-reis.com
+  directoryGroups:
+    - tts-users
+  accessGroups:
+    # - ai-users
+  proxy:
+    mode: forward_single
+    externalHost: https://tts.d-reis.com
+    agentTokenAuth: true

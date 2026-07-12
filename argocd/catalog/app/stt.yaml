@@ -1,0 +1,19 @@
+name: stt
+namespace: stt
+sourceType: helmLocal
+basePath: helm/simple-web-service
+valuesFile: services/app/stt/values.yaml
+authentik:
+  name: STT
+  slug: stt
+  protocol: proxy
+  hidden: true
+  url: https://stt.d-reis.com
+  directoryGroups:
+    - stt-users
+  accessGroups:
+    # - ai-users
+  proxy:
+    mode: forward_single
+    externalHost: https://stt.d-reis.com
+    agentTokenAuth: true

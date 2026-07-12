@@ -15,6 +15,7 @@ locals {
       namespace        = lookup(config, "namespace", config.name)
       protocol         = lookup(config.authentik, "protocol", "oidc")
       name             = lookup(config.authentik, "name", config.name)
+      agent_group      = lookup(config.authentik, "agentGroup", null)
       directory_groups = lookup(config.authentik, "directoryGroups", [])
       access_groups    = lookup(config.authentik, "accessGroups", null)
       group_properties = lookup(config.authentik, "groupProperties", {})
