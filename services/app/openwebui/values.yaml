@@ -52,6 +52,20 @@ extraEnvVars:
         key: token
   - name: ENABLE_PERSISTENT_CONFIG
     value: "false"
+  - name: DEFAULT_MODEL_PARAMS
+    value: '{"max_tokens":384}'
+  - name: ENABLE_TITLE_GENERATION
+    value: "false"
+  - name: ENABLE_TAGS_GENERATION
+    value: "false"
+  - name: ENABLE_FOLLOW_UP_GENERATION
+    value: "false"
+  - name: ENABLE_AUTOCOMPLETE_GENERATION
+    value: "false"
+  - name: ENABLE_SEARCH_QUERY_GENERATION
+    value: "false"
+  - name: ENABLE_RETRIEVAL_QUERY_GENERATION
+    value: "false"
   - name: DATABASE_TYPE
     value: "postgresql"
   - name: DATABASE_USER
