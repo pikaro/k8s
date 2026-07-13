@@ -11,6 +11,8 @@ spec:
     - "*"
   destinations:
     - server: https://kubernetes.default.svc
+      namespace: assistant
+    - server: https://kubernetes.default.svc
       namespace: files
     - server: https://kubernetes.default.svc
       namespace: habitsync

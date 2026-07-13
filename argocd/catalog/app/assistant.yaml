@@ -1,0 +1,21 @@
+name: assistant
+namespace: assistant
+sourceType: helmLocal
+basePath: helm/simple-web-service
+valuesFile: services/app/assistant/values.yaml
+authentik:
+  name: assistant
+  slug: assistant
+  protocol: proxy
+  hidden: true
+  url: https://hal.d-reis.com
+  directoryGroups:
+    - assistant-users
+  accessGroups:
+    - ai-users
+  serviceAccounts:
+    esp32: {}
+  proxy:
+    mode: forward_single
+    externalHost: https://hal.d-reis.com
+    agentTokenAuth: true
