@@ -7,7 +7,7 @@ annotations:
 
 image:
   repository: ghcr.io/pikaro/ai-tts
-  tag: sha-4e0193f
+  tag: sha-35ef528
 
 persistence:
   enabled: true
