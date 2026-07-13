@@ -76,18 +76,20 @@ extraEnvVars:
     value: "true"
   - name: AUDIO_STT_ENGINE
     value: openai
+  # OpenWebUI requires a static audio model; keep this aligned with nemo-asr /v1/models.
   - name: AUDIO_STT_MODEL
-    value: whisper-1
+    value: nvidia/stt_en_fastconformer_hybrid_large_streaming_multi
   - name: AUDIO_STT_OPENAI_API_BASE_URL
     value: http://nemo-asr.nemo-asr.svc.cluster.local/v1
   - name: AUDIO_STT_OPENAI_API_KEY
     value: not-required
   - name: AUDIO_TTS_ENGINE
     value: openai
+  # OpenWebUI requires static audio settings; keep these aligned with pockettts /health.
   - name: AUDIO_TTS_MODEL
-    value: tts-1
+    value: kyutai/pocket-tts
   - name: AUDIO_TTS_VOICE
-    value: alloy
+    value: alba
   - name: AUDIO_TTS_OPENAI_API_BASE_URL
     value: http://pockettts.pockettts.svc.cluster.local/v1
   - name: AUDIO_TTS_OPENAI_API_KEY
