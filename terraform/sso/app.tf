@@ -27,14 +27,12 @@ resource "authentik_application" "main" {
 }
 
 locals {
-  default_app_access_groups = [
-    "global-admins",
-    "global-users",
-  ]
-
   app_access_groups = {
     for app_key, config in local.sso_configs :
-    app_key => distinct(coalesce(config.access_groups, concat(local.default_app_access_groups, config.directory_groups)))
+    app_key => distinct(concat(
+      ["global-users"],
+      coalesce(config.access_groups, config.directory_groups),
+    ))
   }
 
   app_group_bindings = merge({}, [
