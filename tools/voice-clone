@@ -17,9 +17,10 @@ EXT="${SOURCE##*.}"
 TARGET="/tmp/voice.wav"
 TEMP_TARGET="/tmp/voice_temp.wav"
 VOICE="/tmp/voice.safetensors"
+OUTPUT="/tmp/voice_output.wav"
 
 cleanup() {
-    rm -f "$TARGET" "$VOICE" "$TEMP_TARGET"
+    rm -f "$TARGET" "$VOICE" "$TEMP_TARGET" "$OUTPUT"
 }
 trap cleanup EXIT
 
@@ -61,7 +62,11 @@ mv "${TARGET}" "${TEMP_TARGET}"
 sox "${TEMP_TARGET}" "$@"
 
 pocket-tts export-voice "${TARGET}" "${VOICE}"
-pocket-tts generate --text "Hello, welcome to today's game between the Bears and Cubs." --voice "${VOICE}"
+pocket-tts generate \
+    --text "$(cat assets/voice-test.txt)" \
+    --voice "${VOICE}" \
+    --output-path "${OUTPUT}"
+play "${OUTPUT}"
 
 _yesno "Use this voice?" "y"
 
