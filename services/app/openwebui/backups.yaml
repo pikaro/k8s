@@ -1,4 +1,5 @@
 namespace: openwebui
+createNamespace: false
 
 objectStore:
   resticSecretName: volsync-restic-openwebui
