@@ -1,0 +1,69 @@
+#!/bin/bash
+
+# shellcheck source=../dotfiles/dotinc/entrypoint.sh
+source "${HOME}/.local/shell-include/entrypoint.sh"
+
+NAME="$1"
+SOURCE="$2"
+START="${3:-0}"
+DURATION="${4:-0}"
+
+uvx hf auth login
+
+VIDEO_FORMATS=("mp4" "mkv" "avi" "mov" "flv" "wmv")
+AUDIO_FORMATS=("mp3" "wav" "aac" "flac" "ogg" "m4a")
+EXT="${SOURCE##*.}"
+
+TARGET="/tmp/voice.wav"
+TEMP_TARGET="/tmp/voice_temp.wav"
+VOICE="/tmp/voice.safetensors"
+
+cleanup() {
+    rm -f "$TARGET" "$VOICE" "$TEMP_TARGET"
+}
+trap cleanup EXIT
+
+if [[ " ${VIDEO_FORMATS[*]} " == *" ${EXT} "* ]]; then
+    _log "Converting video file to WAV: $SOURCE"
+    ffmpeg -i "$SOURCE" -vn -c:a pcm_s16le -ar 24000 -ac 1 "$TARGET"
+elif [[ " ${AUDIO_FORMATS[*]} " == *" ${EXT} "* ]]; then
+    _log "Converting audio file to WAV: $SOURCE"
+    ffmpeg -i "$SOURCE" -c:a pcm_s16le -ar 240000 -ac 1 "$TARGET"
+elif [ ! "${EXT,,}" = "wav" ]; then
+    _fatal "Unsupported file format: $EXT"
+else
+    read -r codec rate channels < <(ffprobe -v error \
+        -select_streams a:0 \
+        -show_entries stream=codec_name,sample_rate,channels \
+        -of csv=p=0 \
+        "${SOURCE}" | tr ',' ' ')
+
+    if [ "$codec" != "pcm_s16le" ] || [ "$rate" -ne 24000 ] || [ "$channels" -ne 1 ]; then
+        _log "Converting audio to PCM S16LE, 24000 Hz, mono"
+        ffmpeg -i "$TARGET" -c:a pcm_s16le -ar 24000 -ac 1 "$TARGET"
+    else
+        _log "Audio is already in the correct format, copying to $TARGET"
+        cp "$SOURCE" "$TARGET"
+    fi
+fi
+
+set -- "$TARGET" trim "$START"
+
+if [ "$DURATION" -gt 0 ]; then
+    set -- "$@" "$DURATION"
+fi
+
+play "$@"
+
+_yesno "Is this OK?" "y"
+
+mv "${TARGET}" "${TEMP_TARGET}"
+sox "${TEMP_TARGET}" "$@"
+
+pocket-tts export-voice "${TARGET}" "${VOICE}"
+pocket-tts generate --text "Hello, welcome to today's game between the Bears and Cubs." --voice "${VOICE}"
+
+_yesno "Use this voice?" "y"
+
+TOKEN="$(ak-auth-provider proxy pocketts)"
+curl -H "Authorization: Bearer ${TOKEN}" -F name="${NAME}" -F file=@"${VOICE}" https://tts.d-reis.com/v1/voices
