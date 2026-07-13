@@ -54,6 +54,8 @@ extraEnvVars:
     value: "false"
   - name: DEFAULT_MODEL_PARAMS
     value: '{"max_tokens":384}'
+  - name: DEFAULT_MODEL_METADATA
+    value: '{"capabilities":{"file_context":false,"vision":false,"file_upload":false,"web_search":false,"image_generation":false,"code_interpreter":false,"terminal":false,"citations":false,"status_updates":false,"builtin_tools":false}}'
   - name: ENABLE_TITLE_GENERATION
     value: "false"
   - name: ENABLE_TAGS_GENERATION

@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+    echo "Usage: $(basename "$0") [--client-id ID] [--authentik-url URL] [--app-slug SLUG] [--cache-path PATH] -- COMMAND [ARG ...]" >&2
+    exit 2
+}
+
+die() {
+    echo "$(basename "$0"): $*" >&2
+    exit 1
+}
+
+client_id="${OIDC_CLIENT_ID:-authentik-cli}"
+authentik_url="${OIDC_AUTHENTIK_URL:-https://sso.d-reis.com}"
+app_slug="${OIDC_APP_SLUG:-$client_id}"
+cache_path="${OIDC_VAULT_CACHE_PATH:-}"
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+    --client-id)
+        [ "$#" -ge 2 ] || usage
+        client_id="$2"
+        shift 2
+        ;;
+    --cache-path)
+        [ "$#" -ge 2 ] || usage
+        cache_path="$2"
+        shift 2
+        ;;
+    --authentik-url)
+        [ "$#" -ge 2 ] || usage
+        authentik_url="$2"
+        shift 2
+        ;;
+    --app-slug)
+        [ "$#" -ge 2 ] || usage
+        app_slug="$2"
+        shift 2
+        ;;
+    --)
+        shift
+        break
+        ;;
+    *) usage ;;
+    esac
+done
+
+[ "$#" -gt 0 ] || usage
+command -v ak >/dev/null || die "ak is required"
+command -v jq >/dev/null || die "jq is required"
+
+if [ -z "$cache_path" ]; then
+    cache_key="$(printf '%s' "$client_id" | tr -c '[:alnum:]._-' '_')"
+    cache_path="kv/temp/oidc/$cache_key"
+fi
+
+now="$(date +%s)"
+access_token=""
+expires_at=0
+
+if command -v vault >/dev/null; then
+    cached="$(vault kv get -format=json "$cache_path" 2>/dev/null || true)"
+    if [ -n "$cached" ]; then
+        access_token="$(jq -r '.data.data.access_token // empty' <<<"$cached")"
+        expires_at="$(jq -r '.data.data.expires_at // 0' <<<"$cached")"
+        if ! [[ "$expires_at" =~ ^[0-9]+$ ]] || [ "$expires_at" -le "$((now + 60))" ]; then
+            access_token=""
+            expires_at=0
+        fi
+    fi
+fi
+
+if [ -z "$access_token" ]; then
+    token_response="$(ak -j auth raw --client-id "$client_id" 2>/dev/null)" || true
+    access_token="$(jq -r '.access_token // empty' <<<"$token_response")"
+
+    if [ -z "$access_token" ]; then
+        echo "$(basename "$0"): Authentik agent grant is unavailable; starting setup" >&2
+        ak config setup \
+            --authentik-url "$authentik_url" \
+            --client-id "$client_id" \
+            --app-slug "$app_slug" || die "Authentik agent setup failed"
+        token_response="$(ak -j auth raw --client-id "$client_id")" || true
+        access_token="$(jq -r '.access_token // empty' <<<"$token_response")"
+    fi
+
+    expires_in="$(jq -r '.expires_in // 0' <<<"$token_response")"
+    [ -n "$access_token" ] || die "ak returned no access_token after agent setup"
+    [[ "$expires_in" =~ ^[0-9]+$ ]] || die "ak returned an invalid expires_in"
+    expires_at="$((now + expires_in))"
+
+    if command -v vault >/dev/null; then
+        if ! printf '%s' "$access_token" | vault kv put "$cache_path" \
+            access_token=- \
+            expires_at="$expires_at" \
+            client_id="$client_id" >/dev/null 2>&1; then
+            echo "$(basename "$0"): warning: could not cache token at $cache_path" >&2
+        fi
+    fi
+fi
+
+export OIDC_ACCESS_TOKEN="$access_token"
+export OIDC_TOKEN_EXPIRES_AT="$expires_at"
+exec "$@"
