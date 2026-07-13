@@ -18,6 +18,7 @@ persistence:
 container:
   env:
     HF_HOME: /models/huggingface
+    TTS_DATA_DIRECTORY: /models/custom
   volumeMounts:
     - name: data
       mountPath: /models

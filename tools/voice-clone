@@ -65,5 +65,5 @@ pocket-tts generate --text "Hello, welcome to today's game between the Bears and
 
 _yesno "Use this voice?" "y"
 
-TOKEN="$(ak-auth-provider proxy pocketts)"
+TOKEN="$(ak-auth-provider proxy pockettts)"
 curl -H "Authorization: Bearer ${TOKEN}" -F name="${NAME}" -F file=@"${VOICE}" https://tts.d-reis.com/v1/voices
