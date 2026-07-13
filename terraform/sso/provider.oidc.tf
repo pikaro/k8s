@@ -21,6 +21,10 @@ resource "authentik_provider_oauth2" "main" {
 
   grant_types = each.value.provider.grant_types
 
+  jwt_federation_providers = each.value.provider.agent_token_auth ? [
+    authentik_provider_oauth2.agent.id,
+  ] : []
+
   allowed_redirect_uris = [
     for v in each.value.provider.redirect_uris :
     {

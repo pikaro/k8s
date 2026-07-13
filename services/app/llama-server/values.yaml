@@ -67,3 +67,4 @@ networkPolicy:
   ingressNamespaces:
     - openwebui
     - traefik
+    - assistant

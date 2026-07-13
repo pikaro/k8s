@@ -7,7 +7,7 @@ annotations:
 
 image:
   repository: ghcr.io/pikaro/ai-stt
-  tag: sha-40e2c5e
+  tag: sha-2b2af19
 
 persistence:
   enabled: true
@@ -49,3 +49,4 @@ networkPolicy:
   ingressNamespaces:
     - openwebui
     - traefik
+    - assistant

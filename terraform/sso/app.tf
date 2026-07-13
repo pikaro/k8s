@@ -30,7 +30,10 @@ locals {
   app_access_groups = {
     for app_key, config in local.sso_configs :
     app_key => distinct(concat(
-      ["global-users"],
+      [
+        "global-users",
+        "global-admins",
+      ],
       coalesce(config.access_groups, config.directory_groups),
     ))
   }

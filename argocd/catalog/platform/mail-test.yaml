@@ -8,9 +8,6 @@ authentik:
   protocol: proxy
   group: Management
   url: https://mail-test.k8s.d-reis.com
-  directoryGroups:
-    - global-admins
-    - global-users
   proxy:
     mode: forward_single
     externalHost: https://mail-test.k8s.d-reis.com

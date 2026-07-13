@@ -12,8 +12,6 @@ authentik:
   group: Files
   url: https://files.d-reis.com
   directoryGroups:
-    - global-admins
-    - global-users
     - filestash-admins
     - filestash-users
   proxy:

@@ -15,6 +15,7 @@ locals {
         refresh_hours           = lookup(v.protoconf, "refreshHours", 0)
         auth_flow               = lookup(v.protoconf, "authFlow", "implicit")
         invalidation_flow       = lookup(v.protoconf, "invalidationFlow", "invalidation")
+        agent_token_auth        = lookup(v.protoconf, "agentTokenAuth", true)
         oauth_scopes            = lookup(v.protoconf, "oauthScopes", local.appset_oidc_oauth_scopes)
         grant_types             = lookup(v.protoconf, "grantTypes", ["authorization_code"])
         group_property_mappings = distinct(lookup(v.protoconf, "groupPropertyMappings", []))

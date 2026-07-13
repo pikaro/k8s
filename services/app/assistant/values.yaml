@@ -1,4 +1,4 @@
-namespace: pockettts
+namespace: assistant
 
 labels:
   d-reis.com/context: ai
@@ -6,21 +6,33 @@ annotations:
   d-reis.com/context: ai
 
 image:
-  repository: ghcr.io/pikaro/ai-tts
+  repository: ghcr.io/pikaro/ai-assistant
   tag: sha-2b2af19
 
-persistence:
-  enabled: true
-  volumes:
-    - name: data
-      storageClassName: zfs-temp-bulk
+additionalResources:
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: assistant-config
+    data:
+      config.yaml: |
+        model_id: qwen3-4b
+
+additionalVolumes:
+  - name: config
+    configMap:
+      name: assistant-config
+      items:
+        - key: config.yaml
+          path: config.yaml
 
 container:
   env:
-    HF_HOME: /models/huggingface
+    ASSISTANT_CONFIG_FILE: /config.yaml
   volumeMounts:
-    - name: data
-      mountPath: /models
+    - name: config
+      mountPath: /config.yaml
+      subPath: config.yaml
   livenessProbe:
     enabled: true
   readinessProbe:
@@ -33,11 +45,11 @@ service:
 
 ingress:
   enabled: true
-  host: tts.d-reis.com
+  host: hal.d-reis.com
   tls:
-    secretName: pockettts-tls
+    secretName: assistant-tls
   annotations:
-    external-dns.alpha.kubernetes.io/hostname: tts.d-reis.com
+    external-dns.alpha.kubernetes.io/hostname: hal.d-reis.com
     external-dns.alpha.kubernetes.io/target: thule.d-reis.com
     cert-manager.io/cluster-issuer: letsencrypt
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
@@ -47,6 +59,4 @@ ingress:
 
 networkPolicy:
   ingressNamespaces:
-    - openwebui
     - traefik
-    - assistant

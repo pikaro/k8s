@@ -143,11 +143,14 @@ spec:
               {{- end }}
 {{- end }}
 {{- end }}
-{{- if and .Values.persistence.enabled .Values.persistence.volumes }}
+{{- if or (and .Values.persistence.enabled .Values.persistence.volumes) (.Values.additionalVolumes) }}
       volumes:
 {{- range $volume := .Values.persistence.volumes }}
         - name: {{ $volume.name }}
           persistentVolumeClaim:
             claimName: {{ printf "%s-%s-pvc" (include "simple-web-service.fullname" $) $volume.name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- range $volume := .Values.additionalVolumes }}
+{{- toYaml $volume | nindent 8 }}
 {{- end }}
 {{- end }}
