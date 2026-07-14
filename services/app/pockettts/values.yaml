@@ -21,6 +21,8 @@ container:
     LOG_LEVEL: DEBUG
     TTS_DATA_DIRECTORY: /models/custom
     TTS_VOICE: attenborough
+    TTS_SAVE_LATEST_WAV: "true"
+    TTS_LATEST_WAV_PATH: /models/latest.wav
   volumeMounts:
     - name: data
       mountPath: /models
