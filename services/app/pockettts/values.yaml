@@ -18,7 +18,7 @@ persistence:
 container:
   env:
     HF_HOME: /models/huggingface
-    LOG_LEVEL: debug
+    LOG_LEVEL: DEBUG
     TTS_DATA_DIRECTORY: /models/custom
     TTS_VOICE: attenborough
   volumeMounts:

@@ -18,7 +18,7 @@ persistence:
 container:
   env:
     HF_HOME: /models/huggingface
-    LOG_LEVEL: debug
+    LOG_LEVEL: DEBUG
     STT_SAVE_LATEST_WAV: "true"
     STT_LATEST_WAV_PATH: /models/latest.wav
   volumeMounts:

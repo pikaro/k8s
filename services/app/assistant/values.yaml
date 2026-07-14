@@ -29,7 +29,7 @@ additionalVolumes:
 container:
   env:
     ASSISTANT_CONFIG_FILE: /config.yaml
-    LOG_LEVEL: debug
+    LOG_LEVEL: DEBUG
   volumeMounts:
     - name: config
       mountPath: /config.yaml
