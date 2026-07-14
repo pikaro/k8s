@@ -64,9 +64,9 @@ resource "kubernetes_secret_v1" "app_service_account" {
   }
 
   data = {
-    username           = "goauthentik.io/token"
+    username           = authentik_user.app_service_account[each.key].username
     password           = authentik_token.app_service_account[each.key].key
-    authorization      = "Basic ${base64encode("goauthentik.io/token:${authentik_token.app_service_account[each.key].key}")}"
+    authorization      = "Basic ${base64encode("${authentik_user.app_service_account[each.key].username}:${authentik_token.app_service_account[each.key].key}")}"
     authentik_username = authentik_user.app_service_account[each.key].username
   }
 
