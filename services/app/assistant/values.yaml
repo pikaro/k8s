@@ -25,6 +25,7 @@ additionalResources:
       headers:
         customRequestHeaders:
           Host: hal.d-reis.com
+          X-Forwarded-Host: hal.d-reis.com
 
 additionalVolumes:
   - name: config
