@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if (($# == 0)); then
+    echo "Usage: stitch file1.mp3 file2.mp3 [...]" >&2
+    exit 1
+fi
+
+args=()
+filters=()
+concat_inputs=""
+
+for i in "$@"; do
+    args+=(-i "$i")
+done
+
+count=$#
+for ((i = 0; i < count; i++)); do
+    filters+=(
+        "[$i:a]aresample=48000,aformat=sample_fmts=s16:channel_layouts=stereo[a$i]"
+    )
+    concat_inputs+="[a$i]"
+
+    if ((i < count - 1)); then
+        filters+=(
+            "anullsrc=r=48000:cl=stereo:d=0.5[s$i]"
+        )
+        concat_inputs+="[s$i]"
+    fi
+done
+
+filter=$(
+    IFS=';'
+    echo "${filters[*]}"
+)
+filter+=";${concat_inputs}concat=n=$((count * 2 - 1)):v=0:a=1,"
+filter+="loudnorm=I=-16:LRA=11:TP=-1.5,"
+filter+="alimiter=limit=0.841:attack=5:release=50[out]"
+
+ffmpeg -y "${args[@]}" \
+    -filter_complex "$filter" \
+    -map "[out]" \
+    -c:a pcm_s16le \
+    output.wav

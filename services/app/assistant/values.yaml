@@ -7,7 +7,7 @@ annotations:
 
 image:
   repository: ghcr.io/pikaro/ai-assistant
-  tag: sha-6ee6d6f
+  tag: sha-5fd5a25
 
 additionalResources:
   - apiVersion: v1

@@ -62,11 +62,20 @@ mv "${TARGET}" "${TEMP_TARGET}"
 sox "${TEMP_TARGET}" "$@"
 
 pocket-tts export-voice "${TARGET}" "${VOICE}"
-pocket-tts generate \
-    --text "$(cat assets/voice-test.txt)" \
-    --voice "${VOICE}" \
-    --output-path "${OUTPUT}"
-play "${OUTPUT}"
+
+_say() {
+    pocket-tts generate \
+        --text "${1}" \
+        --voice "${VOICE}" \
+        --output-path "${OUTPUT}"
+    play "${OUTPUT}"
+}
+_say "$(cat assets/voice-test.txt)"
+
+while _yesno "Say more?"; do
+    _read "What to say?"
+    _say "${REPLY}"
+done
 
 _yesno "Use this voice?" "y"
 
