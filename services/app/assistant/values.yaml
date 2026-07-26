@@ -39,6 +39,7 @@ container:
   env:
     ASSISTANT_CONFIG_FILE: /config.yaml
     LOG_LEVEL: DEBUG
+    ASSISTANT_SAVE_LATEST_WAV: "true"
   volumeMounts:
     - name: config
       mountPath: /config.yaml

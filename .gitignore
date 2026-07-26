@@ -18,3 +18,4 @@ credentials
 *.flv
 *.m4a
 *.safetensors
+tmp/
