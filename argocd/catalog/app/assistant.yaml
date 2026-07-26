@@ -3,6 +3,7 @@ namespace: assistant
 sourceType: helmLocal
 basePath: helm/simple-web-service
 valuesFile: services/app/assistant/values.yaml
+resourcesPath: services/app/assistant/resources
 authentik:
   name: assistant
   slug: assistant

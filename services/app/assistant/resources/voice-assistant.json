@@ -1,0 +1,1894 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "panels": [],
+      "title": "Overview",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "Down"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "Up"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "expr": "max by (namespace, service) (up{namespace=~\"assistant|nemo-asr|pockettts\"})",
+          "instant": true,
+          "legendFormat": "{{namespace}} / {{service}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Prometheus Targets",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "text": "Not ready"
+                },
+                "1": {
+                  "color": "green",
+                  "text": "Ready"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "expr": "max(stt_model_ready{namespace=\"nemo-asr\"})",
+          "instant": true,
+          "legendFormat": "STT model",
+          "refId": "A"
+        },
+        {
+          "expr": "max(tts_model_ready{namespace=\"pockettts\"})",
+          "instant": true,
+          "legendFormat": "TTS model",
+          "refId": "B"
+        },
+        {
+          "expr": "max by (service) (assistant_upstream_ready{namespace=\"assistant\"})",
+          "instant": true,
+          "legendFormat": "Assistant → {{service}}",
+          "refId": "C"
+        }
+      ],
+      "title": "Model and Upstream Readiness",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "expr": "sum(assistant_active_sessions{namespace=\"assistant\"})",
+          "legendFormat": "Assistant sessions",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(stt_active_requests{namespace=\"nemo-asr\"})",
+          "legendFormat": "STT requests",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(tts_active_requests{namespace=\"pockettts\"})",
+          "legendFormat": "TTS requests",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(assistant_llm_slots_in_use{namespace=\"assistant\"})",
+          "legendFormat": "LLM slots in use",
+          "refId": "D"
+        },
+        {
+          "expr": "sum(assistant_llm_slot_waiters{namespace=\"assistant\"})",
+          "legendFormat": "LLM slot waiters",
+          "refId": "E"
+        }
+      ],
+      "title": "Active Work",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "id": 5,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(assistant_session_rejections_total{namespace=\"assistant\"}[1h]))",
+          "instant": true,
+          "legendFormat": "Assistant",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(increase(stt_busy_rejections_total{namespace=\"nemo-asr\"}[1h]))",
+          "instant": true,
+          "legendFormat": "STT",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(increase(tts_busy_rejections_total{namespace=\"pockettts\"}[1h]))",
+          "instant": true,
+          "legendFormat": "TTS",
+          "refId": "C"
+        }
+      ],
+      "title": "Rejected Work / 1h",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "id": 6,
+      "panels": [],
+      "title": "Assistant Orchestration",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 7
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (outcome) (rate(assistant_sessions_total{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "sessions / {{outcome}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(assistant_session_rejections_total{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "rejected",
+          "refId": "B"
+        }
+      ],
+      "title": "Sessions",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 7
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le, stage) (rate(assistant_pipeline_stage_duration_seconds_bucket{namespace=\"assistant\"}[$__rate_interval])))",
+          "legendFormat": "p50 {{stage}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, stage) (rate(assistant_pipeline_stage_duration_seconds_bucket{namespace=\"assistant\"}[$__rate_interval])))",
+          "legendFormat": "p95 {{stage}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Pipeline Stage Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 7
+      },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(assistant_audio_input_bytes_total{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "audio in",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(assistant_audio_output_bytes_total{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "audio out",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(rate(assistant_stt_deltas_total{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "stable STT deltas/s",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(rate(assistant_llm_output_characters_total{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "LLM characters/s",
+          "refId": "D"
+        }
+      ],
+      "title": "Audio and Text Throughput",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 15
+      },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (operation, outcome) (rate(assistant_llm_requests_total{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "{{operation}} / {{outcome}}",
+          "refId": "A"
+        }
+      ],
+      "title": "LLM Requests",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 15
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, operation) (rate(assistant_llm_request_duration_seconds_bucket{namespace=\"assistant\"}[$__rate_interval])))",
+          "legendFormat": "request p95 / {{operation}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(assistant_llm_time_to_first_token_seconds_bucket{namespace=\"assistant\"}[$__rate_interval])))",
+          "legendFormat": "first token p95",
+          "refId": "B"
+        }
+      ],
+      "title": "LLM Request Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 15
+      },
+      "id": 12,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le, phase) (rate(assistant_llm_server_phase_duration_seconds_bucket{namespace=\"assistant\"}[$__rate_interval])))",
+          "legendFormat": "p50 {{phase}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, phase) (rate(assistant_llm_server_phase_duration_seconds_bucket{namespace=\"assistant\"}[$__rate_interval])))",
+          "legendFormat": "p95 {{phase}}",
+          "refId": "B"
+        }
+      ],
+      "title": "LLM Server Phase Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 23
+      },
+      "id": 13,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (kind) (rate(assistant_llm_tokens_sum{namespace=\"assistant\"}[$__rate_interval])) / sum by (kind) (rate(assistant_llm_tokens_count{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "tokens/request / {{kind}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(assistant_transcript_characters_sum{namespace=\"assistant\"}[$__rate_interval])) / sum(rate(assistant_transcript_characters_count{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "transcript characters",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(rate(assistant_llm_cache_prompt_characters_sum{namespace=\"assistant\"}[$__rate_interval])) / sum(rate(assistant_llm_cache_prompt_characters_count{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "cache prompt characters",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(rate(assistant_llm_cache_warms_per_session_sum{namespace=\"assistant\"}[$__rate_interval])) / sum(rate(assistant_llm_cache_warms_per_session_count{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "cache warms/session",
+          "refId": "D"
+        },
+        {
+          "expr": "sum(rate(assistant_llm_cache_reuse_ratio_sum{namespace=\"assistant\"}[$__rate_interval])) / sum(rate(assistant_llm_cache_reuse_ratio_count{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "cache reuse ratio",
+          "refId": "E"
+        }
+      ],
+      "title": "Prompt, Token, and Cache Sizes",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 23
+      },
+      "id": 14,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (reason, outcome) (rate(assistant_llm_cache_warm_requests_total{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "warm / {{reason}} / {{outcome}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (disposition) (rate(assistant_llm_cache_warm_updates_total{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "update / {{disposition}}",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(rate(assistant_llm_cache_toolset_changes_total{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "tool-set changes",
+          "refId": "C"
+        }
+      ],
+      "title": "Cache Scheduler Activity",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 23
+      },
+      "id": 15,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, reason) (rate(assistant_llm_cache_warm_duration_seconds_bucket{namespace=\"assistant\"}[$__rate_interval])))",
+          "legendFormat": "warm p95 / {{reason}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(assistant_llm_cache_warm_final_wait_duration_seconds_bucket{namespace=\"assistant\"}[$__rate_interval])))",
+          "legendFormat": "final wait p95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(assistant_llm_slot_wait_duration_seconds_bucket{namespace=\"assistant\"}[$__rate_interval])))",
+          "legendFormat": "slot wait p95",
+          "refId": "C"
+        }
+      ],
+      "title": "Cache and Slot Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 31
+      },
+      "id": 16,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (phase) (rate(assistant_llm_tokens_per_second_sum{namespace=\"assistant\"}[$__rate_interval])) / sum by (phase) (rate(assistant_llm_tokens_per_second_count{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "tokens/s / {{phase}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (outcome) (rate(assistant_tts_requests_total{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "TTS requests/s / {{outcome}}",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(rate(assistant_tts_audio_seconds_sum{namespace=\"assistant\"}[$__rate_interval])) / sum(rate(assistant_tts_audio_seconds_count{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "TTS audio seconds/segment",
+          "refId": "C"
+        }
+      ],
+      "title": "LLM Throughput and Assistant TTS",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 31
+      },
+      "id": 17,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(assistant_tts_request_duration_seconds_bucket{namespace=\"assistant\"}[$__rate_interval])))",
+          "legendFormat": "request duration p95 (s)",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(assistant_tts_time_to_first_audio_seconds_bucket{namespace=\"assistant\"}[$__rate_interval])))",
+          "legendFormat": "first audio p95 (s)",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(assistant_tts_realtime_factor_bucket{namespace=\"assistant\"}[$__rate_interval])))",
+          "legendFormat": "real-time factor p95",
+          "refId": "C"
+        }
+      ],
+      "title": "Assistant TTS Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 31
+      },
+      "id": 18,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (source) (rate(assistant_tools_selected_total{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "selected / {{source}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (source, tool, outcome) (rate(assistant_tool_calls_total{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "tool / {{source}} / {{tool}} / {{outcome}}",
+          "refId": "B"
+        },
+        {
+          "expr": "sum by (server, operation, outcome) (rate(assistant_mcp_requests_total{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "MCP / {{server}} / {{operation}} / {{outcome}}",
+          "refId": "C"
+        }
+      ],
+      "title": "Tool and MCP Activity",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 39
+      },
+      "id": 19,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, source, tool) (rate(assistant_tool_call_duration_seconds_bucket{namespace=\"assistant\"}[$__rate_interval])))",
+          "legendFormat": "tool / {{source}} / {{tool}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, server, operation) (rate(assistant_mcp_request_duration_seconds_bucket{namespace=\"assistant\"}[$__rate_interval])))",
+          "legendFormat": "MCP / {{server}} / {{operation}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Tool and MCP p95 Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 39
+      },
+      "id": 20,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(assistant_configuration_updates_total{namespace=\"assistant\"}[$__rate_interval]))",
+          "legendFormat": "assistant",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(stt_configuration_updates_total{namespace=\"nemo-asr\"}[$__rate_interval]))",
+          "legendFormat": "STT",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(rate(tts_configuration_updates_total{namespace=\"pockettts\"}[$__rate_interval]))",
+          "legendFormat": "TTS",
+          "refId": "C"
+        }
+      ],
+      "title": "Ephemeral Configuration Updates",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 47
+      },
+      "id": 21,
+      "panels": [],
+      "title": "Speech to Text (NeMo ASR)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 48
+      },
+      "id": 22,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (mode, outcome) (rate(stt_requests_total{namespace=\"nemo-asr\"}[$__rate_interval]))",
+          "legendFormat": "{{mode}} / {{outcome}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(stt_busy_rejections_total{namespace=\"nemo-asr\"}[$__rate_interval]))",
+          "legendFormat": "busy rejections",
+          "refId": "B"
+        }
+      ],
+      "title": "STT Requests",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 48
+      },
+      "id": 23,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le, mode) (rate(stt_request_duration_seconds_bucket{namespace=\"nemo-asr\"}[$__rate_interval])))",
+          "legendFormat": "p50 / {{mode}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, mode) (rate(stt_request_duration_seconds_bucket{namespace=\"nemo-asr\"}[$__rate_interval])))",
+          "legendFormat": "p95 / {{mode}}",
+          "refId": "B"
+        }
+      ],
+      "title": "STT Request Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 48
+      },
+      "id": 24,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(stt_stream_chunk_processing_duration_seconds_bucket{namespace=\"nemo-asr\"}[$__rate_interval])))",
+          "legendFormat": "chunk processing p95",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(stt_stream_commit_duration_seconds_bucket{namespace=\"nemo-asr\"}[$__rate_interval])))",
+          "legendFormat": "commit processing p95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(stt_stream_time_to_first_delta_seconds_bucket{namespace=\"nemo-asr\"}[$__rate_interval])))",
+          "legendFormat": "first stable delta p95",
+          "refId": "C"
+        }
+      ],
+      "title": "STT Streaming Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 56
+      },
+      "id": 25,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(stt_stream_input_audio_seconds_bucket{namespace=\"nemo-asr\"}[$__rate_interval])))",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(stt_stream_input_audio_seconds_bucket{namespace=\"nemo-asr\"}[$__rate_interval])))",
+          "legendFormat": "p95",
+          "refId": "B"
+        }
+      ],
+      "title": "STT Input Audio per Realtime Session",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 56
+      },
+      "id": 26,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "max(stt_model_load_seconds{namespace=\"nemo-asr\"})",
+          "legendFormat": "model load seconds",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(stt_active_requests{namespace=\"nemo-asr\"})",
+          "legendFormat": "active requests",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(increase(stt_configuration_updates_total{namespace=\"nemo-asr\"}[1h]))",
+          "legendFormat": "config updates / 1h",
+          "refId": "C"
+        }
+      ],
+      "title": "STT Model and Runtime State",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 64
+      },
+      "id": 27,
+      "panels": [],
+      "title": "Text to Speech (Pocket TTS)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 65
+      },
+      "id": 28,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (format, outcome) (rate(tts_requests_total{namespace=\"pockettts\"}[$__rate_interval]))",
+          "legendFormat": "{{format}} / {{outcome}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(tts_busy_rejections_total{namespace=\"pockettts\"}[$__rate_interval]))",
+          "legendFormat": "busy rejections",
+          "refId": "B"
+        }
+      ],
+      "title": "TTS Requests",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 65
+      },
+      "id": 29,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le, format) (rate(tts_request_duration_seconds_bucket{namespace=\"pockettts\"}[$__rate_interval])))",
+          "legendFormat": "p50 / {{format}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, format) (rate(tts_request_duration_seconds_bucket{namespace=\"pockettts\"}[$__rate_interval])))",
+          "legendFormat": "p95 / {{format}}",
+          "refId": "B"
+        }
+      ],
+      "title": "TTS Request Latency",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 65
+      },
+      "id": 30,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(tts_time_to_first_audio_seconds_bucket{namespace=\"pockettts\"}[$__rate_interval])))",
+          "legendFormat": "first PCM audio p95 (s)",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(tts_output_audio_seconds_bucket{namespace=\"pockettts\"}[$__rate_interval])))",
+          "legendFormat": "output audio p95 (s)",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(tts_realtime_factor_bucket{namespace=\"pockettts\"}[$__rate_interval])))",
+          "legendFormat": "real-time factor p95",
+          "refId": "C"
+        }
+      ],
+      "title": "TTS Generation Performance",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 73
+      },
+      "id": 31,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "max(tts_model_load_seconds{namespace=\"pockettts\"})",
+          "legendFormat": "model load",
+          "refId": "A"
+        },
+        {
+          "expr": "max(tts_voice_load_seconds{namespace=\"pockettts\"})",
+          "legendFormat": "voice load",
+          "refId": "B"
+        }
+      ],
+      "title": "TTS Load Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 73
+      },
+      "id": 32,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(tts_active_requests{namespace=\"pockettts\"})",
+          "legendFormat": "active requests",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(increase(tts_configuration_updates_total{namespace=\"pockettts\"}[1h]))",
+          "legendFormat": "config updates / 1h",
+          "refId": "B"
+        }
+      ],
+      "title": "TTS Runtime State",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 81
+      },
+      "id": 33,
+      "panels": [],
+      "title": "Python Process Runtime",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 82
+      },
+      "id": 34,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (namespace) (rate(process_cpu_seconds_total{namespace=~\"assistant|nemo-asr|pockettts\"}[$__rate_interval]))",
+          "legendFormat": "{{namespace}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Process CPU",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 82
+      },
+      "id": 35,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (namespace) (process_resident_memory_bytes{namespace=~\"assistant|nemo-asr|pockettts\"})",
+          "legendFormat": "RSS / {{namespace}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (namespace) (process_virtual_memory_bytes{namespace=~\"assistant|nemo-asr|pockettts\"})",
+          "legendFormat": "virtual / {{namespace}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Process Memory",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "max": 1,
+          "min": 0,
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 82
+      },
+      "id": 36,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (namespace) (process_open_fds{namespace=~\"assistant|nemo-asr|pockettts\"}) / sum by (namespace) (process_max_fds{namespace=~\"assistant|nemo-asr|pockettts\"})",
+          "legendFormat": "{{namespace}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Open File Descriptor Utilization",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 90
+      },
+      "id": 37,
+      "options": {
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (namespace, generation) (rate(python_gc_collections_total{namespace=~\"assistant|nemo-asr|pockettts\"}[$__rate_interval]))",
+          "legendFormat": "collections / {{namespace}} / gen {{generation}}",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (namespace, generation) (rate(python_gc_objects_collected_total{namespace=~\"assistant|nemo-asr|pockettts\"}[$__rate_interval]))",
+          "legendFormat": "objects collected / {{namespace}} / gen {{generation}}",
+          "refId": "B"
+        },
+        {
+          "expr": "sum by (namespace, generation) (rate(python_gc_objects_uncollectable_total{namespace=~\"assistant|nemo-asr|pockettts\"}[$__rate_interval]))",
+          "legendFormat": "uncollectable / {{namespace}} / gen {{generation}}",
+          "refId": "C"
+        }
+      ],
+      "title": "Python Garbage Collection",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 90
+      },
+      "id": 38,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "expr": "time() - max by (namespace) (process_start_time_seconds{namespace=~\"assistant|nemo-asr|pockettts\"})",
+          "instant": true,
+          "legendFormat": "uptime / {{namespace}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Process Uptime",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "$datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 90
+      },
+      "id": 39,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "name",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "expr": "max by (namespace, version) (python_info{namespace=~\"assistant|nemo-asr|pockettts\"})",
+          "instant": true,
+          "legendFormat": "{{namespace}} / Python {{version}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Python Version",
+      "type": "stat"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 41,
+  "tags": [
+    "ai",
+    "assistant",
+    "speech",
+    "stt",
+    "tts"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "Prometheus",
+          "value": "prometheus"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Prometheus datasource",
+        "name": "datasource",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Voice Assistant",
+  "uid": "voice-assistant",
+  "version": 1,
+  "weekStart": "monday"
+}

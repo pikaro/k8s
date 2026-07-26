@@ -36,6 +36,9 @@ container:
 service:
   port: 80
 
+serviceMonitor:
+  enabled: true
+
 ingress:
   enabled: true
   host: tts.d-reis.com
@@ -52,6 +55,7 @@ ingress:
 
 networkPolicy:
   ingressNamespaces:
+    - monitoring
     - openwebui
     - traefik
     - assistant

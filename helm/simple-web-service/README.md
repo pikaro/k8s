@@ -4,6 +4,10 @@ An opinionated local Helm chart for HTTP services that do not provide their own
 chart. It deploys a namespaced `Deployment` and `ClusterIP` `Service`, with
 optional persistence and public ingress.
 
+Services that expose Prometheus metrics can enable `serviceMonitor.enabled`.
+When the network policy is enabled, also add the Prometheus namespace to
+`networkPolicy.ingressNamespaces` so the scrape traffic can reach the pod.
+
 Ingress traffic is denied by default by an ingress-only `NetworkPolicy`, except
 for pods in the service's own namespace. Add every namespace that needs to call
 the service to `networkPolicy.ingressNamespaces`. An ingress-enabled service
@@ -68,4 +72,7 @@ networkPolicy:
   ingressNamespaces:
     - traefik
     - calling-application
+
+serviceMonitor:
+  enabled: true
 ```
