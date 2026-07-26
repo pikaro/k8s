@@ -30,7 +30,6 @@ storage:
 
   attachments:
     name: "vaultwarden-files"
-    path: /temporary
     size: "5Gi"
     class: "zfs"
     accessMode: "ReadWriteOnce"
