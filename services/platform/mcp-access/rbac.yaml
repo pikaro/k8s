@@ -16,129 +16,124 @@ kind: ClusterRole
 metadata:
   name: codex-mcp-readonly
 rules:
+  # Kubernetes RBAC is additive and cannot express "all resources except
+  # Secrets". Keep the core API explicit so credential-bearing Secret objects
+  # and active access subresources such as exec, attach, port-forward, and
+  # proxy remain unavailable.
   - apiGroups: [""]
     resources:
+      - componentstatuses
+      - configmaps
       - endpoints
       - events
+      - limitranges
       - namespaces
+      - namespaces/status
       - nodes
       - persistentvolumeclaims
+      - persistentvolumeclaims/status
       - persistentvolumes
       - pods
       - pods/log
+      - pods/status
+      - podtemplates
       - replicationcontrollers
+      - replicationcontrollers/scale
+      - replicationcontrollers/status
+      - resourcequotas
+      - resourcequotas/status
+      - serviceaccounts
       - services
+      - services/status
     verbs: ["get", "list", "watch"]
-  - apiGroups: ["apps"]
-    resources:
-      - controllerrevisions
-      - daemonsets
-      - deployments
-      - replicasets
-      - statefulsets
+
+  # Standard Kubernetes APIs do not carry Secret payloads. Wildcard resources
+  # also cover their read-only status and scale subresources as APIs evolve.
+  - apiGroups:
+      - admissionregistration.k8s.io
+      - apiextensions.k8s.io
+      - apiregistration.k8s.io
+      - apps
+      - autoscaling
+      - batch
+      - certificates.k8s.io
+      - coordination.k8s.io
+      - discovery.k8s.io
+      - events.k8s.io
+      - flowcontrol.apiserver.k8s.io
+      - gateway.networking.k8s.io
+      - networking.k8s.io
+      - node.k8s.io
+      - policy
+      - rbac.authorization.k8s.io
+      - resource.k8s.io
+      - scheduling.k8s.io
+      - snapshot.storage.k8s.io
+      - storage.k8s.io
+    resources: ["*"]
     verbs: ["get", "list", "watch"]
-  - apiGroups: ["batch"]
-    resources:
-      - cronjobs
-      - jobs
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["networking.k8s.io"]
-    resources:
-      - ingressclasses
-      - ingresses
-      - networkpolicies
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["discovery.k8s.io"]
-    resources:
-      - endpointslices
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["policy"]
-    resources:
-      - poddisruptionbudgets
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["autoscaling"]
-    resources:
-      - horizontalpodautoscalers
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["storage.k8s.io"]
-    resources:
-      - csidrivers
-      - csinodes
-      - csistoragecapacities
-      - storageclasses
-      - volumeattachments
-    verbs: ["get", "list", "watch"]
+
   - apiGroups: ["metrics.k8s.io"]
-    resources:
-      - nodes
-      - pods
+    resources: ["*"]
     verbs: ["get", "list"]
-  - apiGroups: ["apiextensions.k8s.io"]
-    resources:
-      - customresourcedefinitions
+
+  # Read-only operator APIs whose objects contain operational configuration or
+  # references to Secrets, but never Secret payloads themselves. New operator
+  # API groups remain default-denied until they are classified here.
+  - apiGroups:
+      - argoproj.io
+      - externaldns.k8s.io
+      - monitoring.grafana.com
+      - postgresql.cnpg.io
+      - traefik.io
+      - volsync.backube
+      - zfs.openebs.io
+    resources: ["*"]
     verbs: ["get", "list", "watch"]
-  - apiGroups: ["argoproj.io"]
-    resources:
-      - applications
-      - applicationsets
-      - appprojects
-    verbs: ["get", "list", "watch"]
+
+  # Certificate objects can contain literal keystore passwords, so only the
+  # non-payload cert-manager resources are readable. ACME Challenge and Order
+  # objects are omitted because they expose live challenge tokens.
   - apiGroups: ["cert-manager.io"]
     resources:
-      - certificates
       - certificaterequests
       - clusterissuers
       - issuers
     verbs: ["get", "list", "watch"]
-  - apiGroups: ["acme.cert-manager.io"]
+
+  # Prometheus, PrometheusAgent, and ThanosRuler objects are omitted because
+  # their deprecated bearerToken fields can contain credentials in clear text.
+  - apiGroups: ["monitoring.coreos.com"]
     resources:
-      - challenges
-      - orders
+      - alertmanagerconfigs
+      - alertmanagers
+      - podmonitors
+      - probes
+      - prometheusrules
+      - scrapeconfigs
+      - servicemonitors
     verbs: ["get", "list", "watch"]
-  - apiGroups: ["external-secrets.io"]
+
+  # Traefik Hub authentication policies are intentionally omitted:
+  # accesscontrolpolicies can store JWT signing material directly, while
+  # apiauths and apiportalauths are credential-oriented resources.
+  - apiGroups: ["hub.traefik.io"]
     resources:
-      - clustersecretstores
-      - externalsecrets
-      - secretstores
+      - aiservices
+      - apibundles
+      - apicatalogitems
+      - apiplans
+      - apiportals
+      - apiratelimits
+      - apis
+      - apiversions
+      - managedapplications
+      - managedsubscriptions
     verbs: ["get", "list", "watch"]
-  - apiGroups: ["generators.external-secrets.io"]
-    resources:
-      - passwords
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["postgresql.cnpg.io"]
-    resources:
-      - backups
-      - clusterimagecatalogs
-      - clusters
-      - databases
-      - databaseroles
-      - failoverquorums
-      - imagecatalogs
-      - poolers
-      - publications
-      - scheduledbackups
-      - subscriptions
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["traefik.io"]
-    resources:
-      - ingressroutes
-      - ingressroutetcps
-      - ingressrouteudps
-      - middlewares
-      - middlewaretcps
-      - serverstransports
-      - tlsoptions
-      - tlsstores
-      - traefikservices
-    verbs: ["get", "list", "watch"]
-  - apiGroups: ["zfs.openebs.io"]
-    resources:
-      - zfsbackups
-      - zfsnodes
-      - zfsrestores
-      - zfssnapshots
-      - zfsvolumes
-    verbs: ["get", "list", "watch"]
+
+  # external-secrets.io and generators.external-secrets.io are intentionally
+  # omitted because those APIs exist specifically to locate, generate, and
+  # distribute credential material.
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
