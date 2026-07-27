@@ -17,5 +17,6 @@ credentials
 *.mkv
 *.flv
 *.m4a
+*.opus
 *.safetensors
 tmp/
