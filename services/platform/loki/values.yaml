@@ -18,9 +18,11 @@ loki:
   limits_config:
     discover_log_levels: false
     retention_period: 168h
+    deletion_mode: filter-and-delete
   compactor:
     retention_enabled: true
     delete_request_store: filesystem
+    delete_request_cancel_period: 0s
 
 singleBinary:
   replicas: 1
