@@ -61,7 +61,7 @@ container:
     # LLAMA_ARG_HF_FILE: Qwen3-4B-Q5_K_M.gguf
     # LLAMA_ARG_ALIAS: qwen3-4b
 
-    LLAMA_ARG_HF_REPO: unsloth/Qwen3-4B-Instruct-2507
+    LLAMA_ARG_HF_REPO: unsloth/Qwen3-4B-Instruct-2507-GGUF
     LLAMA_ARG_HF_FILE: Qwen3-4B-Instruct-2507-Q5_K_M.gguf
     LLAMA_ARG_ALIAS: qwen3-4b-instruct
   volumeMounts:
