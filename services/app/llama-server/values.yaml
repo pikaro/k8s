@@ -19,21 +19,51 @@ persistence:
 container:
   env:
     LLAMA_CACHE: /models
+
+    # Network
     LLAMA_ARG_HOST: "0.0.0.0"
     LLAMA_ARG_PORT: "8080"
-    LLAMA_ARG_HF_REPO: Qwen/Qwen3-4B-GGUF
-    LLAMA_ARG_HF_FILE: Qwen3-4B-Q5_K_M.gguf
-    LLAMA_ARG_ALIAS: qwen3-4b
+    LLAMA_ARG_UI: "false"
+
+    # Interop
+    LLAMA_ARG_ENDPOINT_SLOTS: "true"
+    LLAMA_ARG_SLOT_SAVE_PATH: /models/slots
+    LLAMA_ARG_ENDPOINT_METRICS: "true"
+    LLAMA_ARG_THREADS_HTTP: "2"
+    LLAMA_ARG_TIMEOUT: "120"
+    LLAMA_ARG_SSE_PING_INTERVAL: "15"
+
+    # Context
     LLAMA_ARG_CTX_SIZE: "8192"
     LLAMA_ARG_N_PARALLEL: "1"
-    LLAMA_ARG_REASONING: "off"
+    LLAMA_ARG_N_PREDICT: "256"
+
+    # CPU Config
     LLAMA_ARG_THREADS: "5"
     LLAMA_ARG_THREADS_BATCH: "5"
+    LLAMA_ARG_BATCH: "1024"
+    LLAMA_ARG_UBATCH: "256"
+    LLAMA_ARG_REPACK: "true"
+    LLAMA_ARG_FLASH_ATTN: "auto"
+    LLAMA_ARG_LOAD_MODE: "mmap+mlock"
+
+    # Behavior
+    LLAMA_ARG_REASONING: "off"
+
+    # Caching
     LLAMA_ARG_CACHE_PROMPT: "true"
-    LLAMA_ARG_ENDPOINT_SLOTS: "true"
-    LLAMA_ARG_SLOT_SAVE_PATH: /models
-    LLAMA_ARG_ENDPOINT_METRICS: "true"
-    LLAMA_ARG_UI: "false"
+    LLAMA_ARG_CACHE_REUSE: "64"
+    # TODO: Evaluate AFTER dialing in
+    # LLAMA_ARG_CACHE_TYPE_K: "q8_0"
+    # LLAMA_ARG_CACHE_TYPE_V: "q8_0"
+
+    # LLAMA_ARG_HF_REPO: Qwen/Qwen3-4B-GGUF
+    # LLAMA_ARG_HF_FILE: Qwen3-4B-Q5_K_M.gguf
+    # LLAMA_ARG_ALIAS: qwen3-4b
+
+    LLAMA_ARG_HF_REPO: unsloth/Qwen3-4B-Instruct-2507
+    LLAMA_ARG_HF_FILE: Qwen3-4B-Instruct-2507-Q5_K_M.gguf
+    LLAMA_ARG_ALIAS: qwen3-4b-instruct
   volumeMounts:
     - name: data
       mountPath: /models
