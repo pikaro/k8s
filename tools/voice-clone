@@ -17,6 +17,7 @@ TARGET="/tmp/voice.wav"
 TEMP_TARGET="/tmp/voice_temp.wav"
 VOICE="/tmp/voice.safetensors"
 OUTPUT="/tmp/voice_output.wav"
+TTS_LANG="${TTS_LANG:-english}"
 
 is_nonnegative_number() {
     [[ "$1" =~ ^([0-9]+([.][0-9]*)?|[.][0-9]+)$ ]]
@@ -54,7 +55,7 @@ trim_args+=(
     "silence" "1" "0.05" "0.5%" "reverse"
     "highpass" "65"
     "sinc" "-11500"
-    "gain" "-n" "-3"
+    "gain" "-n" "-6"
 )
 play "$TARGET" "${trim_args[@]}"
 
@@ -63,10 +64,11 @@ _yesno "Is this OK?"
 sox "$TARGET" "$TEMP_TARGET" "${trim_args[@]}"
 mv "$TEMP_TARGET" "$TARGET"
 
-pocket-tts export-voice "${TARGET}" "${VOICE}"
+pocket-tts export-voice --language "${TTS_LANG}" "${TARGET}" "${VOICE}"
 
 _say() {
     pocket-tts generate \
+        --language "${TTS_LANG}" \
         --text "${1}" \
         --voice "${VOICE}" \
         --output-path "${OUTPUT}"
