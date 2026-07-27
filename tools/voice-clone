@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # shellcheck source=../dotfiles/dotinc/entrypoint.sh
 source "${HOME}/.local/shell-include/entrypoint.sh"
@@ -10,56 +10,58 @@ DURATION="${4:-0}"
 
 uvx hf auth login
 
-VIDEO_FORMATS=("mp4" "mkv" "avi" "mov" "flv" "wmv")
-AUDIO_FORMATS=("mp3" "wav" "aac" "flac" "ogg" "m4a")
 EXT="${SOURCE##*.}"
+EXT="${EXT,,}"
 
 TARGET="/tmp/voice.wav"
 TEMP_TARGET="/tmp/voice_temp.wav"
 VOICE="/tmp/voice.safetensors"
 OUTPUT="/tmp/voice_output.wav"
 
+is_nonnegative_number() {
+    [[ "$1" =~ ^([0-9]+([.][0-9]*)?|[.][0-9]+)$ ]]
+}
+
+is_nonnegative_number "$START" ||
+    _fatal "START must be a non-negative number: $START"
+
+is_nonnegative_number "$DURATION" ||
+    _fatal "DURATION must be a non-negative number: $DURATION"
+
 cleanup() {
     rm -f "$TARGET" "$VOICE" "$TEMP_TARGET" "$OUTPUT"
 }
 trap cleanup EXIT
 
-if [[ " ${VIDEO_FORMATS[*]} " == *" ${EXT} "* ]]; then
-    _log "Converting video file to WAV: $SOURCE"
-    ffmpeg -i "$SOURCE" -vn -c:a pcm_s16le -ar 24000 -ac 1 "$TARGET"
-elif [[ " ${AUDIO_FORMATS[*]} " == *" ${EXT} "* ]]; then
-    _log "Converting audio file to WAV: $SOURCE"
-    ffmpeg -i "$SOURCE" -c:a pcm_s16le -ar 240000 -ac 1 "$TARGET"
-elif [ ! "${EXT,,}" = "wav" ]; then
-    _fatal "Unsupported file format: $EXT"
-else
-    read -r codec rate channels < <(ffprobe -v error \
-        -select_streams a:0 \
-        -show_entries stream=codec_name,sample_rate,channels \
-        -of csv=p=0 \
-        "${SOURCE}" | tr ',' ' ')
+_log "Converting source to PCM S16LE, 24000 Hz, mono"
 
-    if [ "$codec" != "pcm_s16le" ] || [ "$rate" -ne 24000 ] || [ "$channels" -ne 1 ]; then
-        _log "Converting audio to PCM S16LE, 24000 Hz, mono"
-        ffmpeg -i "$TARGET" -c:a pcm_s16le -ar 24000 -ac 1 "$TARGET"
-    else
-        _log "Audio is already in the correct format, copying to $TARGET"
-        cp "$SOURCE" "$TARGET"
-    fi
+ffmpeg -hide_banner -loglevel error -y \
+    -i "$SOURCE" \
+    -map 0:a:0 \
+    -vn \
+    -c:a pcm_s16le \
+    -ar 24000 \
+    -ac 1 \
+    "$TARGET" ||
+    _fatal "Could not extract audio from: $SOURCE"
+
+trim_args=(trim "$START")
+if awk -v duration="$DURATION" 'BEGIN { exit !(duration > 0) }'; then
+    trim_args+=("$DURATION")
 fi
+trim_args+=(
+    "silence" "1" "0.05" "0.5%" "reverse"
+    "silence" "1" "0.05" "0.5%" "reverse"
+    "highpass" "65"
+    "sinc" "-11500"
+    "gain" "-n" "-3"
+)
+play "$TARGET" "${trim_args[@]}"
 
-set -- "$TARGET" trim "$START"
+_yesno "Is this OK?"
 
-if [ "$DURATION" -gt 0 ]; then
-    set -- "$@" "$DURATION"
-fi
-
-play "$@"
-
-_yesno "Is this OK?" "y"
-
-mv "${TARGET}" "${TEMP_TARGET}"
-sox "${TEMP_TARGET}" "$@"
+sox "$TARGET" "$TEMP_TARGET" "${trim_args[@]}"
+mv "$TEMP_TARGET" "$TARGET"
 
 pocket-tts export-voice "${TARGET}" "${VOICE}"
 
@@ -77,7 +79,7 @@ while _yesno "Say more?"; do
     _say "${REPLY}"
 done
 
-_yesno "Use this voice?" "y"
+_yesno "Use this voice?"
 
 TOKEN="$(ak-auth-provider proxy pockettts)"
 curl -H "Authorization: Bearer ${TOKEN}" -F name="${NAME}" -F file=@"${VOICE}" https://tts.d-reis.com/v1/voices
