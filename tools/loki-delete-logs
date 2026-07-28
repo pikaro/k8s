@@ -1,0 +1,35 @@
+#!/bin/bash
+
+set -eEuo pipefail
+
+_usage() {
+    echo "$0 <namespace> <pod> <since>"
+    exit 1
+}
+
+if [ "$#" -ne 3 ]; then
+    _usage
+fi
+
+kubectl port-forward -n observability svc/loki-gateway 3100:80 &
+KCTL_PID=$!
+trap 'kill "${KCTL_PID}"' EXIT
+
+while ! nc -z localhost 3100; do
+    echo "Waiting for forward"
+    sleep 1
+done
+
+NS="$1"
+POD="$2"
+START="$(date -d "$3" +%s)"
+END="$(date +%s)"
+
+echo "Deleting logs"
+curl -w '\nHTTP %{http_code}\n' \
+    -X POST \
+    --get \
+    --data-urlencode "query={namespace=\"$NS\",pod=\"$POD\"}" \
+    --data-urlencode "start=$START" \
+    --data-urlencode "end=$END" \
+    'http://127.0.0.1:3100/loki/api/v1/delete'
