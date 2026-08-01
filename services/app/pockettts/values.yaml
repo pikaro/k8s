@@ -7,7 +7,7 @@ annotations:
 
 image:
   repository: ghcr.io/pikaro/ai-tts
-  tag: sha-e2b7aff
+  tag: sha-4c2c190
 
 persistence:
   enabled: true
@@ -20,8 +20,8 @@ container:
     HF_HOME: /models/huggingface
     TTS_DATA_DIRECTORY: /models/custom
     TTS_VOICE: attenborough
-    LOG_LEVEL: DEBUG
-    TTS_SAVE_LATEST_WAV: "true"
+    LOG_LEVEL: INFO
+    TTS_SAVE_LATEST_WAV: "false"
   volumeMounts:
     - name: data
       mountPath: /models
