@@ -17,6 +17,29 @@ additionalResources:
     data:
       config.yaml: |
         model_id: qwen3-4b-instruct
+        multi_voice:
+          default_character: assistant
+          characters:
+            assistant:
+              voice: attenborough
+              marker: "§"
+              description: "The default assistant voice.""
+            narrator:
+              voice: attenborough
+              marker: "𝄞"
+              description: "David Attenborough voice for a calm and informative tone.""
+            pikaro:
+              voice: bender
+              marker: "⊙"
+              description: "An irreverent and humorous robot voice."
+            hal:
+              voice: hal
+              marker: "모"
+              description: "HAL 9000 voice for a calm and slightly ominous tone."
+            morgan:
+              voice: morgan
+              marker: "•"
+              description: "Morgan Freeman voice for a calm and authoritative tone."
   - apiVersion: traefik.io/v1alpha1
     kind: Middleware
     metadata:
