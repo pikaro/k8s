@@ -1,3 +1,8 @@
+{{- $podAnnotations := deepCopy (default (dict) .Values.deployment.podAnnotations) -}}
+{{- range $triggerName, $selector := .Values.deployment.rolloutTriggers -}}
+{{- $checksum := include "simple-web-service.rolloutTriggerChecksum" (dict "triggerName" $triggerName "selector" $selector "resources" $.Values.additionalResources) -}}
+{{- $_ := set $podAnnotations (printf "checksum/%s" $triggerName) $checksum -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -30,9 +35,9 @@ spec:
 {{- range $key, $value := .Values.deployment.podLabels }}
         {{ $key }}: {{ $value | quote }}
 {{- end }}
-      {{- with .Values.deployment.podAnnotations }}
+      {{- with $podAnnotations }}
       annotations:
-{{ toYaml . | nindent 8 }}
+{{- toYaml . | nindent 8 }}
       {{- end }}
     spec:
       automountServiceAccountToken: {{ .Values.deployment.automountServiceAccountToken }}

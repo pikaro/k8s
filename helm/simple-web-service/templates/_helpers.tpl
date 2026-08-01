@@ -33,3 +33,20 @@
 {{- $tag := required "image.tag is required" .Values.image.tag -}}
 {{- printf "%s:%s" $repository $tag -}}
 {{- end -}}
+
+{{- define "simple-web-service.rolloutTriggerChecksum" -}}
+{{- $triggerName := .triggerName -}}
+{{- $selector := .selector -}}
+{{- $kind := required (printf "deployment.rolloutTriggers.%s.kind is required" $triggerName) $selector.kind -}}
+{{- $name := required (printf "deployment.rolloutTriggers.%s.name is required" $triggerName) $selector.name -}}
+{{- $matches := list -}}
+{{- range $resource := .resources -}}
+{{- if and (eq (dig "kind" "" $resource) $kind) (eq (dig "metadata" "name" "" $resource) $name) -}}
+{{- $matches = append $matches $resource -}}
+{{- end -}}
+{{- end -}}
+{{- if ne (len $matches) 1 -}}
+{{- fail (printf "deployment.rolloutTriggers.%s must match exactly one additional resource with kind %q and name %q; matched %d" $triggerName $kind $name (len $matches)) -}}
+{{- end -}}
+{{- first $matches | toJson | sha256sum -}}
+{{- end -}}

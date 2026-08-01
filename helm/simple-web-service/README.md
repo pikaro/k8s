@@ -13,6 +13,19 @@ for pods in the service's own namespace. Add every namespace that needs to call
 the service to `networkPolicy.ingressNamespaces`. An ingress-enabled service
 must therefore include its ingress controller namespace, normally `traefik`.
 
+Resources declared in `additionalResources` can trigger a pod rollout when they
+change. Add a named selector under `deployment.rolloutTriggers`; the chart adds
+a `checksum/<trigger>` annotation to the pod template for the one matching
+resource:
+
+```yaml
+deployment:
+  rolloutTriggers:
+    config:
+      kind: ConfigMap
+      name: example-config
+```
+
 The chart does not create OIDC credentials. Applications consume the OIDC
 Secret generated from their ArgoCD catalog entry through `container.env` or
 `container.envFrom`. Services protected by the Authentik proxy can additionally

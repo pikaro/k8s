@@ -20,6 +20,7 @@ deployment:
   annotations: {}
   podLabels: {}
   podAnnotations: {}
+  rolloutTriggers: {}
 
 image:
   repository: ""

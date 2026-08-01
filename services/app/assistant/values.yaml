@@ -5,6 +5,12 @@ labels:
 annotations:
   d-reis.com/context: ai
 
+deployment:
+  rolloutTriggers:
+    config:
+      kind: ConfigMap
+      name: assistant-config
+
 image:
   repository: ghcr.io/pikaro/ai-assistant
   tag: sha-e2b7aff
@@ -23,18 +29,18 @@ additionalResources:
             assistant:
               voice: attenborough
               marker: "§"
-              description: "The default assistant voice.""
+              description: "The default assistant voice."
             narrator:
               voice: attenborough
               marker: "𝄞"
-              description: "David Attenborough voice for a calm and informative tone.""
+              description: "David Attenborough voice for a calm and informative tone."
             pikaro:
               voice: bender
               marker: "⊙"
               description: "An irreverent and humorous robot voice."
             hal:
               voice: hal
-              marker: "모"
+              marker: "☐"
               description: "HAL 9000 voice for a calm and slightly ominous tone."
             morgan:
               voice: morgan
