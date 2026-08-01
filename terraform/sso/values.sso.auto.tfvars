@@ -20,6 +20,12 @@ users = {
     groups = ["global-users", "personal-mcp-users"]
   }
 
+  work = {
+    name   = "David Reis"
+    email  = "work@d-reis.com"
+    groups = ["vaultwarden-users"]
+  }
+
   agent = {
     name  = "LLM Agent"
     email = "agent@d-reis.cm"

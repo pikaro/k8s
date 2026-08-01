@@ -18,6 +18,7 @@ TEMP_TARGET="/tmp/voice_temp.wav"
 VOICE="/tmp/voice.safetensors"
 OUTPUT="/tmp/voice_output.wav"
 TTS_LANG="${TTS_LANG:-english}"
+TTS_SAMPLE="${TTS_SAMPLE:-${TTS_LANG}}"
 
 is_nonnegative_number() {
     [[ "$1" =~ ^([0-9]+([.][0-9]*)?|[.][0-9]+)$ ]]
@@ -33,6 +34,60 @@ cleanup() {
     rm -f "$TARGET" "$VOICE" "$TEMP_TARGET" "$OUTPUT"
 }
 trap cleanup EXIT
+
+get_youtube_id() {
+    local url="$1"
+    local id
+
+    case "$url" in
+    *youtube.com/watch\?*v=*)
+        id="${url#*v=}"
+        id="${id%%&*}"
+        ;;
+    *youtu.be/*)
+        id="${url#*youtu.be/}"
+        id="${id%%\?*}"
+        id="${id%%&*}"
+        ;;
+    *youtube.com/shorts/*)
+        id="${url#*youtube.com/shorts/}"
+        id="${id%%\?*}"
+        id="${id%%/*}"
+        ;;
+    *youtube.com/embed/*)
+        id="${url#*youtube.com/embed/}"
+        id="${id%%\?*}"
+        id="${id%%/*}"
+        ;;
+    *)
+        return 1
+        ;;
+    esac
+
+    printf '%s\n' "$id"
+}
+
+find_downloaded_audio() {
+    local VIDEO_ID="$1"
+    find "/tmp/" -mindepth 1 -maxdepth 1 -name "${VIDEO_ID}*"
+}
+
+if [[ "${SOURCE}" == *"youtube"* ]]; then
+    VIDEO_ID="$(get_youtube_id "${SOURCE}")"
+    DOWNLOADED_FILE="$(find_downloaded_audio "${VIDEO_ID}" || true)"
+    if [ -z "${DOWNLOADED_FILE}" ]; then
+        DOWNLOAD_TARGET="/tmp/${VIDEO_ID}"
+        _log "Downloading ${SOURCE} to ${DOWNLOAD_TARGET}"
+        yt-dlp -f bestaudio -x "${SOURCE}" -o "${DOWNLOAD_TARGET}"
+        SOURCE="$(find_downloaded_audio "${VIDEO_ID}")"
+        if [ -z "${SOURCE}" ]; then
+            _fatal "Could not find downloaded audio for ${SOURCE}"
+        fi
+    else
+        SOURCE="${DOWNLOADED_FILE}"
+    fi
+    _log "Found downloaded audio in ${SOURCE}"
+fi
 
 _log "Converting source to PCM S16LE, 24000 Hz, mono"
 
@@ -51,11 +106,11 @@ if awk -v duration="$DURATION" 'BEGIN { exit !(duration > 0) }'; then
     trim_args+=("$DURATION")
 fi
 trim_args+=(
-    "silence" "1" "0.05" "0.5%" "reverse"
-    "silence" "1" "0.05" "0.5%" "reverse"
+    # "silence" "1" "0.05" "0.5%" "reverse"
+    # "silence" "1" "0.05" "0.5%" "reverse"
+    #"gain" "-3"
     "highpass" "65"
     "sinc" "-11500"
-    "gain" "-n" "-6"
 )
 play "$TARGET" "${trim_args[@]}"
 
@@ -74,7 +129,7 @@ _say() {
         --output-path "${OUTPUT}"
     play "${OUTPUT}"
 }
-_say "$(cat assets/voice-test.txt)"
+_say "$(cat "assets/voice-test.${TTS_SAMPLE}.txt")"
 
 while _yesno "Say more?"; do
     _read "What to say?"
