@@ -1,6 +1,6 @@
 name: vaultwarden
 chartRepo: https://guerzon.github.io/vaultwarden
-chartVersion: 0.34.4
+chartVersion: 0.44.0
 resourcesPath: services/app/vaultwarden/resources
 skipDryRunOnMissingResource: "true"
 extraHelmSources:
