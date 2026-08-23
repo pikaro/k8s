@@ -12,7 +12,7 @@ data:
       - match:
           - "*@d-reis.com"
         keyFile: proton.asc
-        fingerprint: "7D43A0CB95AC1CF2EE0179EEF02F25000E1EA603"
+        fingerprint: "7a18ffd70c429bfad7e4fe2a76f0105062d11b39"
   proton.asc: |
     -----BEGIN PGP PUBLIC KEY BLOCK-----
 
