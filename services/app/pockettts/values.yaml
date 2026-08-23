@@ -28,6 +28,7 @@ container:
         "kyutai/pocket-tts-german-24l": {
           "language": "german_24l",
           "voice": "juergen"
+        }
       }
   volumeMounts:
     - name: data
