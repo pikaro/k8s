@@ -7,7 +7,7 @@ annotations:
 
 image:
   repository: ghcr.io/pikaro/ai-tts
-  tag: sha-2691cd0
+  tag: sha-68ec995
 
 
 persistence:
@@ -29,6 +29,11 @@ container:
           "language": "german_24l",
           "voice": "juergen"
         }
+      }
+    TTS_MODEL_BY_VOICE: |
+      {
+        "juergen": "kyutai/pocket-tts-german-24l",
+        "norbert": "kyutai/pocket-tts-german-24l"
       }
   volumeMounts:
     - name: data
