@@ -38,7 +38,7 @@ database:
   type: "default"
 
 pushNotifications:
-  enabled: true
+  enabled: false
   existingSecret: "vaultwarden-installation"
   installationId:
     existingSecretKey: "installation_id"
