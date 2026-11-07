@@ -193,7 +193,7 @@ is deployed.
       --namespace observability \
       --create-namespace \
       prometheus-community/prometheus-operator-crds \
-      --version 30.0.0 \
+      --version 32.0.2 \
       --values services/platform/monitoring-crds/values.yaml
     ```
 

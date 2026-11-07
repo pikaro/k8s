@@ -1,6 +1,6 @@
 name: traefik
 chartRepo: https://traefik.github.io/charts
-chartVersion: 37.4.0
+chartVersion: 42.3.1
 resourcesPath: services/platform/traefik/resources
 authentik:
   name: Traefik Dashboard

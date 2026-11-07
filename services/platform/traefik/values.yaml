@@ -4,11 +4,12 @@ ports:
       default: true
     port: 80
     hostPort: 80
-    redirections:
-      entryPoint:
-        to: websecure
-        scheme: https
-        permanent: true
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
   websecure:
     expose:
       default: true
@@ -32,9 +33,8 @@ providers:
     enabled: true
     allowCrossNamespace: true
 
-logs:
-  general:
-    level: INFO
+log:
+  level: INFO
 
 metrics:
   prometheus:

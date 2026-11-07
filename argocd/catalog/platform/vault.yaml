@@ -1,6 +1,6 @@
 name: vault
 chartRepo: https://helm.releases.hashicorp.com
-chartVersion: 0.34.0
+chartVersion: 0.34.1
 serverSideApply: "true"
 authentik:
   name: Vault

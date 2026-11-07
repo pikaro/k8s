@@ -1,6 +1,6 @@
 name: openproject
 chartRepo: https://charts.openproject.org
-chartVersion: 13.8.1
+chartVersion: 13.17.1
 skipDryRunOnMissingResource: "true"
 createNamespace: "false"
 extraHelmSources:

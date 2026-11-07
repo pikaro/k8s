@@ -1,6 +1,6 @@
 name: vikunja
 chartRepo: oci://ghcr.io/go-vikunja/helm-chart/vikunja
-chartVersion: v2.0.2
+chartVersion: 2.6.0
 skipDryRunOnMissingResource: "true"
 extraHelmSources:
   - path: helm/volsync-restic-consumer

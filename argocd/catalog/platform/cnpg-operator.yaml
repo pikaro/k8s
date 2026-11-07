@@ -3,5 +3,5 @@ releaseName: cnpg
 namespace: cnpg-system
 chartRepo: https://cloudnative-pg.github.io/charts
 chart: cloudnative-pg
-chartVersion: 0.28.3
+chartVersion: 0.29.1
 serverSideApply: "true"

@@ -1,8 +1,4 @@
 vikunja:
-  image:
-    repository: vikunja/vikunja
-    tag: "2.5.0"
-
   ingress:
     main:
       enabled: true

@@ -85,8 +85,8 @@ ingress:
 memcached:
   bundled: true
   image:
+    # The bundled chart still needs the archived Bitnami repository.
     repository: bitnamilegacy/memcached
-    tag: 1.6.24-debian-12-r0
 
   global:
     containerSecurityContext:

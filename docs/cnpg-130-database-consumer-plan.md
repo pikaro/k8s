@@ -15,7 +15,7 @@ applications may write.
 
 ## Goals
 
-- Upgrade the CNPG operator chart to the 1.30.0 release.
+- Deploy the CNPG operator 1.30.1 upgrade staged in the service upgrade audit.
 - Add a narrow ArgoCD project for database consumer resources.
 - Add a repo-local Helm chart that creates a consumer database, role, generated
   password material, and target namespace secret sync.
@@ -167,8 +167,8 @@ in templates. Service-specific output keys belong in values files.
 
 ### Operator
 
-- Update `argocd/catalog/platform/cnpg-operator.yaml` from chart `0.28.3` to
-  `0.29.0`.
+- Deploy `argocd/catalog/platform/cnpg-operator.yaml` chart `0.29.1` (operator
+  `1.30.1`), staged by the service upgrade audit; verify the new CRDs first.
 - Keep `services/platform/cnpg-operator/values.yaml` unchanged unless template
   validation exposes a required change.
 
@@ -269,7 +269,7 @@ Local validation:
 argocd/appsets/generate.sh
 helm template cnpg cloudnative-pg \
   --repo https://cloudnative-pg.github.io/charts \
-  --version 0.29.0 \
+  --version 0.29.1 \
   -n cnpg-system \
   -f services/platform/cnpg-operator/values.yaml
 helm template authentik-cnpg helm/cnpg-database-consumer \
@@ -295,7 +295,7 @@ deploying the migration.
 
 ## Rollout Order
 
-1. Sync the CNPG operator upgrade to 1.30.0.
+1. Sync the CNPG operator upgrade to 1.30.1.
 2. Confirm the `DatabaseRole` CRD exists.
 3. Sync the new `cnpg-consumer` project and ApplicationSet.
 4. Sync one low-risk consumer first, likely `habitsync`.

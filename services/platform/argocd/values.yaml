@@ -1,5 +1,8 @@
 global:
   domain: argo.d-reis.com
+  # Preserve the pre-10.x policy behavior; review isolation separately.
+  networkPolicy:
+    create: false
 
 configs:
   params:

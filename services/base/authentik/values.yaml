@@ -10,10 +10,11 @@ serviceAccount:
   annotations: {}
 
 global:
-  # FIXME: REMOVE THIS
-  image:
-    tag: 2026.5.8
-
+  env:
+    # Traefik uses host networking; trust its node IP as well as the defaults.
+    - name: AUTHENTIK_LISTEN__TRUSTED_PROXY_CIDRS
+      value: >-
+        127.0.0.0/8,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fe80::/10,::1/128,95.217.36.114/32
   envFrom:
     - secretRef:
         name: authentik-smtp
