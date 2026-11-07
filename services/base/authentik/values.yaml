@@ -1,4 +1,6 @@
 authentik:
+  image:
+    tag: 2026.5.8
   existingSecret:
     secretName: authentik-config
 
