@@ -260,7 +260,15 @@ service:
 serviceAccount:
   create: true
 
+cleanup:
+  # Argo recreates the migration hook on sync; retain its logs until then.
+  deletePodsOnSuccess: false
+
 seederJob:
+  annotations:
+    # Helm's release revision stays at 1 under Argo; Job templates are immutable.
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
   resourcesPreset: ~
   resources:
     limits:

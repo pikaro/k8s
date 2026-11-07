@@ -1,14 +1,96 @@
 # Service upgrade audit 2026 11 07
 
-Prepared for review only. No cluster resources were changed, and nothing was
-committed or pushed. Kubernetes MCP and Grafana MCP supplied the live inventory;
-all 38 Argo Applications were Healthy and Synced. The node runs Kubernetes
-1.34.1 and Talos 1.13.5.
+The initial audit prepared changes for review without deploying, committing or
+pushing them. Its baseline inventory, obtained through Kubernetes MCP and
+Grafana MCP, showed all 38 Argo Applications Healthy and Synced. The node runs
+Kubernetes 1.34.1 and Talos 1.13.5. The user subsequently pushed commit
+`2927f78`; the post-deployment findings below supersede that baseline.
 
 The changes update 21 remote chart pins and the existing shared MCP chart
 dependency. Application versions follow their charts. Authentik and Vikunja's
 conflicting image overrides are removed. The redundant OpenProject memcached
 tag is removed while retaining its required `bitnamilegacy` repository override.
+
+## Post-deployment validation
+
+Checked on November 7 at approximately **18:47 UTC / 19:47 CET**, using Kubernetes
+MCP and Grafana MCP. No cluster mutations, commits or pushes were performed
+during validation. There are **19 firing alert series**, mostly consequences of
+two failed workloads. Of 38 Applications, 34 are Healthy, three Degraded
+(`argocd`, `openproject`, `mail-relay`) and Alloy is Progressing. Only OpenProject
+and root are OutOfSync. Synced does not imply a successful rollout.
+
+| Finding | Evidence and impact | Recovery status |
+| --- | --- | --- |
+| Alloy unavailable | Container logs reject `#` comments inside `config.alloy`; crash loop prevents log collection. Its scrape target is down. | Local fix in [Alloy values](../services/platform/alloy/values.yaml) uses `//`. Validated with the actual Alloy 1.21.3 binary; awaiting review and deployment. |
+| OpenProject unavailable | Argo cannot modify immutable `spec.template` of completed `openproject-seeder-1`. Web and worker wait for database migrations and fail initialization. | Local fix in [OpenProject values](../services/app/openproject/values.yaml) makes the seeder a `Sync` hook with `BeforeHookCreation`; disables the competing Job TTL. Awaiting review and deployment. |
+| Mail relay Secret refresh broken | External Secrets controller repeatedly reports `function "fail" not defined` for SMTP credentials. Existing mail containers remain Ready; successful delivery was not tested. | Unresolved compatibility break. Existing credential validation remains intact; see below. |
+| Argo CD degraded | Both existing HPAs report `FailedGetResourceMetric`: `pods.metrics.k8s.io` is missing. Their failure condition dates to June 23, predating this upgrade. Argo's own workloads are Ready. | Requires either a working resource metrics API or a deliberate switch to fixed replicas. No dependency added and no health check suppressed. |
+| CoreDNS upgrade pending | Root has not synced the changed child Application. Live chart remains 1.45.0 / CoreDNS 1.13.1; Git requests 1.50.2 / 1.14.7. | Sync the root Application, then CoreDNS; both steps are manual under the existing policies. |
+| Vault restart pending | StatefulSet requests 2.0.4 but its healthy existing pod runs 2.0.3. `OnDelete` leaves its revisions different. | Expected `KubeStatefulSetUpdateNotRolledOut`; perform the previously planned interactive restart. |
+
+### Ready fixes and limits
+
+The Alloy comments were already present before the version-bump commit. Helm
+rendering did not validate the embedded Alloy syntax. The corrected rendered
+configuration passes `alloy validate` using the official 1.21.3 macOS binary,
+whose SHA-256 was checked against release metadata.
+
+OpenProject's chart includes `.Release.Revision` in the seeder Job name, but
+Argo's Helm rendering keeps that revision at 1. Reapplying a changed Job then
+fails Kubernetes immutability checks. The new hook recreates that Job on full
+sync, runs the chart's normal migrations and seeding, and retains its logs until
+the next sync. Other resources, including persistent data, are unaffected by
+the hook deletion policy. **Use a full Application sync:** Argo does not run
+hooks during selective resource sync. Migration execution and application
+recovery still need live validation after deployment. See
+[Argo's hook lifecycle documentation](https://argo-cd.readthedocs.io/en/stable/user-guide/sync-waves/).
+
+Both changed charts render and pass strict Helm lint. OpenProject's bundled
+memcached chart emits an existing Helm coalescing warning about
+`service.sessionAffinity`; the recovery changes do not alter that setting.
+
+### External Secrets compatibility correction
+
+[External Secrets 2.12.0](https://github.com/external-secrets/external-secrets/releases/tag/v2.12.0)
+removed the Sprig `fail` function. The current
+[mail relay templates](../services/platform/mail-relay/externalsecrets.yaml)
+use it to reject the `undefined` bootstrap credentials declared in
+[Terraform](../terraform/aws/mail.tf). This is an actual incompatibility missed
+by the initial review, even though the chart renders successfully.
+
+**2.11.0 is the last release before this break**; its upstream function map
+still includes `fail`. Version 2.14.0 has neither `fail` nor a `required`
+replacement. Simply deleting the guard would silently weaken credential
+validation. Recovery needs either a reviewed replacement for that validation or
+a controlled rollback to 2.11.0. A rollback must review the already-installed
+CRDs and the intervening secret-validation/error-handling fixes; it is not
+included in these local edits. The original assessment below must not be read
+as declaring 2.14.0 compatible with all existing templates.
+
+MCP RBAC does not permit reading ExternalSecret objects. The diagnosis comes
+from permitted controller logs and the repository templates; credential values
+were not inspected.
+
+### Other checks
+
+- Grafana 13.3.0 returns HTTP 200 from `/api/health` with `database: ok`.
+  Prometheus 3.16.0 queries work; only Alloy and OpenProject scrape targets are
+  down. Alertmanager 0.34.2 has sent webhook notifications with no recorded
+  notification failures in the checked hour. This does not prove downstream
+  delivery to a recipient.
+- Authentik 2026.8.5, Open WebUI 0.13.0, Vikunja 2.8.0, Vaultwarden 1.37.5,
+  Traefik 3.7.17, cert-manager 1.20.5, Loki 3.6.11 and OpenEBS ZFS 2.11.2 are
+  running, with their Applications Healthy. ExternalDNS 0.23.0 is Ready and
+  repeatedly reports that its DNS records are up to date. These are operational
+  checks, not authenticated user-workflow tests.
+- All current PVCs are Bound. Six `SetPropertyFailed` ZFS warnings refer to
+  342-day-old ZFSVolume objects with no corresponding PV or PVC; the controller
+  reports their datasets missing. These appear to be stale objects, not current
+  claims. They were not deleted; host-side dataset verification remains a
+  separate cleanup task.
+- `Watchdog` is expected. `CNPGClusterInstancesOnSameNode` reflects the existing
+  three database instances on one node and is routed to the null receiver.
 
 ## Chart versions prepared
 
@@ -28,7 +110,7 @@ CoreDNS is pinned in [`argocd/applications/coredns.yaml`](../argocd/applications
 | [CNPG cluster](https://github.com/cloudnative-pg/charts/tree/main/charts/cluster) | 0.7.0 → 0.9.0 | PostgreSQL 16.14; major 16 retained | Preserve roles, storage and native Barman backup; no database image change. |
 | [CoreDNS](https://github.com/coredns/helm) | 1.45.0 → 1.50.2 | 1.13.1 → 1.14.7 | Existing Corefile and Service IP preserved. |
 | [ExternalDNS](https://github.com/kubernetes-sigs/external-dns/releases/tag/v0.23.0) | 1.19.0 → 1.23.0 | 0.19.0 → 0.23.0 | Preserve existing annotation prefix explicitly. |
-| [External Secrets](https://github.com/external-secrets/external-secrets/releases/tag/v2.14.0) | 2.6.0 → 2.14.0 | 2.6.0 → 2.14.0 | Existing Vault, AWS and Kubernetes stores retained. |
+| [External Secrets](https://github.com/external-secrets/external-secrets/releases/tag/v2.14.0) | 2.6.0 → 2.14.0 | 2.6.0 → 2.14.0 | **Post-deployment incompatibility:** mail template uses removed `fail`; last compatible release is 2.11.0. See recovery discussion above. |
 | [Grafana Alloy](https://github.com/grafana/alloy/releases/tag/v1.21.3) | 1.10.0 → 1.15.0 | 1.17.0 → 1.21.3 | Existing Kubernetes log pipeline retained. |
 | [Loki](https://github.com/grafana/loki/blob/main/production/helm/loki/CHANGELOG.md) | 7.0.0 → **7.5.0, existing repository** | 3.6.7 → **3.6.11** | Interim update; maintained OSS chart is **community 21.0.0 / Loki 3.7.9**. See migration below. |
 | [Monitoring stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack) | 87.2.1 → 92.22.0 | Operator 0.92.0 → 0.94.2 | Bundled components detailed below. |

@@ -65,8 +65,8 @@ alloy:
 
         stage.template {
           source   = "detected_level"
-          # The Alloy chart runs this block through Helm tpl; printf emits the
-          # literal Go template that Alloy should evaluate at runtime.
+          // The Alloy chart runs this block through Helm tpl; printf emits the
+          // literal Go template that Alloy should evaluate at runtime.
           template = {{ printf "%q" `{{- $level := ToLower (coalesce .field_level .klog_level .token_level "unknown") -}}{{- if or (eq $level "trace") (eq $level "trc") -}}trace{{- else if or (eq $level "debug") (eq $level "dbg") -}}debug{{- else if or (eq $level "info") (eq $level "inf") (eq $level "information") (eq $level "i") -}}info{{- else if or (eq $level "warn") (eq $level "wrn") (eq $level "warning") (eq $level "w") -}}warn{{- else if or (eq $level "error") (eq $level "err") (eq $level "e") -}}error{{- else if or (eq $level "critical") (eq $level "crit") -}}critical{{- else if or (eq $level "fatal") (eq $level "f") -}}fatal{{- else if eq $level "panic" -}}panic{{- else -}}unknown{{- end -}}` }}
         }
 
